@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
+import { NodeIO } from "@gltf-transform/core";
+import path from "node:path";
 import { LENGTH_COSTS, PLATFORM_COSTS, TRAINS, createInitialState } from "../app/game/data";
 import { decodeSave, encodeSave } from "../app/game/save";
 import {
   canPurchase,
   cleanStation,
   cleaningCost,
+  daylightFactor,
   isNight,
   purchaseUpgrade,
   stationRating,
@@ -13,6 +16,7 @@ import {
   trainMeetsRequirements,
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
+import { catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
 
 function fundedState(): GameState {
   return {
@@ -50,6 +54,51 @@ describe("Corner Rails economy and progression", () => {
     expect(state.lengthLevel).toBe(2);
     expect(state.systems.electrification).toBe(true);
     expect(state.upgradesUsed).toBe(3);
+  });
+});
+
+describe("gradual day and night presentation", () => {
+  it("eases through dusk and dawn instead of switching lighting instantly", () => {
+    expect(daylightFactor(0)).toBe(1);
+    expect(daylightFactor(570)).toBeCloseTo(0.5);
+    expect(daylightFactor(600)).toBe(0);
+    expect(daylightFactor(840)).toBe(0);
+    expect(daylightFactor(870)).toBeCloseTo(0.5);
+    expect(daylightFactor(900)).toBe(1);
+  });
+});
+
+describe("render helpers", () => {
+  it("creates finite catenary positions across the complete corridor", () => {
+    const poles = catenaryPolePositions(58);
+    expect(poles).toHaveLength(10);
+    expect(poles.every(Number.isFinite)).toBe(true);
+    expect(poles[0]).toBeCloseTo(-26.8);
+    expect(poles.at(-1)).toBeCloseTo(26.8);
+  });
+
+  it("provides continuous sub-frame train positions", () => {
+    const first = trainMotionPosition("approach", 1, 5, -20, 4, 30);
+    const nextFrame = trainMotionPosition("approach", 1 + 1 / 60, 5, -20, 4, 30);
+    expect(nextFrame).toBeGreaterThan(first);
+    expect(nextFrame - first).toBeLessThan(1);
+  });
+
+  it("ships three structurally distinct Tier 1 GLB models", async () => {
+    const io = new NodeIO();
+    const modelDirectory = path.resolve("public/models/trains");
+    const signatures = [
+      ["br650.glb", "single_car_chamfered_shell"],
+      ["br642.glb", "desiro_red_chamfered_shell"],
+      ["br648.glb", "lint_red_chamfered_shell"],
+    ] as const;
+    const nodeSets = await Promise.all(signatures.map(async ([file, signature]) => {
+      const document = await io.read(path.join(modelDirectory, file));
+      const names = document.getRoot().listNodes().map((node) => node.getName());
+      expect(names).toContain(signature);
+      return names.join("|");
+    }));
+    expect(new Set(nodeSets).size).toBe(3);
   });
 });
 

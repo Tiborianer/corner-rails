@@ -2,6 +2,8 @@
 
 The screenshots below document the original 2026-08-11 vertical slice. A 2026-08-12 visual revision replaced the shared boxy train recipe with family-specific lead vehicles and formations, moved onboarding to the lower corner, extended rails and terrain beyond the camera, grounded the platform on a full plinth, and added deterministic landscape scenery. Automated regression results for this revision are recorded in the repository build output; the earlier screenshots are retained as before/after evidence rather than presented as the revised visuals.
 
+A second 2026-08-12 regression pass corrected the catenary crash, isolated train loading from the rest of the diorama, added frame-by-frame train-motion extrapolation above the 10 Hz deterministic simulation, and replaced the Tier 1 bodies with three longer chamfered rail-vehicle shells. Daylight now eases through a one-minute dusk and one-minute dawn, including sky, fog, ambient light, directional light, hemisphere light, and station-window colour. Thirteen automated checks now include finite electrification geometry, continuous sub-frame motion, gradual daylight values, and distinct node signatures for all three Tier 1 GLBs.
+
 QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/build validation.
 
 ## Automated acceptance coverage

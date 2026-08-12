@@ -31,7 +31,7 @@ Checked against primary operator, manufacturer, or museum material on **2026-08-
 
 The procedural assets intentionally omit protected logos, but now encode the train-family cues visible in the primary records:
 
-- **Tier 1:** the RS1 is a single compact railcar with its diagonal side-window lattice; Class 642 uses the Desiro’s rounded articulated red cab mask; LINT 41 has a squarer black-glass cab and low-floor two-car body.
+- **Tier 1:** the RS1 is a single long chamfered railcar with Stadler’s characteristic trapezoidal side-window lattice, red door and compact roof equipment; Class 642 uses a separate two-ended articulated Desiro body with a rounded wraparound black cab, red shell, silver window ribbon and articulation bellows; LINT 41 uses a longer two-ended body with a distinctly flatter cab, broad windshield, two door groups and larger roof HVAC equipment.
 - **Tier 2:** Desiro HC mixes high-capacity end cars with double-deck centre cars; metronom uses a blue/yellow electric locomotive, double-deck trailers, and control coach; Talent 2 uses its bulbous dark “hamster cheek” nose.
 - **Tier 3:** FlixTrain is a green electric locomotive with refurbished single-deck trailers; IC1 uses a locomotive-led single-deck formation; IC2 uses a modern locomotive with double-deck trailers and a control end.
 - **Tier 4:** ICE 2 has the older wedge power head and paired windscreen; ICE 3 has a smooth rounded continuous mask; ICE 4 has a longer angular nose, squarer glass, black side mask, and red belt.

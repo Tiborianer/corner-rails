@@ -101,10 +101,6 @@ button:disabled {
   mix-blend-mode: multiply;
 }
 
-.night .world-vignette {
-  background: linear-gradient(90deg, rgba(5, 13, 25, 0.35), transparent 28%, transparent 74%, rgba(5, 13, 25, 0.3));
-}
-
 .brand {
   position: absolute;
   z-index: 12;

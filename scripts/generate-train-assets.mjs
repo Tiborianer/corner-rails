@@ -92,6 +92,69 @@ function cylinderGeometry(doc, buffer, segments = 16) {
   };
 }
 
+function railcarGeometry(doc, buffer) {
+  // A long rail-vehicle cross-section with a narrow underframe and chamfered
+  // roof shoulders.  Flat face normals keep the low-poly style intentional.
+  const crossSection = [
+    [-0.5, -0.34],
+    [-0.42, -0.48],
+    [0.31, -0.48],
+    [0.5, -0.36],
+    [0.5, 0.36],
+    [0.31, 0.48],
+    [-0.42, 0.48],
+    [-0.5, 0.34],
+  ];
+  const raw = [];
+  const addTriangle = (a, b, c) => {
+    const ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const normal = [
+      ab[1] * ac[2] - ab[2] * ac[1],
+      ab[2] * ac[0] - ab[0] * ac[2],
+      ab[0] * ac[1] - ab[1] * ac[0],
+    ];
+    const magnitude = Math.hypot(...normal) || 1;
+    raw.push({ vertices: [a, b, c], normal: normal.map((value) => value / magnitude) });
+  };
+  for (let index = 0; index < crossSection.length; index += 1) {
+    const next = (index + 1) % crossSection.length;
+    const [y1, z1] = crossSection[index];
+    const [y2, z2] = crossSection[next];
+    const a = [-0.5, y1, z1];
+    const b = [0.5, y1, z1];
+    const c = [0.5, y2, z2];
+    const d = [-0.5, y2, z2];
+    addTriangle(a, b, c);
+    addTriangle(a, c, d);
+  }
+  for (const x of [-0.5, 0.5]) {
+    for (let index = 0; index < crossSection.length; index += 1) {
+      const center = [x, 0, 0];
+      const a = [x, crossSection[index][0], crossSection[index][1]];
+      const next = (index + 1) % crossSection.length;
+      const b = [x, crossSection[next][0], crossSection[next][1]];
+      if (x < 0) addTriangle(center, b, a);
+      else addTriangle(center, a, b);
+    }
+  }
+  const positions = [];
+  const normals = [];
+  for (const triangle of raw) {
+    for (const vertex of triangle.vertices) {
+      positions.push(...vertex);
+      normals.push(...triangle.normal);
+    }
+  }
+  const indices = new Uint16Array(positions.length / 3);
+  for (let index = 0; index < indices.length; index += 1) indices[index] = index;
+  return {
+    positions: doc.createAccessor("railcar_position").setType("VEC3").setArray(new Float32Array(positions)).setBuffer(buffer),
+    normals: doc.createAccessor("railcar_normal").setType("VEC3").setArray(new Float32Array(normals)).setBuffer(buffer),
+    indices: doc.createAccessor("railcar_indices").setType("SCALAR").setArray(indices).setBuffer(buffer),
+  };
+}
+
 function makePrimitive(doc, geometry, material) {
   return doc.createPrimitive().setAttribute("POSITION", geometry.positions).setAttribute("NORMAL", geometry.normals).setIndices(geometry.indices).setMaterial(material);
 }
@@ -104,6 +167,7 @@ function makeAsset(asset) {
   const buffer = doc.createBuffer("corner_rails_buffer");
   const cube = cubeGeometry(doc, buffer);
   const cylinder = cylinderGeometry(doc, buffer);
+  const railcar = railcarGeometry(doc, buffer);
   const materialDefs = {
     body: [asset.body, 0.12, 0.58],
     accent: [asset.accent, 0.08, 0.52],
@@ -113,6 +177,7 @@ function makeAsset(asset) {
     lamp: ["#ffe79b", 0.05, 0.3],
     redLamp: ["#d51e35", 0.05, 0.3],
     steamRod: ["#d7b86a", 0.42, 0.35],
+    destination: ["#f3b53f", 0.05, 0.28],
   };
   const materials = Object.fromEntries(Object.entries(materialDefs).map(([name, [hex, metallic, roughness]]) => [
     name,
@@ -120,6 +185,7 @@ function makeAsset(asset) {
   ]));
   const meshes = Object.fromEntries(Object.entries(materials).map(([name, material]) => [name, doc.createMesh(`${name}_cube`).addPrimitive(makePrimitive(doc, cube, material))]));
   const cylinders = Object.fromEntries(Object.entries(materials).map(([name, material]) => [name, doc.createMesh(`${name}_cylinder`).addPrimitive(makePrimitive(doc, cylinder, material))]));
+  const railcars = Object.fromEntries(Object.entries(materials).map(([name, material]) => [name, doc.createMesh(`${name}_railcar`).addPrimitive(makePrimitive(doc, railcar, material))]));
   const root = doc.createNode(`${asset.id}_train_root`);
   doc.createScene(`Corner Rails ${asset.id}`).addChild(root);
 
@@ -130,6 +196,11 @@ function makeAsset(asset) {
   };
   const addCylinder = (name, material, scale, translation, rotation) => {
     const node = doc.createNode(name).setMesh(cylinders[material]).setScale(scale).setTranslation(translation);
+    if (rotation) node.setRotation(rotation);
+    root.addChild(node);
+  };
+  const addRailcar = (name, material, scale, translation, rotation) => {
+    const node = doc.createNode(name).setMesh(railcars[material]).setScale(scale).setTranslation(translation);
     if (rotation) node.setRotation(rotation);
     root.addChild(node);
   };
@@ -198,38 +269,48 @@ function makeAsset(asset) {
     [-0.37, 0.37].forEach((z, side) => addBox(`connecting_rod_${side}`, "steamRod", [1.12, 0.04, 0.025], [-0.16, 0.18, z]));
     addLights(0.9, 0.55, 0);
   } else if (asset.family === "rs1") {
-    addBox("single_car_body", "body", [1.34, 0.72, 0.72], [-0.04, 0.56, 0]);
-    addBox("sloped_front", "body", [0.26, 0.58, 0.64], [0.72, 0.53, 0], qz(-0.15));
-    addBox("red_lower_band", "accent", [1.44, 0.24, 0.74], [-0.01, 0.3, 0]);
-    addFrontMask(0.85, 0.72, 0.3, 0.5, true);
-    addSideWindows(0.86, 0.72, 4, 0.22, -0.1);
+    addRailcar("single_car_chamfered_shell", "body", [1.7, 0.74, 0.72], [-0.06, 0.56, 0]);
+    addBox("sloped_front", "body", [0.3, 0.58, 0.62], [0.92, 0.53, 0], qz(-0.13));
+    addBox("red_lower_band", "accent", [1.78, 0.22, 0.7], [-0.02, 0.3, 0]);
+    addFrontMask(1.08, 0.72, 0.29, 0.48, true);
+    addBox("destination_display", "destination", [0.035, 0.07, 0.23], [1.1, 0.91, 0]);
+    addSideWindows(1.2, 0.72, 5, 0.22, -0.16);
     // RS1 visual signature: diagonal white/red lattice around the side windows.
-    [-0.43, -0.14, 0.15, 0.44].forEach((x, index) => {
+    [-0.63, -0.32, -0.01, 0.3, 0.61].forEach((x, index) => {
       [-0.385, 0.385].forEach((z, side) => addBox(`rs1_diagonal_${index}_${side}`, "body", [0.3, 0.045, 0.025], [x, 0.72, z], qz(index % 2 ? -0.7 : 0.7)));
     });
-    addBox("roof", "roof", [1.2, 0.09, 0.64], [-0.08, 0.98, 0]);
-    addBogieSet(1.24, 0.12);
-    addLights(0.91, 0.43);
+    [-0.385, 0.385].forEach((z, side) => addBox(`rs1_red_door_${side}`, "accent", [0.19, 0.48, 0.025], [0.55, 0.54, z]));
+    addBox("roof_exhaust", "roof", [0.38, 0.08, 0.34], [-0.2, 1.0, 0]);
+    addBogieSet(1.56, 0.12);
+    addLights(1.15, 0.42);
   } else if (asset.family === "desiro") {
-    addBox("articulated_body", "body", [1.42, 0.72, 0.72], [-0.08, 0.56, 0]);
-    addBox("desiro_rounded_nose", "accent", [0.34, 0.6, 0.62], [0.71, 0.54, 0], qz(-0.17));
-    addFrontMask(0.88, 0.73, 0.32, 0.52);
-    addBox("silver_lower_apron", "body", [1.42, 0.15, 0.74], [-0.06, 0.26, 0]);
-    addSideWindows(0.88, 0.72, 4, 0.2, -0.13);
-    addBox("articulation_marker", "roof", [0.06, 0.72, 0.735], [-0.38, 0.57, 0]);
-    addBox("roof", "roof", [1.24, 0.1, 0.62], [-0.12, 1.0, 0]);
-    addBogieSet(1.28, 0.12);
-    addLights(0.92, 0.42);
+    addRailcar("desiro_red_chamfered_shell", "accent", [1.72, 0.75, 0.72], [-0.08, 0.56, 0]);
+    addBox("silver_window_ribbon", "body", [1.36, 0.32, 0.72], [-0.18, 0.7, 0]);
+    addBox("desiro_rounded_nose_lower", "accent", [0.42, 0.46, 0.58], [0.88, 0.44, 0], qz(-0.2));
+    addBox("desiro_wraparound_mask", "windows", [0.3, 0.39, 0.64], [0.93, 0.72, 0], qz(-0.18));
+    addBox("desiro_white_chin", "body", [0.3, 0.13, 0.55], [1.05, 0.29, 0], qz(-0.12));
+    addBox("destination_display", "destination", [0.035, 0.06, 0.22], [1.09, 0.91, 0]);
+    addSideWindows(1.05, 0.72, 5, 0.19, -0.24);
+    [-0.385, 0.385].forEach((z, side) => addBox(`desiro_door_${side}`, "accent", [0.18, 0.48, 0.025], [0.45, 0.54, z]));
+    addBox("articulation_bellows", "wheel", [0.09, 0.69, 0.7], [-0.9, 0.57, 0]);
+    addBox("roof_hvac", "roof", [0.5, 0.08, 0.42], [-0.28, 1.02, 0]);
+    addBogieSet(1.58, 0.12);
+    addLights(1.11, 0.4);
   } else if (asset.family === "lint") {
-    addBox("lint_body", "body", [1.36, 0.72, 0.72], [-0.04, 0.56, 0]);
-    addBox("lint_red_nose", "accent", [0.28, 0.55, 0.64], [0.72, 0.5, 0], qz(-0.11));
-    addFrontMask(0.86, 0.73, 0.33, 0.54);
-    addBox("lint_lower_red", "accent", [1.38, 0.18, 0.73], [-0.04, 0.27, 0]);
-    addSideWindows(0.94, 0.72, 4, 0.2, -0.12);
-    [-0.385, 0.385].forEach((z, side) => addBox(`lint_door_${side}`, "accent", [0.16, 0.53, 0.025], [-0.39, 0.54, z]));
-    addBox("roof", "roof", [1.18, 0.1, 0.62], [-0.12, 1.0, 0]);
-    addBogieSet(1.26, 0.12);
-    addLights(0.9, 0.42);
+    addRailcar("lint_red_chamfered_shell", "accent", [1.78, 0.76, 0.72], [-0.08, 0.56, 0]);
+    addBox("lint_silver_window_ribbon", "body", [1.42, 0.3, 0.72], [-0.2, 0.71, 0]);
+    addBox("lint_flat_cab_face", "accent", [0.25, 0.58, 0.65], [0.91, 0.55, 0], qz(-0.07));
+    addBox("lint_broad_black_windscreen", "windows", [0.13, 0.34, 0.57], [1.05, 0.74, 0], qz(-0.07));
+    addBox("lint_grey_lower_apron", "roof", [0.28, 0.16, 0.58], [1.05, 0.31, 0], qz(-0.05));
+    addBox("destination_display", "destination", [0.035, 0.065, 0.25], [1.12, 0.91, 0]);
+    addSideWindows(1.08, 0.72, 4, 0.2, -0.28);
+    [-0.385, 0.385].forEach((z, side) => {
+      addBox(`lint_front_door_${side}`, "accent", [0.17, 0.5, 0.025], [0.48, 0.54, z]);
+      addBox(`lint_rear_door_${side}`, "accent", [0.17, 0.5, 0.025], [-0.58, 0.54, z]);
+    });
+    addBox("lint_roof_hvac", "roof", [0.62, 0.1, 0.46], [-0.22, 1.03, 0]);
+    addBogieSet(1.64, 0.12);
+    addLights(1.13, 0.4);
   } else if (asset.family === "desiro-hc") {
     addBox("high_capacity_end_car", "body", [1.45, 0.89, 0.74], [-0.05, 0.63, 0]);
     addBox("desiro_hc_red_nose", "accent", [0.33, 0.68, 0.64], [0.76, 0.58, 0], qz(-0.12));

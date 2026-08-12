@@ -5,10 +5,11 @@
 import { Clone, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
-import type { Group, InstancedMesh, Points } from "three";
+import type { AmbientLight, DirectionalLight, Fog, Group, HemisphereLight, InstancedMesh, Points } from "three";
 import { Color, MathUtils, Object3D } from "three";
-import { isNight } from "./simulation";
+import { daylightFactor, isNight } from "./simulation";
 import { TRAINS } from "./data";
+import { catenaryPolePositions, trainMotionPosition } from "./visual";
 import type { GameState, TrainDefinition } from "./types";
 
 interface SceneProps {
@@ -104,7 +105,7 @@ function Platform({ index, length, amenities }: { index: number; length: number;
 }
 
 function Catenary({ trackCount, length }: { trackCount: number; length: number }) {
-  const poles = useMemo(() => Array.from({ length: Math.ceil(length / 6) }, (_, index, all) => -length / 2 + 2.2 + (index / Math.max(1, all.length - 1)) * (length - 4.4)), [length]);
+  const poles = useMemo(() => catenaryPolePositions(length), [length]);
   return (
     <group>
       {Array.from({ length: trackCount }, (_, track) => {
@@ -125,16 +126,17 @@ function Catenary({ trackCount, length }: { trackCount: number; length: number }
   );
 }
 
-function StationBuilding({ tier, night }: { tier: number; night: boolean }) {
+function StationBuilding({ tier, daylight }: { tier: number; daylight: number }) {
   if (tier < 2) return null;
   const width = 2.2 + tier * 0.42;
   const height = 0.72 + tier * 0.26;
+  const windowColor = new Color("#ffd878").lerp(new Color("#547482"), daylight).getStyle();
   return (
     <group position={[-1.2, 0, 3.8]}>
       <Box position={[0, height / 2 + 0.2, 0]} scale={[width, height, 1.35]} color={tier >= 5 ? "#ede3c9" : "#d1b98e"} />
       <Box position={[0, height + 0.35, 0]} scale={[width + 0.28, 0.16, 1.58]} color="#32494c" />
       <Box position={[0.55, 0.72, -0.69]} scale={[0.58, 0.9, 0.06]} color="#2b4a55" />
-      <Box position={[-0.62, 0.86, -0.69]} scale={[0.52, 0.46, 0.06]} color={night ? "#ffd878" : "#547482"} />
+      <Box position={[-0.62, 0.86, -0.69]} scale={[0.52, 0.46, 0.06]} color={windowColor} />
       <Box position={[0, height + 0.62, -0.78]} scale={[1.18, 0.35, 0.08]} color="#f0e9d7" />
       <Box position={[0, height + 0.62, -0.83]} scale={[0.74, 0.06, 0.02]} color="#b51f2e" />
       {tier >= 4 && <Box position={[-width / 2 + 0.5, height + 0.92, 0]} scale={[0.16, 1.1, 0.16]} color="#2f3e3f" />}
@@ -339,6 +341,12 @@ function SteamPuffs({ active }: { active: boolean }) {
 
 const DOUBLE_DECK_TRAINS = new Set(["desiro-hc", "metronom", "ic2", "tgv-duplex"]);
 const DOUBLE_ENDED_TRAINS = new Set(["br642", "br648", "desiro-hc", "talent2", "ice2", "ice3", "ice4", "tgv-duplex", "giruno", "ice-s"]);
+const TIER_ONE_CAR_PITCH: Record<string, number> = { br642: 1.65, br648: 1.7 };
+const TRAIN_ASSET_VERSION = "4";
+
+function carPitch(train: TrainDefinition): number {
+  return TIER_ONE_CAR_PITCH[train.id] ?? 1.12;
+}
 
 function CoachWheels() {
   return (
@@ -364,7 +372,7 @@ function CoachWindows({ y, color, count = 4 }: { y: number; color: string; count
 }
 
 function ProceduralCoach({ train, index }: { train: TrainDefinition; index: number }) {
-  const x = -1.14 - index * 0.96;
+  const x = -carPitch(train) * (index + 1);
   const isSteam = train.id === "br01";
   const isTender = isSteam && index === 0;
   const isHeritage = isSteam && !isTender;
@@ -392,10 +400,10 @@ function ProceduralCoach({ train, index }: { train: TrainDefinition; index: numb
 
   return (
     <group position={[x, 0, 0]}>
-      <Box position={[0, centerY, 0]} scale={[0.88, height, 0.69]} color={body} />
-      <Box position={[0, centerY + height / 2 + 0.055, 0]} scale={[0.82, 0.09, 0.61]} color={isHeritage ? "#3b2d29" : train.colors.roof} />
-      <Box position={[0, 0.28, 0]} scale={[0.88, 0.065, 0.71]} color={accent} />
-      <Box position={[0, 0.18, 0]} scale={[0.72, 0.12, 0.52]} color="#222a2b" />
+      <Box position={[0, centerY, 0]} scale={[0.98, height, 0.69]} color={body} />
+      <Box position={[0, centerY + height / 2 + 0.055, 0]} scale={[0.92, 0.09, 0.61]} color={isHeritage ? "#3b2d29" : train.colors.roof} />
+      <Box position={[0, 0.28, 0]} scale={[0.98, 0.065, 0.71]} color={accent} />
+      <Box position={[0, 0.18, 0]} scale={[0.82, 0.12, 0.52]} color="#222a2b" />
       {doubleDeck ? (
         <>
           <CoachWindows y={0.48} color={train.colors.windows} />
@@ -437,34 +445,90 @@ function ProceduralCoach({ train, index }: { train: TrainDefinition; index: numb
 function TrainConsist({ state }: { state: GameState }) {
   const active = state.activeTrain;
   const group = useRef<Group>(null);
+  const motion = useRef({ trainId: "", phase: "", elapsed: 0 });
   const train = active ? TRAINS.find((candidate) => candidate.id === active.trainId) : null;
-  const gltf = useGLTF(train ? `/models/trains/${train.modelKey}.glb` : "/models/trains/br650.glb");
+  const gltf = useGLTF(train ? `/models/trains/${train.modelKey}.glb?v=${TRAIN_ASSET_VERSION}` : `/models/trains/br650.glb?v=${TRAIN_ASSET_VERSION}`);
   const head = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
-  const entryX = train ? -31 - train.cars * 0.96 : -31;
-  const exitX = train ? 34 + train.cars * 0.96 : 34;
-  const targetX = useMemo(() => {
-    if (!active) return entryX;
-    const progress = MathUtils.clamp(active.phaseElapsed / active.phaseDuration, 0, 1);
-    if (active.phase === "approach") return MathUtils.lerp(entryX, 4.4, 1 - Math.pow(1 - progress, 3));
-    if (active.phase === "depart") return MathUtils.lerp(4.4, exitX, progress * progress);
-    return 4.4;
-  }, [active, entryX, exitX]);
-  useFrame(() => {
-    if (group.current) group.current.position.x = targetX;
+  const entryX = train ? -34 - train.cars * 1.6 : -34;
+  const exitX = train ? 36 + train.cars * 1.6 : 36;
+  useFrame((_, delta) => {
+    if (!group.current || !active) return;
+    const visual = motion.current;
+    if (visual.trainId !== active.trainId || visual.phase !== active.phase) {
+      visual.trainId = active.trainId;
+      visual.phase = active.phase;
+      visual.elapsed = active.phaseElapsed;
+    } else {
+      // Extrapolate between deterministic 10 Hz simulation snapshots, then
+      // correct only forward so a late snapshot can never make a train jump back.
+      visual.elapsed = Math.min(active.phaseDuration, Math.max(visual.elapsed, active.phaseElapsed) + delta * state.speed);
+    }
+    group.current.position.x = trainMotionPosition(active.phase, visual.elapsed, active.phaseDuration, entryX, 4.4, exitX);
   });
   if (!active || !train) return null;
   const tailIndex = train.cars - 2;
   const hasMirroredTail = DOUBLE_ENDED_TRAINS.has(train.id) && train.cars > 1;
   return (
-    <group ref={group} position={[entryX, 0.25, -0.72]} scale={0.82}>
+    <group ref={group} position={[entryX, 0.25, -0.72]} scale={[1.5, 0.82, 0.82]}>
       <Clone object={head} castShadow />
       {Array.from({ length: Math.max(0, train.cars - 1) }, (_, index) => hasMirroredTail && index === tailIndex ? (
-        <group key={index} position={[-1.14 - index * 0.96, 0, 0]} rotation={[0, Math.PI, 0]}>
+        <group key={index} position={[-carPitch(train) * (index + 1), 0, 0]} rotation={[0, Math.PI, 0]}>
           <Clone object={head} castShadow />
         </group>
       ) : <ProceduralCoach key={index} train={train} index={index} />)}
       <SteamPuffs active={train.style === "steam"} />
     </group>
+  );
+}
+
+function Atmosphere({ state }: { state: GameState }) {
+  const ambient = useRef<AmbientLight>(null);
+  const sun = useRef<DirectionalLight>(null);
+  const hemisphere = useRef<HemisphereLight>(null);
+  const fog = useRef<Fog>(null);
+  const visualDaylight = useRef(daylightFactor(state.simSeconds));
+  const daySky = useMemo(() => new Color("#a7cfdd"), []);
+  const rainSky = useMemo(() => new Color("#60777b"), []);
+  const nightSky = useMemo(() => new Color("#101c2c"), []);
+  const duskSky = useMemo(() => new Color("#be7968"), []);
+  const sky = useMemo(() => new Color(), []);
+  const daySun = useMemo(() => new Color("#fff1c4"), []);
+  const nightSun = useMemo(() => new Color("#94aee0"), []);
+  const dayHemi = useMemo(() => new Color("#d9f1ff"), []);
+  const nightHemi = useMemo(() => new Color("#28395e"), []);
+
+  useFrame(({ gl, scene }, delta) => {
+    const target = daylightFactor(state.simSeconds);
+    visualDaylight.current = MathUtils.damp(visualDaylight.current, target, 2.4, delta);
+    const daylight = visualDaylight.current;
+    const transitionGlow = 1 - Math.abs(daylight * 2 - 1);
+    const daytimeSky = state.raining ? rainSky : daySky;
+    sky.copy(nightSky).lerp(daytimeSky, daylight).lerp(duskSky, transitionGlow * (state.raining ? 0.12 : 0.34));
+    gl.setClearColor(sky);
+    scene.background = sky;
+    if (fog.current) fog.current.color.copy(sky);
+    if (ambient.current) {
+      ambient.current.intensity = MathUtils.lerp(0.42, 1.35, daylight);
+      ambient.current.color.copy(nightSun).lerp(daySun, daylight);
+    }
+    if (sun.current) {
+      sun.current.intensity = MathUtils.lerp(0.58, 2.2, daylight);
+      sun.current.color.copy(nightSun).lerp(daySun, daylight);
+      sun.current.position.y = MathUtils.lerp(4, 12, daylight);
+    }
+    if (hemisphere.current) {
+      hemisphere.current.intensity = MathUtils.lerp(0.48, 1.1, daylight);
+      hemisphere.current.color.copy(nightHemi).lerp(dayHemi, daylight);
+    }
+  });
+
+  return (
+    <>
+      <fog ref={fog} attach="fog" args={["#a7cfdd", 34, 72]} />
+      <ambientLight ref={ambient} intensity={1.35} color="#fff0d2" />
+      <directionalLight ref={sun} position={[-7, 12, -5]} intensity={2.2} color="#fff1c4" castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <hemisphereLight ref={hemisphere} args={["#d9f1ff", seasonGround[state.seasonIndex], 1.1]} />
+    </>
   );
 }
 
@@ -481,18 +545,13 @@ function FestivalDecor({ active }: { active: boolean }) {
 }
 
 function Diorama({ state, onPlacePlatform }: SceneProps) {
-  const night = isNight(state);
   const platformLength = 6 + state.lengthLevel * 2.25;
   const trackCount = Math.max(1, state.platforms);
   const activeEvent = state.activeTrain?.trainId === "br01" || state.boosts.some((boost) => boost.label === "Steam festival");
   return (
     <>
       <LockedCamera />
-      <color attach="background" args={[night ? "#101c2c" : state.raining ? "#60777b" : "#a7cfdd"]} />
-      <fog attach="fog" args={[night ? "#101c2c" : state.raining ? "#60777b" : "#a7cfdd", 34, 72]} />
-      <ambientLight intensity={night ? 0.48 : 1.35} color={night ? "#7893bd" : "#fff0d2"} />
-      <directionalLight position={[-7, 12, -5]} intensity={night ? 0.8 : 2.2} color={night ? "#94aee0" : "#fff1c4"} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
-      <hemisphereLight args={[night ? "#28395e" : "#d9f1ff", seasonGround[state.seasonIndex], night ? 0.55 : 1.1]} />
+      <Atmosphere state={state} />
 
       <mesh position={[0, -0.2, 2.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[90, 56]} />
@@ -516,11 +575,11 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
             <Platform key={index} index={index} length={platformLength} amenities={state.systems.amenities} />
           ))}
           <Dirt cleanliness={state.cleanliness} />
-          <TrainConsist state={state} />
+          <Suspense fallback={null}><TrainConsist state={state} /></Suspense>
         </>
       ) : null}
 
-      <StationBuilding tier={state.tier} night={night} />
+      <StationBuilding tier={state.tier} daylight={daylightFactor(state.simSeconds)} />
       {state.systems.electrification && <Catenary trackCount={trackCount} length={58} />}
       {state.systems.signaling && <Signal advanced={state.systems.advancedSignaling} />}
       {state.systems.roadAccess && <RoadAccess />}
@@ -551,4 +610,6 @@ export default function StationScene(props: SceneProps) {
   );
 }
 
-useGLTF.preload("/models/trains/br650.glb");
+useGLTF.preload(`/models/trains/br650.glb?v=${TRAIN_ASSET_VERSION}`);
+useGLTF.preload(`/models/trains/br642.glb?v=${TRAIN_ASSET_VERSION}`);
+useGLTF.preload(`/models/trains/br648.glb?v=${TRAIN_ASSET_VERSION}`);

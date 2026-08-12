@@ -37,6 +37,20 @@ export function isNight(state: Pick<GameState, "simSeconds">): boolean {
   return state.simSeconds % 900 >= 600;
 }
 
+/** Continuous daylight used by the renderer: dusk 09:00–10:00, night,
+ * then dawn 14:00–15:00 in the game's fifteen-minute cycle. */
+export function daylightFactor(simSeconds: number): number {
+  const cycle = ((simSeconds % 900) + 900) % 900;
+  if (cycle < 540) return 1;
+  if (cycle < 600) {
+    const t = (cycle - 540) / 60;
+    return 1 - t * t * (3 - 2 * t);
+  }
+  if (cycle < 840) return 0;
+  const t = (cycle - 840) / 60;
+  return t * t * (3 - 2 * t);
+}
+
 export function stationRating(state: GameState): number {
   const systemScore = Object.entries(state.systems).reduce((score, [key, enabled]) => {
     if (!enabled) return score;

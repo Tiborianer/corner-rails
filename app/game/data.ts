@@ -66,7 +66,7 @@ const source = {
   desiroClassic: "https://press.siemens.com/global/en/pressrelease/consortium-develops-safe-remote-controlled-system-ai-based-obstacle-detection-rail",
   lint41: "https://www.alstom.com/de/press-releases-news/2009/11/Deutsche-Bahn-bestellt-16-Coradia-Lint-Regionalzuge-20091127",
   desiroHC: "https://press.siemens.com/global/de/pressemitteilung/db-regio-bayern-und-siemens-mobility-unterzeichnen-vertrag-ueber-31-regionalzuege",
-  metronom: "https://www.der-metronom.de/ueber-uns/fahrzeuge/",
+  metronom: "https://www.der-metronom.de/unternehmen/ueber-uns/",
   nightjet:
     "https://www.nightjet.com/dam/jcr%3A6d74c6d1-0c5e-44a2-8b25-5e08c2a51bdb/folder-nightjet-promo-deutschland-de.pdf",
   sbb: "https://www.sbb.ch/en/travel-information/services-on-train/our-trains/giruno.html",

@@ -1,5 +1,7 @@
 # Screenshot-backed QA summary
 
+The screenshots below document the original 2026-08-11 vertical slice. A 2026-08-12 visual revision replaced the shared boxy train recipe with family-specific lead vehicles and formations, moved onboarding to the lower corner, extended rails and terrain beyond the camera, grounded the platform on a full plinth, and added deterministic landscape scenery. Automated regression results for this revision are recorded in the repository build output; the earlier screenshots are retained as before/after evidence rather than presented as the revised visuals.
+
 QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/build validation.
 
 ## Automated acceptance coverage
@@ -28,5 +30,5 @@ QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/
 
 ## Known scope limits
 
-- The train-head GLBs are deliberately compact procedural low-poly originals. They provide distinct silhouettes and authentic colour patterns, not museum-grade replicas or protected logos.
+- The train GLBs remain original compact low-poly interpretations with no protected logos. Train families now have distinct silhouettes, cab masks, roof equipment, window rhythms, liveries, and consist roles; they are readable game assets rather than museum-grade replicas.
 - Longer soak balancing, China/France/Japan, extra steam variants, additional events, and second-station expansion remain future work.

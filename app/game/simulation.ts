@@ -18,6 +18,7 @@ import type {
 } from "./types";
 
 export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
+export const DEVELOPMENT_CAP = 3;
 
 const clamp = (value: number, minimum: number, maximum: number) =>
   Math.min(maximum, Math.max(minimum, value));
@@ -305,7 +306,7 @@ export function purchaseCost(state: GameState, action: UpgradeAction): number | 
 
 export function canPurchase(state: GameState, action: UpgradeAction): { allowed: boolean; reason?: string; cost?: number } {
   if (!state.platformPlaced) return { allowed: false, reason: "Place the free platform first." };
-  if (state.tier < 5 && state.upgradesUsed >= 2) return { allowed: false, reason: "Development cap reached — tier up next." };
+  if (state.tier < 5 && state.upgradesUsed >= DEVELOPMENT_CAP) return { allowed: false, reason: "Development cap reached — tier up next." };
   const cost = purchaseCost(state, action);
   if (cost === null) return { allowed: false, reason: "Already fully developed." };
   if ((action.kind === "platform" && state.platforms === 4) || (action.kind === "length" && state.lengthLevel === 4)) {
@@ -373,7 +374,10 @@ export function undoLastUpgrade(state: GameState): GameState {
 
 export function tierUp(state: GameState): GameState {
   if (state.tier >= 5) return { ...state, toast: "Tier 5 is the international terminus." };
-  if (state.upgradesUsed < 2) return { ...state, toast: `Use ${2 - state.upgradesUsed} more development slot${state.upgradesUsed === 1 ? "" : "s"} first.` };
+  if (state.upgradesUsed < DEVELOPMENT_CAP) {
+    const remaining = DEVELOPMENT_CAP - state.upgradesUsed;
+    return { ...state, toast: `Use ${remaining} more development slot${remaining === 1 ? "" : "s"} first.` };
+  }
   const cost = TIER_COSTS[state.tier - 1];
   if (state.coins < cost) return { ...state, toast: `Need ${(cost - state.coins).toLocaleString()} more coins to tier up.` };
   const tier = (state.tier + 1) as GameState["tier"];

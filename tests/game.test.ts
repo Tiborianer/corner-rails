@@ -29,26 +29,27 @@ describe("Corner Rails economy and progression", () => {
     expect(LENGTH_COSTS).toEqual([30, 90, 1_200, 7_500]);
   });
 
-  it("counts systems and structure against the same two-use cap", () => {
+  it("counts systems and structure against the same three-use cap", () => {
     let state = fundedState();
     state = purchaseUpgrade(state, { kind: "platform" });
     state = purchaseUpgrade(state, { kind: "system", system: "electrification" });
-    expect(state.upgradesUsed).toBe(2);
-    expect(canPurchase(state, { kind: "length" }).allowed).toBe(false);
+    state = purchaseUpgrade(state, { kind: "length" });
+    expect(state.upgradesUsed).toBe(3);
+    expect(canPurchase(state, { kind: "system", system: "signaling" }).allowed).toBe(false);
     const tiered = tierUp(state);
     expect(tiered.tier).toBe(2);
     expect(tiered.upgradesUsed).toBe(0);
   });
 
   it("removes the development cap at Tier 5", () => {
-    let state = { ...fundedState(), tier: 5 as const, upgradesUsed: 2 };
+    let state = { ...fundedState(), tier: 5 as const, upgradesUsed: 3 };
     state = purchaseUpgrade(state, { kind: "platform" });
     state = purchaseUpgrade(state, { kind: "length" });
     state = purchaseUpgrade(state, { kind: "system", system: "electrification" });
     expect(state.platforms).toBe(2);
     expect(state.lengthLevel).toBe(2);
     expect(state.systems.electrification).toBe(true);
-    expect(state.upgradesUsed).toBe(2);
+    expect(state.upgradesUsed).toBe(3);
   });
 });
 
@@ -133,4 +134,3 @@ describe("manual save codes", () => {
     expect(() => decodeSave(`${code}x`)).toThrow(/damaged|incomplete/u);
   });
 });
-

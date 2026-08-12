@@ -1,6 +1,6 @@
 # Verified Germany train-source record
 
-Checked against primary operator, manufacturer, or museum material on **2026-08-11**. Gameplay car counts are representative consists for the diorama; sources establish the vehicle/service identity and the tooltip fact. Where an operator uses variable consists, the record says so rather than implying one immutable formation.
+Checked against primary operator, manufacturer, or museum material on **2026-08-12**. Gameplay car counts are representative consists for the diorama; sources establish the vehicle/service identity and the tooltip fact. Where an operator uses variable consists, the record says so rather than implying one immutable formation.
 
 | Tier | Game record | Representative consist | Primary record used |
 |---:|---|---:|---|
@@ -8,7 +8,7 @@ Checked against primary operator, manufacturer, or museum material on **2026-08-
 | 1 | DB Class 642 Desiro Classic | 2 cars | [Siemens Desiro Classic operational test](https://press.siemens.com/global/en/pressrelease/consortium-develops-safe-remote-controlled-system-ai-based-obstacle-detection-rail) |
 | 1 | DB Class 648 LINT 41 | 2 cars | [Alstom DB LINT 41 order](https://www.alstom.com/de/press-releases-news/2009/11/Deutsche-Bahn-bestellt-16-Coradia-Lint-Regionalzuge-20091127) |
 | 2 | Siemens Desiro HC Regional-Express | 4 cars | [Siemens/DB Regio Desiro HC order](https://press.siemens.com/global/de/pressemitteilung/db-regio-bayern-und-siemens-mobility-unterzeichnen-vertrag-ueber-31-regionalzuege) |
-| 2 | metronom Double-Deck Express | locomotive + 5 cars | [metronom vehicle information](https://www.der-metronom.de/ueber-uns/fahrzeuge/) |
+| 2 | metronom Double-Deck Express | locomotive + 5 cars | [metronom vehicle information](https://www.der-metronom.de/unternehmen/ueber-uns/) |
 | 2 | DB Regio Talent 2 | 4 cars | [DB Regio service categories](https://www.dbregio.de/schiene/zugverkehre) |
 | 3 | FlixTrain Refurbished Intercity | representative 10 cars | [Flix current fleet: 140 refurbished coaches forming 10–20 trainsets](https://corporate.flix.com/flix-brands/) |
 | 3 | DB Intercity IC1 | locomotive + 8 cars | [DB 2024 fleet/quality report](https://ir.deutschebahn.com/fileadmin/Englisch/2025e/DB24_Quality_Report.pdf) |
@@ -27,3 +27,15 @@ Checked against primary operator, manufacturer, or museum material on **2026-08-
 
 “RegioJet” is used only for the Czech operator at Tier 5. Tier 2 contains a verified DB Regio Talent 2 instead; DB’s own service categories remain S-Bahn, Regionalbahn, and Regional-Express.
 
+## Implemented visual-recognition pass
+
+The procedural assets intentionally omit protected logos, but now encode the train-family cues visible in the primary records:
+
+- **Tier 1:** the RS1 is a single compact railcar with its diagonal side-window lattice; Class 642 uses the Desiro’s rounded articulated red cab mask; LINT 41 has a squarer black-glass cab and low-floor two-car body.
+- **Tier 2:** Desiro HC mixes high-capacity end cars with double-deck centre cars; metronom uses a blue/yellow electric locomotive, double-deck trailers, and control coach; Talent 2 uses its bulbous dark “hamster cheek” nose.
+- **Tier 3:** FlixTrain is a green electric locomotive with refurbished single-deck trailers; IC1 uses a locomotive-led single-deck formation; IC2 uses a modern locomotive with double-deck trailers and a control end.
+- **Tier 4:** ICE 2 has the older wedge power head and paired windscreen; ICE 3 has a smooth rounded continuous mask; ICE 4 has a longer angular nose, squarer glass, black side mask, and red belt.
+- **Tier 5:** Railjet uses a Taurus-style red locomotive and push-pull consist; Nightjet is midnight blue with sleeper-window/door rhythm; TGV Euroduplex has low pointed power cars at both ends and two window decks; RegioJet is yellow/black; Giruno is a long low-floor EMU with a sharp black mask and red chin; ComfortJet is a blue/white Vectron-led push-pull set.
+- **Events:** ICE-S is a three-car measurement set with grey measurement band, sensor rack, and dedicated pantograph; BR 01 uses a 4-6-2-style black boiler, red chassis and driving wheels, smoke deflectors, tender, and heritage coaches.
+
+Formation choices were rechecked against the [metronom fleet record](https://www.der-metronom.de/unternehmen/ueber-uns/), [Flix current fleet record](https://corporate.flix.com/flix-brands/), [DB vehicle overview](https://www.deutschebahn.com/de/Fahrzeuge-der-DB-6854978), [Siemens Desiro HC record](https://press.siemens.com/global/en/pressrelease/db-regio-bayern-and-siemens-mobility-sign-contract-31-regional-trains), [ÖBB Railjet record](https://www.oebb.at/en/reiseplanung-services/im-zug/unsere-zuege/railjet), [SBB Giruno record](https://www.sbb.ch/en/travel-information/services-on-train/our-trains/giruno.html), [ČD ComfortJet record](https://www.ceskedrahy.cz/en/press-center/press-releases/first-comfortjet-train-set-has-arrived-test-circuit-velim), and [DB ICE-S record](https://www.deutschebahn.com/de/konzern/Im-Fokus/-S-wie-Speed-Der-Hochgeschwindigkeitsmesszug-der-DB-7594140).

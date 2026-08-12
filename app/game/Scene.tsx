@@ -5,8 +5,8 @@
 import { Clone, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
-import type { Group, Points } from "three";
-import { Color, MathUtils } from "three";
+import type { Group, InstancedMesh, Points } from "three";
+import { Color, MathUtils, Object3D } from "three";
 import { isNight } from "./simulation";
 import { TRAINS } from "./data";
 import type { GameState, TrainDefinition } from "./types";
@@ -21,10 +21,10 @@ const seasonGround = ["#78945c", "#6f9958", "#9b8050", "#b8c3bf"];
 function LockedCamera() {
   const { camera, size } = useThree();
   useEffect(() => {
-    camera.position.set(13, 12, 13);
-    camera.lookAt(0, 0.4, 0);
+    camera.position.set(15, 13, 15);
+    camera.lookAt(0, 0.35, 1.1);
     if ("zoom" in camera) {
-      camera.zoom = size.width < 620 ? 34 : size.width < 980 ? 42 : 50;
+      camera.zoom = size.width < 620 ? 31 : size.width < 980 ? 39 : 47;
       camera.updateProjectionMatrix();
     }
   }, [camera, size.width]);
@@ -53,15 +53,28 @@ function Box({
 }
 
 function Track({ z, length }: { z: number; length: number }) {
-  const sleepers = useMemo(() => Array.from({ length: 25 }, (_, index) => -length / 2 + (index / 24) * length), [length]);
+  const count = Math.ceil(length / 0.52);
+  const sleepers = useRef<InstancedMesh>(null);
+  useEffect(() => {
+    if (!sleepers.current) return;
+    const dummy = new Object3D();
+    for (let index = 0; index < count; index += 1) {
+      dummy.position.set(-length / 2 + (index / (count - 1)) * length, 0.08, z);
+      dummy.scale.set(0.1, 0.07, 0.94);
+      dummy.updateMatrix();
+      sleepers.current.setMatrixAt(index, dummy.matrix);
+    }
+    sleepers.current.instanceMatrix.needsUpdate = true;
+  }, [count, length, z]);
   return (
     <group>
-      <Box position={[0, 0.07, z]} scale={[length, 0.09, 0.68]} color="#48504f" castShadow={false} />
-      {sleepers.map((x) => (
-        <Box key={x} position={[x, 0.13, z]} scale={[0.12, 0.08, 0.92]} color="#795c42" castShadow={false} />
-      ))}
-      <Box position={[0, 0.19, z - 0.27]} scale={[length, 0.06, 0.06]} color="#c1c6c4" />
-      <Box position={[0, 0.19, z + 0.27]} scale={[length, 0.06, 0.06]} color="#c1c6c4" />
+      <Box position={[0, -0.055, z]} scale={[length, 0.22, 0.92]} color="#59605c" castShadow={false} />
+      <instancedMesh ref={sleepers} args={[undefined, undefined, count]} castShadow={false} receiveShadow>
+        <boxGeometry />
+        <meshStandardMaterial color="#71533d" roughness={0.94} />
+      </instancedMesh>
+      <Box position={[0, 0.16, z - 0.27]} scale={[length, 0.065, 0.065]} color="#c7ccca" />
+      <Box position={[0, 0.16, z + 0.27]} scale={[length, 0.065, 0.065]} color="#c7ccca" />
     </group>
   );
 }
@@ -70,15 +83,19 @@ function Platform({ index, length, amenities }: { index: number; length: number;
   const z = -0.05 + index * 1.25;
   return (
     <group>
-      <Box position={[0, 0.34, z]} scale={[length, 0.34, 0.54]} color={index === 0 ? "#d7d0bd" : "#c9c4b5"} />
-      <Box position={[0, 0.53, z - 0.2]} scale={[length, 0.05, 0.08]} color="#f6e9b2" />
-      <Box position={[0, 0.53, z + 0.2]} scale={[length, 0.05, 0.08]} color="#f6e9b2" />
+      <Box position={[0, 0.07, z]} scale={[length + 0.18, 0.54, 0.58]} color="#8f8a7d" />
+      <Box position={[0, 0.39, z]} scale={[length, 0.14, 0.54]} color={index === 0 ? "#d7d0bd" : "#c9c4b5"} />
+      <Box position={[0, 0.475, z - 0.22]} scale={[length, 0.035, 0.07]} color="#f6e9b2" />
+      <Box position={[0, 0.475, z + 0.22]} scale={[length, 0.035, 0.07]} color="#f6e9b2" />
+      {Array.from({ length: Math.max(3, Math.floor(length / 1.4)) }, (_, marker) => (
+        <Box key={marker} position={[-length / 2 + 0.6 + marker * 1.4, 0.49, z - 0.22]} scale={[0.06, 0.018, 0.065]} color="#3c4542" castShadow={false} />
+      ))}
       {amenities && (
         <>
-          <Box position={[-1.5, 0.78, z]} scale={[0.78, 0.08, 0.23]} color="#235a5a" />
-          <Box position={[-1.76, 0.62, z]} scale={[0.08, 0.35, 0.08]} color="#394443" />
-          <Box position={[-1.24, 0.62, z]} scale={[0.08, 0.35, 0.08]} color="#394443" />
-          <Box position={[1.6, 0.85, z]} scale={[0.12, 0.78, 0.12]} color="#3b4747" />
+          <Box position={[-1.5, 0.73, z]} scale={[0.78, 0.08, 0.23]} color="#235a5a" />
+          <Box position={[-1.76, 0.58, z]} scale={[0.08, 0.3, 0.08]} color="#394443" />
+          <Box position={[-1.24, 0.58, z]} scale={[0.08, 0.3, 0.08]} color="#394443" />
+          <Box position={[1.6, 0.8, z]} scale={[0.12, 0.68, 0.12]} color="#3b4747" />
           <pointLight position={[1.6, 1.35, z]} intensity={0.8} distance={3} color="#ffd994" />
         </>
       )}
@@ -87,7 +104,7 @@ function Platform({ index, length, amenities }: { index: number; length: number;
 }
 
 function Catenary({ trackCount, length }: { trackCount: number; length: number }) {
-  const poles = [-length / 2 + 0.8, 0, length / 2 - 0.8];
+  const poles = useMemo(() => Array.from({ length: Math.ceil(length / 6) }, (_, index, all) => -length / 2 + 2.2 + (index / Math.max(1, all.length - 1)) * (length - 4.4)), [length]);
   return (
     <group>
       {Array.from({ length: trackCount }, (_, track) => {
@@ -195,6 +212,81 @@ function Dirt({ cleanliness }: { cleanliness: number }) {
   );
 }
 
+function LowPolyTree({ position, scale, autumn, winter }: { position: [number, number, number]; scale: number; autumn: boolean; winter: boolean }) {
+  const foliage = winter ? "#63736d" : autumn ? "#a56c36" : "#3f704a";
+  const highlight = winter ? "#8c9993" : autumn ? "#cf9246" : "#63935d";
+  return (
+    <group position={position} scale={scale}>
+      <mesh position={[0, 0.62, 0]} castShadow>
+        <cylinderGeometry args={[0.11, 0.16, 1.24, 7]} />
+        <meshStandardMaterial color="#76553b" roughness={0.95} />
+      </mesh>
+      <mesh position={[0, 1.33, 0]} castShadow>
+        <dodecahedronGeometry args={[0.56, 0]} />
+        <meshStandardMaterial color={foliage} roughness={0.96} />
+      </mesh>
+      <mesh position={[-0.2, 1.63, 0.08]} scale={[0.66, 0.62, 0.66]} castShadow>
+        <dodecahedronGeometry args={[0.48, 0]} />
+        <meshStandardMaterial color={highlight} roughness={0.96} />
+      </mesh>
+      {winter && (
+        <mesh position={[-0.2, 1.82, 0.08]} rotation={[0, 0, 0.12]}>
+          <coneGeometry args={[0.32, 0.08, 7]} />
+          <meshStandardMaterial color="#d9e1df" roughness={1} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+function LandscapeScenery({ seasonIndex }: { seasonIndex: number }) {
+  const trees = useMemo(
+    () =>
+      Array.from({ length: 30 }, (_, index) => {
+        const farSide = index % 3 !== 0;
+        const x = -25 + ((index * 7.7) % 50);
+        const z = farSide ? 7.1 + ((index * 2.3) % 5.4) : -5.8 - ((index * 1.7) % 3.5);
+        return { position: [x, -0.2, z] as [number, number, number], scale: 0.72 + (index % 5) * 0.12 };
+      }),
+    [],
+  );
+  const shrubs = useMemo(
+    () => Array.from({ length: 24 }, (_, index) => ({ x: -19 + ((index * 5.3) % 38), z: index % 2 ? 6.4 : -4.7, scale: 0.32 + (index % 4) * 0.08 })),
+    [],
+  );
+  return (
+    <group>
+      <mesh position={[-15, -0.175, 8.6]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[18, 7]} />
+        <meshStandardMaterial color={seasonIndex === 2 ? "#9c7e43" : "#718e4e"} roughness={1} />
+      </mesh>
+      <mesh position={[16, -0.17, 8.3]} rotation={[-Math.PI / 2, 0.05, 0]} receiveShadow>
+        <planeGeometry args={[20, 7]} />
+        <meshStandardMaterial color={seasonIndex === 3 ? "#aab8ae" : "#82964e"} roughness={1} />
+      </mesh>
+      {[-13, -6, 1, 8, 15].map((x) => (
+        <Box key={x} position={[x, -0.05, 7]} scale={[0.055, 0.42, 8.8]} color="#8b7457" castShadow={false} />
+      ))}
+      {trees.map((tree, index) => <LowPolyTree key={index} position={tree.position} scale={tree.scale} autumn={seasonIndex === 2} winter={seasonIndex === 3} />)}
+      {shrubs.map((shrub, index) => (
+        <mesh key={index} position={[shrub.x, 0.02, shrub.z]} scale={shrub.scale} castShadow>
+          <dodecahedronGeometry args={[0.5, 0]} />
+          <meshStandardMaterial color={seasonIndex === 2 ? "#806b3f" : "#456e45"} roughness={1} />
+        </mesh>
+      ))}
+      <group position={[-8.2, 0, 5.9]}>
+        <Box position={[0, 0.36, 0]} scale={[1.4, 0.72, 0.95]} color="#c8af83" />
+        <Box position={[0, 0.8, 0]} scale={[1.65, 0.14, 1.15]} color="#6d4537" rotation={[0, 0, 0.08]} />
+        <Box position={[0.3, 0.34, -0.49]} scale={[0.32, 0.46, 0.04]} color="#526d70" />
+      </group>
+      <Box position={[0, 0.18, -4.25]} scale={[58, 0.07, 0.06]} color="#a9a18b" castShadow={false} />
+      {Array.from({ length: 20 }, (_, index) => (
+        <Box key={index} position={[-27 + index * 2.8, 0.43, -4.25]} scale={[0.055, 0.55, 0.055]} color="#756c5a" castShadow={false} />
+      ))}
+    </group>
+  );
+}
+
 function Rain() {
   const points = useRef<Points>(null);
   const positions = useMemo(() => {
@@ -245,16 +337,99 @@ function SteamPuffs({ active }: { active: boolean }) {
   );
 }
 
-function ProceduralCoach({ train, index }: { train: TrainDefinition; index: number }) {
-  const height = train.style === "double" || train.id === "tgv-duplex" ? 0.82 : 0.62;
-  const body = train.style === "steam" ? "#5a3028" : train.colors.body;
-  const accent = train.style === "steam" ? "#d2ad69" : train.colors.accent;
+const DOUBLE_DECK_TRAINS = new Set(["desiro-hc", "metronom", "ic2", "tgv-duplex"]);
+const DOUBLE_ENDED_TRAINS = new Set(["br642", "br648", "desiro-hc", "talent2", "ice2", "ice3", "ice4", "tgv-duplex", "giruno", "ice-s"]);
+
+function CoachWheels() {
   return (
-    <group position={[-1.08 - index * 0.92, 0, 0]}>
-      <Box position={[0, 0.5, 0]} scale={[0.82, height, 0.49]} color={body} />
-      <Box position={[0, 0.62, -0.255]} scale={[0.62, 0.16, 0.02]} color={train.colors.windows} />
-      <Box position={[0, 0.3, -0.262]} scale={[0.76, 0.04, 0.02]} color={accent} />
-      <Box position={[0, 0.1, 0]} scale={[0.62, 0.1, 0.38]} color="#222929" />
+    <>
+      {[-0.29, 0.29].map((x) => [-0.33, 0.33].map((z) => (
+        <mesh key={`${x}-${z}`} position={[x, 0.1, z]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.11, 0.11, 0.08, 12]} />
+          <meshStandardMaterial color="#1a2223" metalness={0.7} roughness={0.42} />
+        </mesh>
+      )))}
+    </>
+  );
+}
+
+function CoachWindows({ y, color, count = 4 }: { y: number; color: string; count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, pane) => [-0.351, 0.351].map((z) => (
+        <Box key={`${pane}-${z}`} position={[-0.32 + pane * (0.64 / Math.max(1, count - 1)), y, z]} scale={[0.12, 0.15, 0.025]} color={color} />
+      )))}
+    </>
+  );
+}
+
+function ProceduralCoach({ train, index }: { train: TrainDefinition; index: number }) {
+  const x = -1.14 - index * 0.96;
+  const isSteam = train.id === "br01";
+  const isTender = isSteam && index === 0;
+  const isHeritage = isSteam && !isTender;
+  const isMeasurement = train.id === "ice-s" && index === 0;
+  const doubleDeck = DOUBLE_DECK_TRAINS.has(train.id) && !(train.id === "desiro-hc" && index > 1);
+  const isSleeper = train.id === "nightjet";
+  const body = isHeritage ? "#6d3427" : isTender ? "#17191a" : train.colors.body;
+  const accent = isHeritage ? "#d4b26e" : train.colors.accent;
+  const height = doubleDeck ? 0.88 : isTender ? 0.62 : 0.68;
+  const centerY = doubleDeck ? 0.6 : 0.5;
+  const controlCab = (train.id === "metronom" || train.id === "ic2" || train.id === "railjet" || train.id === "comfortjet") && index === train.cars - 2;
+  const pantograph = isMeasurement || (["desiro-hc", "talent2", "ice3", "ice4", "giruno"].includes(train.id) && index % 3 === 0);
+
+  if (isTender) {
+    return (
+      <group position={[x, 0, 0]}>
+        <Box position={[0, 0.48, 0]} scale={[0.86, 0.64, 0.65]} color={body} />
+        <Box position={[0, 0.83, 0]} scale={[0.7, 0.09, 0.54]} color="#2c2b28" />
+        <Box position={[0, 0.88, 0]} scale={[0.58, 0.08, 0.46]} color="#0e1111" />
+        <Box position={[0, 0.24, 0]} scale={[0.88, 0.11, 0.66]} color={train.colors.accent} />
+        <CoachWheels />
+      </group>
+    );
+  }
+
+  return (
+    <group position={[x, 0, 0]}>
+      <Box position={[0, centerY, 0]} scale={[0.88, height, 0.69]} color={body} />
+      <Box position={[0, centerY + height / 2 + 0.055, 0]} scale={[0.82, 0.09, 0.61]} color={isHeritage ? "#3b2d29" : train.colors.roof} />
+      <Box position={[0, 0.28, 0]} scale={[0.88, 0.065, 0.71]} color={accent} />
+      <Box position={[0, 0.18, 0]} scale={[0.72, 0.12, 0.52]} color="#222a2b" />
+      {doubleDeck ? (
+        <>
+          <CoachWindows y={0.48} color={train.colors.windows} />
+          <CoachWindows y={0.78} color={train.colors.windows} />
+        </>
+      ) : isSleeper ? (
+        <>
+          <CoachWindows y={0.64} color={train.colors.windows} count={3} />
+          {[-0.351, 0.351].map((z) => <Box key={z} position={[0.32, 0.52, z]} scale={[0.13, 0.45, 0.026]} color="#274d7d" />)}
+        </>
+      ) : (
+        <CoachWindows y={isHeritage ? 0.6 : 0.62} color={isHeritage ? "#d9bd82" : train.colors.windows} />
+      )}
+      {[-0.351, 0.351].map((z) => <Box key={z} position={[0.35, centerY, z]} scale={[0.13, height * 0.68, 0.026]} color={isHeritage ? "#4b271f" : accent} />)}
+      {controlCab && (
+        <>
+          <Box position={[-0.455, centerY + 0.14, 0]} scale={[0.035, 0.28, 0.54]} color={train.colors.windows} />
+          <Box position={[-0.465, centerY - 0.15, 0]} scale={[0.04, 0.08, 0.58]} color={accent} />
+        </>
+      )}
+      {isMeasurement && (
+        <>
+          <Box position={[0, 0.52, 0]} scale={[0.86, 0.08, 0.71]} color="#7d8589" />
+          <Box position={[0, 1.02, 0]} scale={[0.4, 0.05, 0.22]} color="#2d3538" rotation={[0, 0, 0.35]} />
+        </>
+      )}
+      {pantograph && (
+        <group position={[0, centerY + height / 2 + 0.2, 0]}>
+          <Box position={[-0.09, 0, 0]} scale={[0.38, 0.035, 0.035]} color="#303839" rotation={[0, 0, 0.68]} />
+          <Box position={[0.09, 0, 0]} scale={[0.38, 0.035, 0.035]} color="#303839" rotation={[0, 0, -0.68]} />
+          <Box position={[0, 0.13, 0]} scale={[0.38, 0.025, 0.16]} color="#303839" />
+        </group>
+      )}
+      <CoachWheels />
     </group>
   );
 }
@@ -265,23 +440,29 @@ function TrainConsist({ state }: { state: GameState }) {
   const train = active ? TRAINS.find((candidate) => candidate.id === active.trainId) : null;
   const gltf = useGLTF(train ? `/models/trains/${train.modelKey}.glb` : "/models/trains/br650.glb");
   const head = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  const entryX = train ? -31 - train.cars * 0.96 : -31;
+  const exitX = train ? 34 + train.cars * 0.96 : 34;
   const targetX = useMemo(() => {
-    if (!active) return -18;
+    if (!active) return entryX;
     const progress = MathUtils.clamp(active.phaseElapsed / active.phaseDuration, 0, 1);
-    if (active.phase === "approach") return MathUtils.lerp(-18, 3.8, 1 - Math.pow(1 - progress, 3));
-    if (active.phase === "depart") return MathUtils.lerp(3.8, 18, progress * progress);
-    return 3.8;
-  }, [active]);
-  useFrame((_, delta) => {
-    if (group.current) group.current.position.x = MathUtils.damp(group.current.position.x, targetX, 8, delta);
+    if (active.phase === "approach") return MathUtils.lerp(entryX, 4.4, 1 - Math.pow(1 - progress, 3));
+    if (active.phase === "depart") return MathUtils.lerp(4.4, exitX, progress * progress);
+    return 4.4;
+  }, [active, entryX, exitX]);
+  useFrame(() => {
+    if (group.current) group.current.position.x = targetX;
   });
   if (!active || !train) return null;
+  const tailIndex = train.cars - 2;
+  const hasMirroredTail = DOUBLE_ENDED_TRAINS.has(train.id) && train.cars > 1;
   return (
-    <group ref={group} position={[-18, 0.25, -0.72]} rotation={[0, Math.PI, 0]} scale={0.72}>
+    <group ref={group} position={[entryX, 0.25, -0.72]} scale={0.82}>
       <Clone object={head} castShadow />
-      {Array.from({ length: Math.max(0, train.cars - 1) }, (_, index) => (
-        <ProceduralCoach key={index} train={train} index={index} />
-      ))}
+      {Array.from({ length: Math.max(0, train.cars - 1) }, (_, index) => hasMirroredTail && index === tailIndex ? (
+        <group key={index} position={[-1.14 - index * 0.96, 0, 0]} rotation={[0, Math.PI, 0]}>
+          <Clone object={head} castShadow />
+        </group>
+      ) : <ProceduralCoach key={index} train={train} index={index} />)}
       <SteamPuffs active={train.style === "steam"} />
     </group>
   );
@@ -308,28 +489,31 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
     <>
       <LockedCamera />
       <color attach="background" args={[night ? "#101c2c" : state.raining ? "#60777b" : "#a7cfdd"]} />
-      <fog attach="fog" args={[night ? "#101c2c" : "#a7cfdd", 16, 34]} />
+      <fog attach="fog" args={[night ? "#101c2c" : state.raining ? "#60777b" : "#a7cfdd", 34, 72]} />
       <ambientLight intensity={night ? 0.48 : 1.35} color={night ? "#7893bd" : "#fff0d2"} />
       <directionalLight position={[-7, 12, -5]} intensity={night ? 0.8 : 2.2} color={night ? "#94aee0" : "#fff1c4"} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <hemisphereLight args={[night ? "#28395e" : "#d9f1ff", seasonGround[state.seasonIndex], night ? 0.55 : 1.1]} />
 
-      <mesh position={[0, -0.12, 1.8]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[26, 18]} />
+      <mesh position={[0, -0.2, 2.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[90, 56]} />
         <meshStandardMaterial color={seasonGround[state.seasonIndex]} roughness={state.raining ? 0.32 : 0.95} metalness={state.raining ? 0.12 : 0} />
       </mesh>
-      <Box position={[0, -0.26, 1.8]} scale={[26.3, 0.3, 18.3]} color="#4b5748" />
+      <LandscapeScenery seasonIndex={state.seasonIndex} />
+
+      {state.region && Array.from({ length: trackCount }, (_, index) => (
+        <Track key={index} z={-0.72 + index * 1.25} length={66} />
+      ))}
 
       {state.region && !state.platformPlaced ? (
-        <group onClick={onPlacePlatform} onPointerOver={() => (document.body.style.cursor = "pointer")} onPointerOut={() => (document.body.style.cursor = "default")}>
-          <Box position={[0, 0.33, 0]} scale={[7.5, 0.32, 0.56]} color="#e9c858" />
+        <group onClick={onPlacePlatform} onPointerOver={() => (document.body.style.cursor = "pointer")} onPointerOut={() => (document.body.style.cursor = "default") }>
+          <Box position={[0, 0.07, 0]} scale={[7.7, 0.54, 0.58]} color="#8f7e4a" />
+          <Box position={[0, 0.39, 0]} scale={[7.5, 0.14, 0.54]} color="#e9c858" />
+          <Box position={[0, 0.49, -0.22]} scale={[7.5, 0.03, 0.07]} color="#fff0a6" />
         </group>
       ) : state.region ? (
         <>
           {Array.from({ length: state.platforms }, (_, index) => (
             <Platform key={index} index={index} length={platformLength} amenities={state.systems.amenities} />
-          ))}
-          {Array.from({ length: trackCount }, (_, index) => (
-            <Track key={index} z={-0.72 + index * 1.25} length={22} />
           ))}
           <Dirt cleanliness={state.cleanliness} />
           <TrainConsist state={state} />
@@ -337,7 +521,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
       ) : null}
 
       <StationBuilding tier={state.tier} night={night} />
-      {state.systems.electrification && <Catenary trackCount={trackCount} length={platformLength + 1} />}
+      {state.systems.electrification && <Catenary trackCount={trackCount} length={58} />}
       {state.systems.signaling && <Signal advanced={state.systems.advancedSignaling} />}
       {state.systems.roadAccess && <RoadAccess />}
       {state.systems.maintenance && <MaintenanceYard />}

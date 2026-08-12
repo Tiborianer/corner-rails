@@ -6,7 +6,7 @@
 
 **Core loop.** Choose Germany → place the free platform → receive a one-car DB Class 650 → earn exactly 10 coins → serve automatic traffic → clean when dirt harms Station Rating → buy permanent development → tier up → meet better-train requirements → complete Tier 5 → prestige for +5 base rating per reset.
 
-**Development tension.** Tiers 1–4 share exactly two permanent-purchase uses across platforms, length, systems, and amenities. The second purchase requires confirmation and locks further development until tier-up. It can be fully undone only until the next train dispatch. Tier-up costs coins but has no infrastructure prerequisite, preventing deadlocks. Tier 5 removes the cap and allows full international completion.
+**Development tension.** Tiers 1–4 share exactly three permanent-purchase uses across platforms, length, systems, and amenities. The third purchase requires confirmation and locks further development until tier-up. It can be fully undone only until the next train dispatch. Tier-up costs coins but has no infrastructure prerequisite, preventing deadlocks. Tier 5 removes the cap and allows full international completion.
 
 **Operations.** Cleanliness starts at 100%, falls by `0.8 + 0.1 × cars` after a visit, and falls faster during rain. Cleaning is a repeatable paid button, never an upgrade. Cleanliness supplies up to 20 Station Rating points; the remaining rating comes from tiers, platforms, length, systems, prestige, temporary boosts, and a rain penalty. Rating changes automatic spawn intervals through ×0.8/×1/×1.25/×1.5 bands.
 
@@ -15,4 +15,3 @@
 **World systems.** A 15-minute simulated day/night loop reserves five minutes for night. Seasons rotate every 30 simulated minutes. Each season has a deterministic 15% rain roll; rain lasts 2–5 simulated minutes, adds 10% dwell, multiplies arrival dirt by 1.5, removes 0.5 cleanliness per simulated minute, and applies a four-point rating penalty. Three rotating mission templates reward regular play. Simulation speed is 1×/2×/3× without changing UI motion or synthesized-audio pitch.
 
 **Persistence and scope.** There is no backend, account, local storage, offline income, or autosave. Export creates a versioned `CR1` base64url save with an integrity checksum; import validates before replacing state. China, France, Japan, extra steam variants, additional events, and a second station remain future work.
-

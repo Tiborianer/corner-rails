@@ -21,6 +21,7 @@ import {
 } from "./game/data";
 import { decodeSave, encodeSave } from "./game/save";
 import {
+  DEVELOPMENT_CAP,
   SEASONS,
   canPurchase,
   claimMission,
@@ -248,14 +249,14 @@ export default function CornerRails() {
       dispatch({ type: "purchase", upgrade });
       return;
     }
-    if (state.tier < 5 && state.upgradesUsed === 1) {
+    if (state.tier < 5 && state.upgradesUsed === DEVELOPMENT_CAP - 1) {
       setConfirmUpgrade(upgrade);
       return;
     }
     dispatch({ type: "purchase", upgrade });
   }
 
-  function confirmSecondUpgrade() {
+  function confirmFinalUpgrade() {
     if (!confirmUpgrade) return;
     dispatch({ type: "purchase", upgrade: confirmUpgrade });
     setConfirmUpgrade(null);
@@ -378,7 +379,7 @@ export default function CornerRails() {
             <div className="build-panel">
               <div className="development-meter">
                 <span>Development uses</span>
-                <div>{state.tier === 5 ? <b>UNLIMITED AT TIER 5</b> : <>{[0, 1].map((slot) => <i key={slot} className={slot < state.upgradesUsed ? "used" : ""} />)}<em>{state.upgradesUsed}/2</em></>}</div>
+                <div>{state.tier === 5 ? <b>UNLIMITED AT TIER 5</b> : <>{Array.from({ length: DEVELOPMENT_CAP }, (_, slot) => <i key={slot} className={slot < state.upgradesUsed ? "used" : ""} />)}<em>{state.upgradesUsed}/{DEVELOPMENT_CAP}</em></>}</div>
               </div>
               <h3>Station structure</h3>
               <button className="build-option" onClick={() => requestPurchase({ kind: "platform" })}>
@@ -427,10 +428,10 @@ export default function CornerRails() {
               <div className="tier-emblem"><span>{state.tier}</span><small>STATION TIER</small></div>
               {state.tier < 5 ? (
                 <>
-                  <p>Spend both shared development uses, then invest in the station building. Train infrastructure can be added in any tier.</p>
+                  <p>Spend all three shared development uses, then invest in the station building. Train infrastructure can be added in any tier.</p>
                   <dl>
                     <div><dt>Tier-up cost</dt><dd>{TIER_COSTS[state.tier - 1].toLocaleString()} coins</dd></div>
-                    <div><dt>Development</dt><dd>{state.upgradesUsed}/2 uses</dd></div>
+                    <div><dt>Development</dt><dd>{state.upgradesUsed}/{DEVELOPMENT_CAP} uses</dd></div>
                     <div><dt>Next unlocks</dt><dd>{TRAINS.filter((train) => train.kind === "scheduled" && train.tier === state.tier + 1).map((train) => train.name.replace(/^DB /u, "")).join(" · ")}</dd></div>
                   </dl>
                   <button className="primary-action" onClick={() => dispatch({ type: "tier-up" })}>Upgrade station to Tier {state.tier + 1} · {TIER_COSTS[state.tier - 1].toLocaleString()}</button>
@@ -464,7 +465,7 @@ export default function CornerRails() {
               <ol>
                 <li><b>1</b><div><strong>Place your free platform</strong><p>Choose Germany, then click the gold platform ghost in the diorama.</p></div></li>
                 <li><b>2</b><div><strong>Welcome the first train</strong><p>Trains arrive automatically. Keep the station clean to protect its rating.</p></div></li>
-                <li><b>3</b><div><strong>Develop twice, then tier up</strong><p>Every permanent purchase uses a shared slot until Tier 5. Better infrastructure attracts better trains.</p></div></li>
+                <li><b>3</b><div><strong>Develop three times, then tier up</strong><p>Every permanent purchase uses a shared slot until Tier 5. Better infrastructure attracts better trains.</p></div></li>
               </ol>
               <p className="keyboard-note"><kbd>B</kbd> Build · <kbd>R</kbd> Trains · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Speed · <kbd>Esc</kbd> Close</p>
             </div>
@@ -503,11 +504,11 @@ export default function CornerRails() {
       {confirmUpgrade && (
         <div className="modal-backdrop" role="presentation">
           <section className="modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-            <span className="modal-icon">Ⅱ</span>
-            <small>SECOND DEVELOPMENT USE</small>
+            <span className="modal-icon">Ⅲ</span>
+            <small>THIRD DEVELOPMENT USE</small>
             <h2 id="confirm-title">This locks development until tier-up.</h2>
             <p>You can undo this purchase until the next train is dispatched. Tier-up itself has no infrastructure requirement.</p>
-            <div><button className="secondary-action" onClick={() => setConfirmUpgrade(null)}>Cancel</button><button className="primary-action" onClick={confirmSecondUpgrade}>Confirm upgrade</button></div>
+            <div><button className="secondary-action" onClick={() => setConfirmUpgrade(null)}>Cancel</button><button className="primary-action" onClick={confirmFinalUpgrade}>Confirm upgrade</button></div>
           </section>
         </div>
       )}

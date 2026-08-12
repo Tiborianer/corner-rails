@@ -19,7 +19,7 @@ import {
   undoLastUpgrade,
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
-import { catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
+import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
 
 function fundedState(): GameState {
   return {
@@ -94,6 +94,11 @@ describe("render helpers", () => {
     expect(entry).toBe(-34);
     expect(halfway).toBeCloseTo(1);
     expect(exit).toBe(36);
+  });
+
+  it("provides at least ten distinct road-traffic silhouettes", () => {
+    expect(TRAFFIC_CAR_KINDS.length).toBeGreaterThanOrEqual(10);
+    expect(new Set(TRAFFIC_CAR_KINDS).size).toBe(TRAFFIC_CAR_KINDS.length);
   });
 
   it("ships three structurally distinct Tier 1 GLB models", async () => {
@@ -264,6 +269,10 @@ describe("train content and eligibility", () => {
     const eligible = debugState(fundedState(), "tier5");
     const triggered = triggerEvent(eligible, "ice-s");
     expect(triggered.platformLanes[0].activeTrain).toMatchObject({ trainId: "ice-s", phase: "pass", phaseDuration: 10 });
+    expect(triggered.eventWindow).toBe("ice-s");
+    expect(triggered.eventRemaining).toBe(300);
+    expect(triggered.eventPassesRemaining).toBe(1);
+    expect(triggered.boosts).toContainEqual(expect.objectContaining({ label: "ICE-S record excitement", amount: 30, remaining: 300 }));
 
     const midRun = tickGame(triggered, 5);
     expect(midRun.platformLanes[0].activeTrain).toMatchObject({ trainId: "ice-s", phase: "pass" });
@@ -272,7 +281,26 @@ describe("train content and eligibility", () => {
     const completed = tickGame(midRun, 5.1);
     expect(completed.platformLanes[0].activeTrain).toBeNull();
     expect(completed.coins).toBe(175_000);
-    expect(completed.boosts.some((boost) => boost.label === "ICE-S record excitement" && boost.amount === 20)).toBe(true);
+    expect(completed.boosts.some((boost) => boost.label === "ICE-S record excitement" && boost.amount === 30)).toBe(true);
+
+    const secondRunReady: GameState = {
+      ...completed,
+      eventNextPassIn: 0,
+      platformLanes: completed.platformLanes.map((lane) => ({ ...lane, activeTrain: null, spawnCountdown: 30 })),
+    };
+    const secondRun = tickGame(secondRunReady, 0.1);
+    expect(secondRun.platformLanes[0].activeTrain).toMatchObject({ trainId: "ice-s", phase: "pass" });
+    expect(secondRun.eventPassesRemaining).toBe(0);
+
+    const eventEnd = tickGame({
+      ...secondRun,
+      eventRemaining: 0.1,
+      eventPassesRemaining: 0,
+      boosts: secondRun.boosts.map((boost) => ({ ...boost, remaining: 0.1 })),
+      platformLanes: secondRun.platformLanes.map((lane) => ({ ...lane, activeTrain: null })),
+    }, 0.1);
+    expect(eventEnd.eventWindow).toBeNull();
+    expect(eventEnd.boosts.some((boost) => boost.label === "ICE-S record excitement")).toBe(false);
   });
 });
 

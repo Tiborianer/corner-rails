@@ -19,6 +19,7 @@ import type {
 
 export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 export const DEVELOPMENT_CAP = 3;
+export const EVENT_DURATION = 300;
 
 const clamp = (value: number, minimum: number, maximum: number) =>
   Math.min(maximum, Math.max(minimum, value));
@@ -142,8 +143,6 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
   const isFirst = platformIndex === 0 && !state.firstTrainComplete && !anyTrainActive && !forcedTrain;
   if (isFirst) {
     train = TRAINS.find((candidate) => candidate.id === "br650");
-  } else if (!train && state.eventWindow) {
-    train = TRAINS.find((candidate) => candidate.id === state.eventWindow);
   }
   if (!train) {
     const eligible = eligibleTrains(state);
@@ -151,10 +150,13 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
     [train, rng] = chooseWeightedTrain(state, eligible);
   }
   if (!train || (!isFirst && !trainMeetsRequirements(state, train))) {
+    const cancelEvent = forcedTrain?.kind === "event";
     return {
       ...updatePlatformLane(state, platformIndex, { spawnCountdown: 8 }),
-      eventWindow: null,
-      eventRemaining: 0,
+      eventWindow: cancelEvent ? null : state.eventWindow,
+      eventRemaining: cancelEvent ? 0 : state.eventRemaining,
+      eventPassesRemaining: cancelEvent ? 0 : state.eventPassesRemaining,
+      eventNextPassIn: cancelEvent ? 0 : state.eventNextPassIn,
       toast: "That special train's requirements are not met yet.",
     };
   }
@@ -172,8 +174,6 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
   return {
     ...updatePlatformLane(state, platformIndex, { activeTrain, spawnCountdown: 0 }),
     rng: payoutSeed,
-    eventWindow: null,
-    eventRemaining: 0,
     lastUpgrade: state.lastUpgrade ? { ...state.lastUpgrade, undoAvailable: false } : null,
     toast: train.kind === "event"
       ? `Special event: ${train.name} is running through platform ${platformIndex + 1}!`
@@ -197,12 +197,6 @@ function completeTrain(state: GameState, platformIndex: number, active: ActiveTr
   const dirt = (0.8 + 0.1 * train.cars) * (state.raining ? 1.5 : 1);
   const rating = stationRating(state);
   const interval = clamp(48 / ratingMultiplier(rating), 10, 60);
-  const eventBoost =
-    train.id === "ice-s"
-      ? { id: `ice-s-${state.simSeconds}`, label: "ICE-S record excitement", amount: 20, remaining: 600 }
-      : train.id === "br01"
-        ? { id: `br01-${state.simSeconds}`, label: "Steam festival", amount: 15, remaining: 600 }
-        : null;
   let next: GameState = {
     ...updatePlatformLane(state, platformIndex, { activeTrain: null, spawnCountdown: interval }),
     coins: state.coins + active.payout,
@@ -210,7 +204,7 @@ function completeTrain(state: GameState, platformIndex: number, active: ActiveTr
     cleanliness: clamp(state.cleanliness - dirt, 0, 100),
     firstTrainComplete: true,
     arrivals: state.arrivals + 1,
-    boosts: eventBoost ? [...state.boosts, eventBoost] : state.boosts,
+    boosts: state.boosts,
     toast: train.kind === "event"
       ? `Platform ${platformIndex + 1}: ${train.name} completed its run-through · +${active.payout.toLocaleString()} coins`
       : `Platform ${platformIndex + 1}: ${train.name} departed · +${active.payout.toLocaleString()} coins`,
@@ -250,6 +244,49 @@ function advanceActiveTrain(state: GameState, platformIndex: number, delta: numb
   return completeTrain(state, platformIndex, active);
 }
 
+function dispatchEventPass(state: GameState): GameState {
+  if (!state.eventWindow || state.eventPassesRemaining <= 0 || state.eventNextPassIn > 0) return state;
+  const eventTrain = TRAINS.find((train) => train.id === state.eventWindow);
+  const eventAlreadyRunning = state.platformLanes.some((lane) => {
+    const active = lane.activeTrain;
+    return active && TRAINS.find((train) => train.id === active.trainId)?.kind === "event";
+  });
+  const idleLane = state.platformLanes.find((lane) => !lane.activeTrain);
+  if (!eventTrain || eventAlreadyRunning || !idleLane) return state;
+
+  const started = startTrain(state, idleLane.platformIndex, eventTrain);
+  if (started.platformLanes.find((lane) => lane.platformIndex === idleLane.platformIndex)?.activeTrain?.trainId !== eventTrain.id) return started;
+  const remainingPasses = state.eventPassesRemaining - 1;
+  return {
+    ...started,
+    eventPassesRemaining: remainingPasses,
+    eventNextPassIn: remainingPasses > 0 ? Math.min(135, Math.max(45, state.eventRemaining / 2)) : 0,
+  };
+}
+
+function beginEvent(state: GameState, eventId: "ice-s" | "br01"): GameState {
+  const train = TRAINS.find((candidate) => candidate.id === eventId)!;
+  const [passRoll, rng] = nextRandom(state.rng);
+  const passCount = passRoll < 0.5 ? 1 : 2;
+  const boost = eventId === "ice-s"
+    ? { id: `ice-s-event-${state.simSeconds}`, label: "ICE-S record excitement", amount: 30, remaining: EVENT_DURATION }
+    : { id: `br01-event-${state.simSeconds}`, label: "Steam festival", amount: 25, remaining: EVENT_DURATION };
+  const announced: GameState = {
+    ...state,
+    rng,
+    eventWindow: eventId,
+    eventRemaining: EVENT_DURATION,
+    eventPassesRemaining: passCount,
+    eventNextPassIn: 0,
+    boosts: [
+      ...state.boosts.filter((candidate) => candidate.label !== "ICE-S record excitement" && candidate.label !== "Steam festival"),
+      boost,
+    ],
+    toast: `${train.name}: five-minute event started · ${passCount} special run-through${passCount === 1 ? "" : "s"}!`,
+  };
+  return dispatchEventPass(announced);
+}
+
 function rollSeasonWeather(state: GameState): GameState {
   const [rainRoll, seedAfterRain] = nextRandom(state.rng);
   const [duration, seedAfterDuration] = randomInteger(seedAfterRain, 120, 300);
@@ -276,9 +313,12 @@ export function tickGame(state: GameState, wallDelta: number): GameState {
       .map((boost) => ({ ...boost, remaining: boost.remaining - delta }))
       .filter((boost) => boost.remaining > 0),
     eventRemaining: state.eventWindow ? Math.max(0, state.eventRemaining - delta) : 0,
+    eventNextPassIn: state.eventWindow && state.eventPassesRemaining > 0 ? Math.max(0, state.eventNextPassIn - delta) : 0,
   };
 
-  if (next.eventWindow && next.eventRemaining <= 0) next = { ...next, eventWindow: null };
+  if (next.eventWindow && next.eventRemaining <= 0) {
+    next = { ...next, eventWindow: null, eventPassesRemaining: 0, eventNextPassIn: 0 };
+  }
 
   if (next.raining) {
     next = {
@@ -293,11 +333,7 @@ export function tickGame(state: GameState, wallDelta: number): GameState {
 
   if (next.simSeconds >= next.nextSeasonAt) next = rollSeasonWeather(next);
 
-  if (next.eventWindow) {
-    const eventTrain = TRAINS.find((train) => train.id === next.eventWindow);
-    const idleLane = next.platformLanes.find((lane) => !lane.activeTrain);
-    if (eventTrain && idleLane) next = startTrain(next, idleLane.platformIndex, eventTrain);
-  }
+  next = dispatchEventPass(next);
 
   for (let platformIndex = 0; platformIndex < next.platforms; platformIndex += 1) {
     const lane = next.platformLanes.find((candidate) => candidate.platformIndex === platformIndex);
@@ -319,7 +355,7 @@ export function tickGame(state: GameState, wallDelta: number): GameState {
       next = { ...next, rng };
       if (roll < 0.35) {
         const chosen = candidates[Math.floor(roll * candidates.length) % candidates.length];
-        next = { ...next, eventWindow: chosen.id as "ice-s" | "br01", eventRemaining: 600, toast: `${chosen.name} announced!` };
+        next = beginEvent(next, chosen.id as "ice-s" | "br01");
       }
     }
   }
@@ -472,14 +508,11 @@ export function claimMission(state: GameState): GameState {
 
 export function triggerEvent(state: GameState, eventId: "ice-s" | "br01"): GameState {
   const train = TRAINS.find((candidate) => candidate.id === eventId)!;
+  if (state.eventWindow) return { ...state, toast: "A special event is already underway." };
   if (!trainMeetsRequirements(state, train)) {
     return { ...state, toast: `${train.name} is locked — check its requirements.` };
   }
-  const idleLane = state.platformLanes.find((lane) => !lane.activeTrain);
-  if (!idleLane) {
-    return { ...state, eventWindow: eventId, eventRemaining: 600, toast: `${train.name} queued for the next free platform.` };
-  }
-  return startTrain({ ...state, eventWindow: eventId, eventRemaining: 600 }, idleLane.platformIndex, train);
+  return beginEvent(state, eventId);
 }
 
 export function prestigeStation(state: GameState): GameState {

@@ -34,7 +34,7 @@ export const SYSTEMS: Record<
     icon: "🚕",
     cost: 650,
     unlockTier: 2,
-    description: "Builds a drop-off loop with animated cars.",
+    description: "Builds a continuous two-way road with varied passing traffic.",
   },
   amenities: {
     name: "Amenities",
@@ -48,7 +48,7 @@ export const SYSTEMS: Record<
     icon: "🔧",
     cost: 1_800,
     unlockTier: 3,
-    description: "A service siding for long-distance stock.",
+    description: "Adds a turnout, dedicated service siding, and adjacent depot.",
   },
   advancedSignaling: {
     name: "ETCS test package",
@@ -465,6 +465,8 @@ export function createInitialState(prestige = 0): GameState {
     nextSeasonAt: 1_800,
     eventWindow: null,
     eventRemaining: 0,
+    eventPassesRemaining: 0,
+    eventNextPassIn: 0,
     boosts: [],
     mission: { id: "serve", progress: 0, complete: false },
     lastUpgrade: null,

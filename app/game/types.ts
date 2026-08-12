@@ -111,6 +111,8 @@ export interface GameState {
   nextSeasonAt: number;
   eventWindow: "ice-s" | "br01" | null;
   eventRemaining: number;
+  eventPassesRemaining: number;
+  eventNextPassIn: number;
   boosts: TemporaryBoost[];
   mission: MissionState;
   lastUpgrade: UpgradeReceipt | null;

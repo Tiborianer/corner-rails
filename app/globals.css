@@ -935,6 +935,16 @@ button:disabled {
   cursor: pointer;
 }
 
+.event-note {
+  margin: -4px 0 9px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  color: #576560;
+  background: rgba(240, 189, 72, 0.16);
+  font-size: 0.63rem;
+  line-height: 1.35;
+}
+
 .tier-panel {
   text-align: center;
 }
@@ -1482,6 +1492,7 @@ button:disabled {
   .event-banner > span { width: 34px; height: 34px; font-size: 1.05rem; }
   .event-banner em { font-size: 0.58rem; }
   .mission-chip p { display: none; }
+  .mission-chip.event-active { top: 220px; }
   .game-nav {
     right: 8px;
     left: 8px;

@@ -202,13 +202,11 @@ export default function CornerRails() {
   const activeLanes = state.platformLanes.filter((lane) => lane.activeTrain);
   const eventLane = state.platformLanes.find((lane) => lane.activeTrain?.trainId === "ice-s" || lane.activeTrain?.trainId === "br01");
   const eventBoost = state.boosts.find((boost) => boost.label === "ICE-S record excitement" || boost.label === "Steam festival");
-  const eventId = eventLane?.activeTrain?.trainId === "ice-s" || eventLane?.activeTrain?.trainId === "br01"
+  const eventId = state.eventWindow ?? (eventLane?.activeTrain?.trainId === "ice-s" || eventLane?.activeTrain?.trainId === "br01"
     ? eventLane.activeTrain.trainId
-    : eventBoost?.label === "ICE-S record excitement" ? "ice-s" : eventBoost ? "br01" : null;
+    : eventBoost?.label === "ICE-S record excitement" ? "ice-s" : eventBoost ? "br01" : null);
   const eventTrain = eventId ? TRAINS.find((train) => train.id === eventId) : null;
-  const eventRemaining = eventLane?.activeTrain
-    ? eventLane.activeTrain.phaseDuration - eventLane.activeTrain.phaseElapsed
-    : eventBoost?.remaining ?? 0;
+  const eventRemaining = state.eventWindow ? state.eventRemaining : eventBoost?.remaining ?? 0;
 
   useEffect(() => {
     let previous = performance.now();
@@ -348,18 +346,20 @@ export default function CornerRails() {
       )}
 
       {eventId && eventTrain && (
-        <aside className={`event-banner ${eventId}`} aria-live="assertive">
+        <aside className={`event-banner ${eventId}`} aria-live="polite">
           <span aria-hidden="true">{eventId === "ice-s" ? "⚡" : "🚂"}</span>
           <div>
-            <small>{eventLane ? "SPECIAL EVENT · RUN-THROUGH" : "STATION CELEBRATION"}</small>
+            <small>{eventLane ? "SPECIAL EVENT · RUN-THROUGH" : "FIVE-MINUTE SPECIAL EVENT"} · {shortDuration(eventRemaining)}</small>
             <strong>{eventId === "ice-s" ? "ICE-S Record Run" : "Steam Locomotive Festival"}</strong>
-            <em>{eventLane ? `${eventTrain.name} is passing Platform ${(eventLane.platformIndex ?? 0) + 1} without stopping` : `Party lights · rating boost · ${shortDuration(eventRemaining)} remaining`}</em>
+            <em>{eventLane
+              ? `${eventTrain.name} is passing Platform ${(eventLane.platformIndex ?? 0) + 1} without stopping · +${formatCoins(eventLane.activeTrain?.payout ?? 0)}`
+              : `Party lights · +${eventBoost?.amount ?? 0} rating · ${state.eventPassesRemaining > 0 ? `next run in ${shortDuration(state.eventNextPassIn)}` : "special runs complete"}`}</em>
           </div>
         </aside>
       )}
 
       {state.region && state.platformPlaced && (
-        <aside className={`mission-chip ${state.mission.complete ? "complete" : ""}`}>
+        <aside className={`mission-chip ${state.mission.complete ? "complete" : ""} ${eventId ? "event-active" : ""}`}>
           <span>DAILY BOARD</span>
           <strong>{currentMission.title}</strong>
           <p>{currentMission.description}</p>
@@ -447,6 +447,7 @@ export default function CornerRails() {
                 {TRAINS.filter((train) => train.kind === "event" && train.tier <= state.tier).map((train) => (
                   <div key={train.id} className="event-row">
                     <TrainRequirement train={train} state={state} />
+                    <p className="event-note">Five-minute event · one or two non-stop run-throughs · temporary rating surge</p>
                     {debugEnabled && <button onClick={() => dispatch({ type: "event", eventId: train.id as "ice-s" | "br01" })}>Debug dispatch</button>}
                   </div>
                 ))}

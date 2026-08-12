@@ -6,6 +6,21 @@ export function catenaryPolePositions(length: number): number[] {
   );
 }
 
+export const TRAFFIC_CAR_KINDS = [
+  "sedan",
+  "hatch",
+  "suv",
+  "van",
+  "pickup",
+  "coupe",
+  "taxi",
+  "estate",
+  "micro",
+  "delivery",
+  "fastback",
+  "compact",
+] as const;
+
 export function trainMotionPosition(
   phase: "approach" | "dwell" | "depart" | "pass",
   elapsed: number,

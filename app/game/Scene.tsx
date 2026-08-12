@@ -6,10 +6,10 @@ import { Clone, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import type { AmbientLight, DirectionalLight, Fog, Group, HemisphereLight, InstancedMesh, Points } from "three";
-import { Color, MathUtils, Object3D } from "three";
+import { CatmullRomCurve3, Color, MathUtils, Object3D, Vector3 } from "three";
 import { daylightFactor, isNight } from "./simulation";
 import { TRAINS } from "./data";
-import { catenaryPolePositions, trainMotionPosition } from "./visual";
+import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "./visual";
 import type { ActiveTrain, GameState, TrainDefinition } from "./types";
 
 interface SceneProps {
@@ -134,7 +134,7 @@ function StationBuilding({ tier, daylight }: { tier: number; daylight: number })
   const bodyTop = bodyBottom + height;
   const windowColor = new Color("#ffd878").lerp(new Color("#547482"), daylight).getStyle();
   return (
-    <group position={[1.25, 0, -3.45]}>
+    <group position={[-1.45, 0, -3.45]}>
       {/* The masonry plinth meets the terrain at y=-0.2 and makes the station
           read as a built structure instead of a box hovering above the lawn. */}
       <Box position={[0, 0.07, 0]} scale={[width + 0.34, 0.54, 1.62]} color="#8e8779" />
@@ -172,30 +172,154 @@ function Signal({ advanced }: { advanced: boolean }) {
   );
 }
 
-function RoadAccess() {
-  const car = useRef<Group>(null);
-  useFrame(({ clock }) => {
-    if (car.current) car.current.position.x = Math.sin(clock.elapsedTime * 0.55) * 2.4;
+type TrafficCarKind = (typeof TRAFFIC_CAR_KINDS)[number];
+
+interface TrafficCarSpec {
+  kind: TrafficCarKind;
+  color: string;
+  accent: string;
+  x: number;
+  direction: 1 | -1;
+  speed: number;
+}
+
+const TRAFFIC_CARS: TrafficCarSpec[] = [
+  { kind: "sedan", color: "#305e8c", accent: "#dbe9ee", x: -43, direction: 1, speed: 4.1 },
+  { kind: "hatch", color: "#d34e3f", accent: "#f1d5b5", x: -29, direction: 1, speed: 3.5 },
+  { kind: "suv", color: "#475851", accent: "#d9e1d8", x: -15, direction: 1, speed: 3.2 },
+  { kind: "pickup", color: "#b98237", accent: "#e7d3a7", x: -1, direction: 1, speed: 3.7 },
+  { kind: "coupe", color: "#8c3153", accent: "#e9d5d7", x: 13, direction: 1, speed: 4.6 },
+  { kind: "taxi", color: "#e3b832", accent: "#252a2a", x: 28, direction: 1, speed: 3.8 },
+  { kind: "estate", color: "#547e72", accent: "#d8e8e4", x: 42, direction: -1, speed: 3.8 },
+  { kind: "micro", color: "#e8e2d1", accent: "#3d6d82", x: 28, direction: -1, speed: 3.1 },
+  { kind: "van", color: "#c5cbd0", accent: "#245b83", x: 14, direction: -1, speed: 3.4 },
+  { kind: "delivery", color: "#f0eee5", accent: "#c33a31", x: 0, direction: -1, speed: 3 },
+  { kind: "fastback", color: "#273f62", accent: "#80c7cf", x: -14, direction: -1, speed: 4.4 },
+  { kind: "compact", color: "#6e4f91", accent: "#e2d5ec", x: -29, direction: -1, speed: 3.6 },
+];
+
+function TrafficCar({ spec }: { spec: TrafficCarSpec }) {
+  const long = spec.kind === "estate" || spec.kind === "delivery" ? 1.18 : spec.kind === "micro" ? 0.72 : spec.kind === "hatch" ? 0.84 : spec.kind === "compact" ? 0.78 : spec.kind === "van" || spec.kind === "pickup" ? 1.08 : 0.94;
+  const wide = spec.kind === "suv" || spec.kind === "van" || spec.kind === "delivery" ? 0.62 : 0.54;
+  const tall = spec.kind === "van" || spec.kind === "delivery" ? 0.58 : spec.kind === "suv" || spec.kind === "micro" ? 0.48 : 0.33;
+  const cabinX = spec.kind === "pickup" ? 0.27 : spec.kind === "hatch" ? -0.12 : spec.kind === "compact" ? 0.08 : spec.kind === "coupe" || spec.kind === "fastback" ? -0.08 : 0;
+  const cabinLength = long * (spec.kind === "micro" ? 0.65 : spec.kind === "estate" ? 0.75 : spec.kind === "hatch" ? 0.68 : 0.58);
+  return (
+    <group rotation={[0, spec.direction < 0 ? Math.PI : 0, 0]}>
+      <Box position={[0, 0.28, 0]} scale={[long, 0.28, wide]} color={spec.color} />
+      {spec.kind === "delivery" ? (
+        <>
+          <Box position={[-0.13, 0.65, 0]} scale={[0.76, 0.68, wide]} color={spec.color} />
+          <Box position={[0.43, 0.52, 0]} scale={[0.3, 0.42, wide - 0.04]} color={spec.accent} />
+        </>
+      ) : spec.kind === "van" ? (
+        <Box position={[-0.06, 0.59, 0]} scale={[0.87, 0.58, wide - 0.03]} color={spec.color} />
+      ) : spec.kind === "pickup" ? (
+        <>
+          <Box position={[0.28, 0.53, 0]} scale={[0.43, 0.46, wide - 0.04]} color={spec.color} />
+          <Box position={[-0.28, 0.46, -wide / 2 + 0.04]} scale={[0.48, 0.25, 0.07]} color={spec.color} />
+          <Box position={[-0.28, 0.46, wide / 2 - 0.04]} scale={[0.48, 0.25, 0.07]} color={spec.color} />
+        </>
+      ) : (
+        <Box position={[cabinX, 0.49 + tall * 0.18, 0]} scale={[cabinLength, tall, wide - 0.05]} color={spec.accent} rotation={[0, 0, spec.kind === "coupe" ? -0.1 : spec.kind === "fastback" ? 0.08 : 0]} />
+      )}
+      {spec.kind !== "delivery" && [-1, 1].map((side) => (
+        <Box key={side} position={[cabinX + 0.05, 0.57 + tall * 0.16, side * (wide / 2 + 0.012)]} scale={[Math.max(0.28, cabinLength * 0.68), 0.16, 0.025]} color="#213b45" castShadow={false} />
+      ))}
+      <Box position={[long / 2 + 0.012, 0.31, 0]} scale={[0.025, 0.12, wide * 0.72]} color="#f4e6ac" />
+      <Box position={[-long / 2 - 0.012, 0.31, 0]} scale={[0.025, 0.1, wide * 0.72]} color="#d74942" />
+      {spec.kind === "taxi" && <Box position={[0, 0.79, 0]} scale={[0.24, 0.12, 0.18]} color="#f3d64d" />}
+      {spec.kind === "coupe" && <Box position={[-long / 2 + 0.08, 0.47, 0]} scale={[0.18, 0.035, wide + 0.08]} color="#272d2f" />}
+      {spec.kind === "fastback" && <Box position={[long / 2 + 0.02, 0.42, 0]} scale={[0.03, 0.045, wide * 0.9]} color="#68e1e6" />}
+      {spec.kind === "suv" && (
+        <>
+          <Box position={[-0.2, 0.83, -0.2]} scale={[0.72, 0.035, 0.035]} color="#293332" />
+          <Box position={[-0.2, 0.83, 0.2]} scale={[0.72, 0.035, 0.035]} color="#293332" />
+        </>
+      )}
+      {[-long * 0.3, long * 0.3].map((x) => [-wide / 2 - 0.025, wide / 2 + 0.025].map((z) => (
+        <mesh key={`${x}-${z}`} position={[x, 0.14, z]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+          <cylinderGeometry args={[0.12, 0.12, 0.08, 10]} />
+          <meshStandardMaterial color="#151b1c" roughness={0.62} />
+        </mesh>
+      )))}
+    </group>
+  );
+}
+
+function RoadAccess({ speed }: { speed: 1 | 2 | 3 }) {
+  const cars = useRef<Array<Group | null>>([]);
+  useFrame((_, delta) => {
+    TRAFFIC_CARS.forEach((spec, index) => {
+      const car = cars.current[index];
+      if (!car) return;
+      car.position.x += spec.direction * spec.speed * delta * speed;
+      if (spec.direction > 0 && car.position.x > 48) car.position.x = -50 - (index % 3) * 2.5;
+      if (spec.direction < 0 && car.position.x < -48) car.position.x = 50 + (index % 3) * 2.5;
+    });
   });
   return (
-    <group position={[1.6, 0, 5.1]}>
-      <Box position={[0, 0.09, 0]} scale={[6.4, 0.1, 1.05]} color="#5b6261" castShadow={false} />
-      <Box position={[0, 0.16, 0]} scale={[6.2, 0.025, 0.05]} color="#e8d87d" castShadow={false} />
-      <group ref={car} position={[0, 0.28, 0]}>
-        <Box position={[0, 0.18, 0]} scale={[0.72, 0.28, 0.4]} color="#d84e3f" />
-        <Box position={[-0.1, 0.38, 0]} scale={[0.38, 0.2, 0.34]} color="#d84e3f" />
-      </group>
+    <group position={[0, 0, -6.35]}>
+      <Box position={[0, -0.11, 0]} scale={[92, 0.18, 1.72]} color="#4d5555" castShadow={false} />
+      <Box position={[0, -0.005, -0.79]} scale={[92, 0.025, 0.06]} color="#d7d4c5" castShadow={false} />
+      <Box position={[0, -0.005, 0.79]} scale={[92, 0.025, 0.06]} color="#d7d4c5" castShadow={false} />
+      {Array.from({ length: 38 }, (_, index) => (
+        <Box key={index} position={[-44 + index * 2.4, 0.005, 0]} scale={[1.18, 0.025, 0.055]} color="#e7dd9e" castShadow={false} />
+      ))}
+      <Box position={[0, -0.05, 1.12]} scale={[92, 0.16, 0.46]} color="#a9a496" castShadow={false} />
+      {TRAFFIC_CARS.map((spec, index) => (
+        <group
+          key={spec.kind}
+          ref={(node) => { cars.current[index] = node; }}
+          position={[spec.x, 0.04, spec.direction > 0 ? 0.4 : -0.4]}
+        >
+          <TrafficCar spec={spec} />
+        </group>
+      ))}
     </group>
   );
 }
 
 function MaintenanceYard() {
+  const siding = useMemo(() => new CatmullRomCurve3([
+    new Vector3(-11, 0.13, -0.72),
+    new Vector3(-8, 0.13, -1.6),
+    new Vector3(1.5, 0.13, -1.6),
+    new Vector3(3.2, 0.13, -3.42),
+    new Vector3(5.9, 0.13, -3.45),
+  ], false, "catmullrom", 0.25), []);
+  const leftRail = useMemo(() => new CatmullRomCurve3(siding.points.map((point) => point.clone().add(new Vector3(0, 0.03, -0.27))), false, "catmullrom", 0.25), [siding]);
+  const rightRail = useMemo(() => new CatmullRomCurve3(siding.points.map((point) => point.clone().add(new Vector3(0, 0.03, 0.27))), false, "catmullrom", 0.25), [siding]);
+  const sleepers = useMemo(() => Array.from({ length: 34 }, (_, index) => {
+    const t = index / 33;
+    const point = siding.getPoint(t);
+    const tangent = siding.getTangent(t);
+    return { point, rotation: -Math.atan2(tangent.z, tangent.x) };
+  }), [siding]);
   return (
-    <group position={[4.2, 0, 3.3]}>
-      <Box position={[0, 0.62, 0]} scale={[2.1, 1.2, 1.55]} color="#74837f" />
-      <Box position={[0, 1.28, 0]} scale={[2.35, 0.15, 1.78]} color="#30464a" />
-      <Box position={[-0.48, 0.55, -0.8]} scale={[0.68, 0.9, 0.08]} color="#26383a" />
-      <Box position={[0.48, 0.55, -0.8]} scale={[0.68, 0.9, 0.08]} color="#26383a" />
+    <group>
+      <mesh castShadow receiveShadow>
+        <tubeGeometry args={[leftRail, 52, 0.045, 7, false]} />
+        <meshStandardMaterial color="#c5cbc9" metalness={0.72} roughness={0.38} />
+      </mesh>
+      <mesh castShadow receiveShadow>
+        <tubeGeometry args={[rightRail, 52, 0.045, 7, false]} />
+        <meshStandardMaterial color="#c5cbc9" metalness={0.72} roughness={0.38} />
+      </mesh>
+      {sleepers.map(({ point, rotation }, index) => (
+        <Box key={index} position={[point.x, 0.075, point.z]} scale={[0.11, 0.07, 0.82]} color="#6f513a" rotation={[0, rotation, 0]} castShadow={false} />
+      ))}
+      <group position={[5.05, 0, -3.45]}>
+        <Box position={[0, 0.07, 0]} scale={[3.25, 0.54, 2.02]} color="#817f76" />
+        <Box position={[0, 0.95, 0]} scale={[3.1, 1.22, 1.9]} color="#6f827e" />
+        <Box position={[0, 1.67, -0.45]} scale={[3.4, 0.14, 1.18]} color="#2f4548" rotation={[0.32, 0, 0]} />
+        <Box position={[0, 1.67, 0.45]} scale={[3.4, 0.14, 1.18]} color="#2f4548" rotation={[-0.32, 0, 0]} />
+        <Box position={[-1.58, 0.86, -0.45]} scale={[0.08, 1.08, 0.7]} color="#26383a" />
+        <Box position={[-1.58, 0.86, 0.45]} scale={[0.08, 1.08, 0.7]} color="#26383a" />
+        <Box position={[-1.63, 1.48, 0]} scale={[0.04, 0.16, 1.66]} color="#d7c75d" />
+        <Box position={[0.35, 1.12, 0.96]} scale={[0.72, 0.45, 0.06]} color="#b9d9d7" />
+        <pointLight position={[-1.9, 1.65, 0]} intensity={1.2} distance={4} color="#ffd884" />
+      </group>
     </group>
   );
 }
@@ -260,13 +384,13 @@ function LandscapeScenery({ seasonIndex }: { seasonIndex: number }) {
       Array.from({ length: 30 }, (_, index) => {
         const farSide = index % 3 !== 0;
         const x = -25 + ((index * 7.7) % 50);
-        const z = farSide ? 7.1 + ((index * 2.3) % 5.4) : -5.8 - ((index * 1.7) % 3.5);
+        const z = farSide ? 7.1 + ((index * 2.3) % 5.4) : -8.7 - ((index * 1.7) % 3.5);
         return { position: [x, -0.2, z] as [number, number, number], scale: 0.72 + (index % 5) * 0.12 };
       }),
     [],
   );
   const shrubs = useMemo(
-    () => Array.from({ length: 24 }, (_, index) => ({ x: -19 + ((index * 5.3) % 38), z: index % 2 ? 6.4 : -4.7, scale: 0.32 + (index % 4) * 0.08 })),
+    () => Array.from({ length: 24 }, (_, index) => ({ x: -19 + ((index * 5.3) % 38), z: index % 2 ? 6.4 : -8.55, scale: 0.32 + (index % 4) * 0.08 })),
     [],
   );
   return (
@@ -294,9 +418,9 @@ function LandscapeScenery({ seasonIndex }: { seasonIndex: number }) {
         <Box position={[0, 0.8, 0]} scale={[1.65, 0.14, 1.15]} color="#6d4537" rotation={[0, 0, 0.08]} />
         <Box position={[0.3, 0.34, -0.49]} scale={[0.32, 0.46, 0.04]} color="#526d70" />
       </group>
-      <Box position={[0, 0.18, -4.25]} scale={[58, 0.07, 0.06]} color="#a9a18b" castShadow={false} />
+      <Box position={[0, 0.18, -8.05]} scale={[58, 0.07, 0.06]} color="#a9a18b" castShadow={false} />
       {Array.from({ length: 20 }, (_, index) => (
-        <Box key={index} position={[-27 + index * 2.8, 0.43, -4.25]} scale={[0.055, 0.55, 0.055]} color="#756c5a" castShadow={false} />
+        <Box key={index} position={[-27 + index * 2.8, 0.43, -8.05]} scale={[0.055, 0.55, 0.055]} color="#756c5a" castShadow={false} />
       ))}
     </group>
   );
@@ -605,7 +729,7 @@ function EventCelebration({ eventId, platformCount }: { eventId: "ice-s" | "br01
 function Diorama({ state, onPlacePlatform }: SceneProps) {
   const platformLength = 6 + state.lengthLevel * 2.25;
   const trackCount = Math.max(1, state.platforms);
-  const activeEventId = state.platformLanes.find((lane) => lane.activeTrain?.trainId === "ice-s" || lane.activeTrain?.trainId === "br01")?.activeTrain?.trainId;
+  const activeEventId = state.eventWindow ?? state.platformLanes.find((lane) => lane.activeTrain?.trainId === "ice-s" || lane.activeTrain?.trainId === "br01")?.activeTrain?.trainId;
   const boostedEventId = state.boosts.some((boost) => boost.label === "ICE-S record excitement")
     ? "ice-s"
     : state.boosts.some((boost) => boost.label === "Steam festival") ? "br01" : null;
@@ -648,7 +772,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
       <StationBuilding tier={state.tier} daylight={daylightFactor(state.simSeconds)} />
       {state.systems.electrification && <Catenary trackCount={trackCount} length={58} />}
       {state.systems.signaling && <Signal advanced={state.systems.advancedSignaling} />}
-      {state.systems.roadAccess && <RoadAccess />}
+      {state.systems.roadAccess && <RoadAccess speed={state.speed} />}
       {state.systems.maintenance && <MaintenanceYard />}
       <EventCelebration eventId={eventId} platformCount={trackCount} />
       {state.raining && <Rain />}

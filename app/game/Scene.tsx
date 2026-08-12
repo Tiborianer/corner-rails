@@ -10,7 +10,7 @@ import { Color, MathUtils, Object3D } from "three";
 import { daylightFactor, isNight } from "./simulation";
 import { TRAINS } from "./data";
 import { catenaryPolePositions, trainMotionPosition } from "./visual";
-import type { GameState, TrainDefinition } from "./types";
+import type { ActiveTrain, GameState, TrainDefinition } from "./types";
 
 interface SceneProps {
   state: GameState;
@@ -442,17 +442,16 @@ function ProceduralCoach({ train, index }: { train: TrainDefinition; index: numb
   );
 }
 
-function TrainConsist({ state }: { state: GameState }) {
-  const active = state.activeTrain;
+function TrainConsist({ active, platformIndex, speed }: { active: ActiveTrain; platformIndex: number; speed: 1 | 2 | 3 }) {
   const group = useRef<Group>(null);
   const motion = useRef({ trainId: "", phase: "", elapsed: 0 });
-  const train = active ? TRAINS.find((candidate) => candidate.id === active.trainId) : null;
+  const train = TRAINS.find((candidate) => candidate.id === active.trainId);
   const gltf = useGLTF(train ? `/models/trains/${train.modelKey}.glb?v=${TRAIN_ASSET_VERSION}` : `/models/trains/br650.glb?v=${TRAIN_ASSET_VERSION}`);
   const head = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const entryX = train ? -34 - train.cars * 1.6 : -34;
   const exitX = train ? 36 + train.cars * 1.6 : 36;
   useFrame((_, delta) => {
-    if (!group.current || !active) return;
+    if (!group.current) return;
     const visual = motion.current;
     if (visual.trainId !== active.trainId || visual.phase !== active.phase) {
       visual.trainId = active.trainId;
@@ -461,15 +460,15 @@ function TrainConsist({ state }: { state: GameState }) {
     } else {
       // Extrapolate between deterministic 10 Hz simulation snapshots, then
       // correct only forward so a late snapshot can never make a train jump back.
-      visual.elapsed = Math.min(active.phaseDuration, Math.max(visual.elapsed, active.phaseElapsed) + delta * state.speed);
+      visual.elapsed = Math.min(active.phaseDuration, Math.max(visual.elapsed, active.phaseElapsed) + delta * speed);
     }
     group.current.position.x = trainMotionPosition(active.phase, visual.elapsed, active.phaseDuration, entryX, 4.4, exitX);
   });
-  if (!active || !train) return null;
+  if (!train) return null;
   const tailIndex = train.cars - 2;
   const hasMirroredTail = DOUBLE_ENDED_TRAINS.has(train.id) && train.cars > 1;
   return (
-    <group ref={group} position={[entryX, 0.25, -0.72]} scale={[1.5, 0.82, 0.82]}>
+    <group ref={group} position={[entryX, 0.25, -0.72 + platformIndex * 1.25]} scale={[1.5, 0.82, 0.82]}>
       <Clone object={head} castShadow />
       {Array.from({ length: Math.max(0, train.cars - 1) }, (_, index) => hasMirroredTail && index === tailIndex ? (
         <group key={index} position={[-carPitch(train) * (index + 1), 0, 0]} rotation={[0, Math.PI, 0]}>
@@ -547,7 +546,7 @@ function FestivalDecor({ active }: { active: boolean }) {
 function Diorama({ state, onPlacePlatform }: SceneProps) {
   const platformLength = 6 + state.lengthLevel * 2.25;
   const trackCount = Math.max(1, state.platforms);
-  const activeEvent = state.activeTrain?.trainId === "br01" || state.boosts.some((boost) => boost.label === "Steam festival");
+  const activeEvent = state.platformLanes.some((lane) => lane.activeTrain?.trainId === "br01") || state.boosts.some((boost) => boost.label === "Steam festival");
   return (
     <>
       <LockedCamera />
@@ -575,7 +574,11 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
             <Platform key={index} index={index} length={platformLength} amenities={state.systems.amenities} />
           ))}
           <Dirt cleanliness={state.cleanliness} />
-          <Suspense fallback={null}><TrainConsist state={state} /></Suspense>
+          {state.platformLanes.map((lane) => lane.activeTrain && (
+            <Suspense key={`${lane.platformIndex}-${lane.activeTrain.trainId}`} fallback={null}>
+              <TrainConsist active={lane.activeTrain} platformIndex={lane.platformIndex} speed={state.speed} />
+            </Suspense>
+          ))}
         </>
       ) : null}
 

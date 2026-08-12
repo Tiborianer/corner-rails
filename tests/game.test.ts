@@ -14,6 +14,7 @@ import {
   tickGame,
   tierUp,
   trainMeetsRequirements,
+  undoLastUpgrade,
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
 import { catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
@@ -123,18 +124,95 @@ describe("cleanliness and rating", () => {
       ...fundedState(),
       raining: true,
       rainRemaining: 100,
-      activeTrain: {
-        trainId: "br650",
-        phase: "depart",
-        phaseElapsed: 4.95,
-        phaseDuration: 5,
-        payout: 10,
-        firstService: false,
-      },
+      platformLanes: [{
+        platformIndex: 0,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: "br650",
+          phase: "depart",
+          phaseElapsed: 4.95,
+          phaseDuration: 5,
+          payout: 10,
+          firstService: false,
+        },
+      }],
     };
     const next = tickGame(state, 0.1);
-    expect(next.activeTrain).toBeNull();
+    expect(next.platformLanes[0].activeTrain).toBeNull();
     expect(next.cleanliness).toBeLessThan(98.7);
+  });
+});
+
+describe("independent platform operations", () => {
+  it("adds an independent lane whenever a platform is purchased", () => {
+    const state = purchaseUpgrade(fundedState(), { kind: "platform" });
+    expect(state.platforms).toBe(2);
+    expect(state.platformLanes).toHaveLength(2);
+    expect(state.platformLanes[0].spawnCountdown).toBe(2);
+    expect(state.platformLanes[1]).toMatchObject({ platformIndex: 1, activeTrain: null });
+    const undone = undoLastUpgrade(state);
+    expect(undone.platforms).toBe(1);
+    expect(undone.platformLanes).toHaveLength(1);
+  });
+
+  it("can operate multiple trains simultaneously without sharing timers", () => {
+    const active = (trainId: string) => ({
+      trainId,
+      phase: "dwell" as const,
+      phaseElapsed: 1,
+      phaseDuration: 12,
+      payout: 15,
+      firstService: false,
+    });
+    const state: GameState = {
+      ...fundedState(),
+      platforms: 2,
+      firstTrainComplete: true,
+      platformLanes: [
+        { platformIndex: 0, spawnCountdown: 0, activeTrain: active("br650") },
+        { platformIndex: 1, spawnCountdown: 0, activeTrain: active("br642") },
+      ],
+    };
+    const next = tickGame(state, 0.5);
+    expect(next.platformLanes[0].activeTrain?.phaseElapsed).toBeCloseTo(1.5);
+    expect(next.platformLanes[1].activeTrain?.phaseElapsed).toBeCloseTo(1.5);
+  });
+
+  it("starts a separate automatic service on every ready platform", () => {
+    const state: GameState = {
+      ...fundedState(),
+      platforms: 3,
+      firstTrainComplete: true,
+      platformLanes: [0, 1, 2].map((platformIndex) => ({ platformIndex, spawnCountdown: 0, activeTrain: null })),
+    };
+    const next = tickGame(state, 0.1);
+    expect(next.platformLanes.every((lane) => lane.activeTrain !== null)).toBe(true);
+    expect(next.platformLanes.map((lane) => lane.activeTrain?.phase)).toEqual(["approach", "approach", "approach"]);
+  });
+
+  it("resets only the lane whose train completes", () => {
+    const state: GameState = {
+      ...fundedState(),
+      platforms: 2,
+      firstTrainComplete: true,
+      platformLanes: [
+        {
+          platformIndex: 0,
+          spawnCountdown: 0,
+          activeTrain: { trainId: "br650", phase: "depart", phaseElapsed: 4.95, phaseDuration: 5, payout: 10, firstService: false },
+        },
+        {
+          platformIndex: 1,
+          spawnCountdown: 0,
+          activeTrain: { trainId: "br642", phase: "dwell", phaseElapsed: 3, phaseDuration: 12, payout: 18, firstService: false },
+        },
+      ],
+    };
+    const next = tickGame(state, 0.1);
+    expect(next.platformLanes[0].activeTrain).toBeNull();
+    expect(next.platformLanes[0].spawnCountdown).toBeGreaterThan(0);
+    expect(next.platformLanes[1].activeTrain?.trainId).toBe("br642");
+    expect(next.platformLanes[1].activeTrain?.phaseElapsed).toBeCloseTo(3.1);
   });
 });
 
@@ -174,12 +252,24 @@ describe("train content and eligibility", () => {
 
 describe("manual save codes", () => {
   it("round-trips serializable game state and rejects damage", () => {
-    const state = { ...fundedState(), tier: 4 as const, cleanliness: 72, coins: 12_345 };
+    const state: GameState = {
+      ...fundedState(),
+      tier: 4,
+      cleanliness: 72,
+      coins: 12_345,
+      platforms: 2,
+      platformLanes: [
+        { ...fundedState().platformLanes[0], spawnCountdown: 17 },
+        { platformIndex: 1, spawnCountdown: 9, activeTrain: null },
+      ],
+    };
     const code = encodeSave(state);
     const decoded = decodeSave(code);
     expect(decoded.tier).toBe(4);
     expect(decoded.cleanliness).toBe(72);
     expect(decoded.coins).toBe(12_345);
+    expect(decoded.platformLanes).toHaveLength(2);
+    expect(decoded.platformLanes.map((lane) => lane.spawnCountdown)).toEqual([17, 9]);
     expect(() => decodeSave(`${code}x`)).toThrow(/damaged|incomplete/u);
   });
 });

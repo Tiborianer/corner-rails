@@ -1,5 +1,5 @@
 import { createInitialState } from "./data";
-import type { GameState } from "./types";
+import type { ActiveTrain, GameState, PlatformLane } from "./types";
 
 function checksum(input: string): string {
   let hash = 0x811c9dc5;
@@ -65,12 +65,35 @@ export function decodeSave(code: string): GameState {
     throw new Error("The save code contains incompatible game data.");
   }
   const defaults = createInitialState(parsed.prestige ?? 0);
+  const legacy = parsed as GameState & { activeTrain?: ActiveTrain | null; spawnCountdown?: number };
+  const serializableParsed = Object.fromEntries(
+    Object.entries(parsed).filter(([key]) => key !== "activeTrain" && key !== "spawnCountdown"),
+  ) as GameState;
+  const suppliedLanes = Array.isArray(parsed.platformLanes) ? parsed.platformLanes : [];
+  const platformLanes: PlatformLane[] = Array.from({ length: Math.max(1, parsed.platforms) }, (_, platformIndex) => {
+    const supplied = suppliedLanes.find((lane) => lane?.platformIndex === platformIndex);
+    if (supplied && typeof supplied.spawnCountdown === "number") {
+      return {
+        platformIndex,
+        spawnCountdown: Math.max(0, supplied.spawnCountdown),
+        activeTrain: supplied.activeTrain ?? null,
+      };
+    }
+    if (platformIndex === 0) {
+      return {
+        platformIndex,
+        spawnCountdown: Math.max(0, legacy.spawnCountdown ?? 2),
+        activeTrain: legacy.activeTrain ?? null,
+      };
+    }
+    return { platformIndex, spawnCountdown: 6 + platformIndex * 4, activeTrain: null };
+  });
   return {
     ...defaults,
-    ...parsed,
+    ...serializableParsed,
     systems: { ...defaults.systems, ...parsed.systems },
+    platformLanes,
     toast: "Save imported — welcome back.",
     lastUpgrade: null,
   };
 }
-

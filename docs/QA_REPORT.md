@@ -4,6 +4,8 @@ The screenshots below document the original 2026-08-11 vertical slice. A 2026-08
 
 A second 2026-08-12 regression pass corrected the catenary crash, isolated train loading from the rest of the diorama, added frame-by-frame train-motion extrapolation above the 10 Hz deterministic simulation, and replaced the Tier 1 bodies with three longer chamfered rail-vehicle shells. Daylight now eases through a one-minute dusk and one-minute dawn, including sky, fog, ambient light, directional light, hemisphere light, and station-window colour. Thirteen automated checks now include finite electrification geometry, continuous sub-frame motion, gradual daylight values, and distinct node signatures for all three Tier 1 GLBs.
 
+The per-platform operations revision replaces the global train timer with one serializable lane per built platform. Regression coverage verifies lane creation/refund, simultaneous automatic spawns, concurrent phase progression, independent completion/countdown reset, and multi-lane save-code round-trips. The DOM arrival surface is now a compact platform board rather than a single-service card.
+
 QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/build validation.
 
 ## Automated acceptance coverage

@@ -57,7 +57,7 @@ Each completed visit removes approximately `0.8 + 0.1 × cars` cleanliness. Rain
 | Mission boost | +5 for 5 simulated minutes |
 | Steam festival / ICE-S | +15 / +20 for 10 simulated minutes |
 
-Base automatic interval is `48 ÷ multiplier`, clamped to 10–60 simulated seconds.
+Each platform maintains its own automatic interval of `48 ÷ multiplier`, clamped to 10–60 simulated seconds. Adding a platform therefore adds both visible track capacity and a separate arrival stream; the countdowns are initially staggered so new platforms do not always dispatch on the same frame.
 
 | Rating | Multiplier | Example interval |
 |---:|---:|---:|
@@ -65,4 +65,3 @@ Base automatic interval is `48 ÷ multiplier`, clamped to 10–60 simulated seco
 | 21–60 | ×1.0 | 48 s |
 | 61–90 | ×1.25 | 38.4 s |
 | 91–100 | ×1.5 | 32 s |
-

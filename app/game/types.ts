@@ -59,6 +59,12 @@ export interface ActiveTrain {
   firstService: boolean;
 }
 
+export interface PlatformLane {
+  platformIndex: number;
+  spawnCountdown: number;
+  activeTrain: ActiveTrain | null;
+}
+
 export interface TemporaryBoost {
   id: string;
   label: string;
@@ -95,8 +101,7 @@ export interface GameState {
   speed: 1 | 2 | 3;
   simSeconds: number;
   wallSeconds: number;
-  spawnCountdown: number;
-  activeTrain: ActiveTrain | null;
+  platformLanes: PlatformLane[];
   firstTrainComplete: boolean;
   arrivals: number;
   prestige: number;
@@ -117,4 +122,3 @@ export type UpgradeAction =
   | { kind: "platform" }
   | { kind: "length" }
   | { kind: "system"; system: SystemId };
-

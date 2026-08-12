@@ -333,7 +333,7 @@ button:disabled {
 }
 
 .mission-chip > span,
-.arrival-card small,
+.platform-service small,
 .drawer-head small,
 .tier-panel small,
 .modal small {
@@ -395,52 +395,84 @@ button:disabled {
   cursor: pointer;
 }
 
-.arrival-card {
+.platform-board {
   position: absolute;
   z-index: 11;
   left: 50%;
   bottom: 86px;
-  width: min(420px, calc(100vw - 42px));
+  width: min(620px, calc(100vw - 42px));
   display: grid;
-  grid-template-columns: 6px 1fr;
-  gap: 0 13px;
-  padding: 11px 14px 9px 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+  padding: 6px;
   border: 1px solid rgba(255, 255, 255, 0.52);
-  border-radius: 11px;
+  border-radius: 13px;
   background: rgba(251, 248, 239, 0.92);
   box-shadow: 0 12px 34px rgba(22, 38, 35, 0.2);
   backdrop-filter: blur(14px);
   transform: translateX(-50%);
 }
 
-.arrival-livery {
-  grid-row: span 2;
+.platform-service {
+  position: relative;
+  display: grid;
+  grid-template-columns: 5px auto 1fr;
+  grid-template-rows: auto auto auto;
+  column-gap: 7px;
+  min-width: 0;
+  padding: 6px 8px 5px 5px;
+  border-radius: 8px;
+  background: rgba(230, 229, 219, 0.55);
+}
+
+.platform-service > i {
+  grid-row: 1 / -1;
   border-radius: 99px;
 }
 
-.arrival-card > div:nth-child(2) {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 14px;
-}
-
-.arrival-card small {
-  grid-column: 1 / -1;
-  color: var(--rail-red);
-}
-
-.arrival-card strong {
-  font-size: 0.85rem;
-}
-
-.arrival-card span {
-  color: var(--ink-soft);
-  font-size: 0.7rem;
-}
-
-.arrival-progress {
+.platform-service small {
   grid-column: 2;
-  margin-top: 7px;
+  color: var(--rail-red);
+  font-size: 0.58rem;
+  font-weight: 900;
+}
+
+.platform-service strong {
+  grid-column: 3;
+  overflow: hidden;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.platform-service span {
+  grid-column: 2 / -1;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 0.57rem;
+}
+
+.platform-service em {
+  grid-column: 2 / -1;
+  height: 2px;
+  margin-top: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(47, 64, 60, 0.15);
+}
+
+.platform-service em b {
+  display: block;
+  height: 100%;
+  background: var(--signal);
+}
+
+.platform-board footer {
+  grid-column: 1 / -1;
+  padding: 2px 4px 1px;
+  color: var(--ink-soft);
+  font-size: 0.56rem;
+  text-align: center;
 }
 
 .next-arrival {
@@ -1374,7 +1406,7 @@ button:disabled {
   .game-nav button span { font-size: 0.84rem; }
   .game-nav kbd { display: none; }
   .game-nav .clean-button { margin-left: 0; }
-  .arrival-card, .next-arrival { bottom: 69px; }
+  .platform-board, .next-arrival { bottom: 69px; }
   .drawer {
     right: 8px;
     left: 8px;
@@ -1408,8 +1440,12 @@ button:disabled {
   .hud .metric:nth-child(4) small { display: none; }
   .game-nav button { flex-direction: column; }
   .game-nav .clean-button { min-width: 72px; }
-  .arrival-card > div:nth-child(2) { grid-template-columns: 1fr; }
-  .arrival-card span { display: none; }
+  .platform-board {
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 3px;
+  }
+  .platform-service { padding-right: 5px; }
+  .platform-service span { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

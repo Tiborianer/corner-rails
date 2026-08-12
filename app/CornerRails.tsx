@@ -184,8 +184,8 @@ export default function CornerRails() {
   const [showPrestige, setShowPrestige] = useState(false);
   const debugEnabled = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
   const audio = useRef(new AudioBus());
-  const previousTrain = useRef<string | null>(null);
-  const previousPhase = useRef<string | null>(null);
+  const previousTrains = useRef<Record<number, string | null>>({});
+  const previousPhases = useRef<Record<number, string | null>>({});
   const previousCoins = useRef(0);
 
   const rating = stationRating(state);
@@ -193,7 +193,7 @@ export default function CornerRails() {
   const visible = useMemo(() => visibleTrains(state), [state]);
   const currentMission = MISSIONS[state.mission.id];
   const cleanPrice = cleaningCost(state);
-  const activeDefinition = state.activeTrain ? TRAINS.find((train) => train.id === state.activeTrain?.trainId) : null;
+  const activeLanes = state.platformLanes.filter((lane) => lane.activeTrain);
 
   useEffect(() => {
     let previous = performance.now();
@@ -212,21 +212,23 @@ export default function CornerRails() {
   }, [state.toast]);
 
   useEffect(() => {
-    const active = state.activeTrain;
-    if (active?.trainId !== previousTrain.current) {
-      if (active) {
-        const definition = TRAINS.find((train) => train.id === active.trainId);
-        if (definition) audio.current.approach(definition.style);
-      } else if (previousTrain.current) {
-        audio.current.reward();
+    for (const lane of state.platformLanes) {
+      const active = lane.activeTrain;
+      if (active?.trainId !== previousTrains.current[lane.platformIndex]) {
+        if (active) {
+          const definition = TRAINS.find((train) => train.id === active.trainId);
+          if (definition) audio.current.approach(definition.style);
+        } else if (previousTrains.current[lane.platformIndex]) {
+          audio.current.reward();
+        }
+        previousTrains.current[lane.platformIndex] = active?.trainId ?? null;
       }
-      previousTrain.current = active?.trainId ?? null;
+      if (active?.phase !== previousPhases.current[lane.platformIndex] && active?.phase === "dwell") audio.current.dwell();
+      previousPhases.current[lane.platformIndex] = active?.phase ?? null;
     }
-    if (active?.phase !== previousPhase.current && active?.phase === "dwell") audio.current.dwell();
-    previousPhase.current = active?.phase ?? null;
-    if (state.coins > previousCoins.current && previousCoins.current > 0 && !active) audio.current.reward();
+    if (state.coins > previousCoins.current && previousCoins.current > 0) audio.current.reward();
     previousCoins.current = state.coins;
-  }, [state.activeTrain, state.coins]);
+  }, [state.platformLanes, state.coins]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -290,7 +292,6 @@ export default function CornerRails() {
   }
 
   const tutorialStep = !state.region ? 0 : !state.platformPlaced ? 1 : !state.firstTrainComplete ? 2 : 3;
-  const phaseProgress = state.activeTrain ? Math.min(1, state.activeTrain.phaseElapsed / state.activeTrain.phaseDuration) : 0;
 
   return (
     <main className={`game-shell ${isNight(state) ? "night" : "day"} ${state.raining ? "rainy" : ""}`}>
@@ -342,20 +343,24 @@ export default function CornerRails() {
         </aside>
       )}
 
-      {state.region && state.platformPlaced && activeDefinition && state.activeTrain && (
-        <div className="arrival-card">
-          <div className="arrival-livery" style={{ backgroundColor: activeDefinition.colors.accent }} />
-          <div>
-            <small>{state.activeTrain.phase.toUpperCase()} · PLATFORM 1</small>
-            <strong>{activeDefinition.name}</strong>
-            <span>{activeDefinition.operator} · +{formatCoins(state.activeTrain.payout)} coins</span>
-          </div>
-          <div className="arrival-progress"><i style={{ width: `${phaseProgress * 100}%` }} /></div>
+      {state.region && state.platformPlaced && (
+        <div className="platform-board" aria-label="Platform arrivals">
+          {state.platformLanes.map((lane) => {
+            const active = lane.activeTrain;
+            const definition = active ? TRAINS.find((train) => train.id === active.trainId) : null;
+            const progress = active ? Math.min(1, active.phaseElapsed / active.phaseDuration) : 0;
+            return (
+              <div key={lane.platformIndex} className={`platform-service ${active ? "active" : "waiting"}`}>
+                <i style={{ backgroundColor: definition?.colors.accent ?? "#71817b" }} />
+                <small>P{lane.platformIndex + 1}</small>
+                <strong>{definition ? definition.name.replace(/^DB /u, "") : `Next in ${Math.max(0, Math.ceil(lane.spawnCountdown))}s`}</strong>
+                <span>{active ? `${active.phase.toUpperCase()} · +${formatCoins(active.payout)}` : "Platform available"}</span>
+                {active && <em><b style={{ width: `${progress * 100}%` }} /></em>}
+              </div>
+            );
+          })}
+          {activeLanes.length > 1 && <footer>{activeLanes.length} trains currently in the station</footer>}
         </div>
-      )}
-
-      {state.region && state.platformPlaced && !state.activeTrain && (
-        <div className="next-arrival">Next service in <strong>{Math.max(0, Math.ceil(state.spawnCountdown))}s</strong></div>
       )}
 
       {state.region && (

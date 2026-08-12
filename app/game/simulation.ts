@@ -126,10 +126,20 @@ function chooseWeightedTrain(state: GameState, trains: TrainDefinition[]): [Trai
   return [trains[trains.length - 1], nextSeed];
 }
 
-function startTrain(state: GameState, forcedTrain?: TrainDefinition): GameState {
+function updatePlatformLane(state: GameState, platformIndex: number, update: Partial<GameState["platformLanes"][number]>): GameState {
+  return {
+    ...state,
+    platformLanes: state.platformLanes.map((lane) => lane.platformIndex === platformIndex ? { ...lane, ...update } : lane),
+  };
+}
+
+function startTrain(state: GameState, platformIndex: number, forcedTrain?: TrainDefinition): GameState {
+  const lane = state.platformLanes.find((candidate) => candidate.platformIndex === platformIndex);
+  if (!lane || lane.activeTrain) return state;
   let train: TrainDefinition | undefined = forcedTrain;
   let rng = state.rng;
-  const isFirst = !state.firstTrainComplete && !forcedTrain;
+  const anyTrainActive = state.platformLanes.some((candidate) => candidate.activeTrain);
+  const isFirst = platformIndex === 0 && !state.firstTrainComplete && !anyTrainActive && !forcedTrain;
   if (isFirst) {
     train = TRAINS.find((candidate) => candidate.id === "br650");
   } else if (!train && state.eventWindow) {
@@ -137,16 +147,20 @@ function startTrain(state: GameState, forcedTrain?: TrainDefinition): GameState 
   }
   if (!train) {
     const eligible = eligibleTrains(state);
-    if (eligible.length === 0) return { ...state, spawnCountdown: 5 };
+    if (eligible.length === 0) return updatePlatformLane(state, platformIndex, { spawnCountdown: 5 });
     [train, rng] = chooseWeightedTrain(state, eligible);
   }
   if (!train || (!isFirst && !trainMeetsRequirements(state, train))) {
-    return { ...state, eventWindow: null, eventRemaining: 0, spawnCountdown: 8, toast: "That special train's requirements are not met yet." };
+    return {
+      ...updatePlatformLane(state, platformIndex, { spawnCountdown: 8 }),
+      eventWindow: null,
+      eventRemaining: 0,
+      toast: "That special train's requirements are not met yet.",
+    };
   }
-  const [dwell, dwellSeed] = randomInteger(rng, train.dwell[0], train.dwell[1]);
   const [payout, payoutSeed] = isFirst
-    ? [10, dwellSeed]
-    : randomInteger(dwellSeed, train.payout[0], train.payout[1]);
+    ? [10, rng]
+    : randomInteger(rng, train.payout[0], train.payout[1]);
   const activeTrain: ActiveTrain = {
     trainId: train.id,
     phase: "approach",
@@ -156,16 +170,12 @@ function startTrain(state: GameState, forcedTrain?: TrainDefinition): GameState 
     firstService: isFirst,
   };
   return {
-    ...state,
-    activeTrain,
+    ...updatePlatformLane(state, platformIndex, { activeTrain, spawnCountdown: 0 }),
     rng: payoutSeed,
     eventWindow: null,
     eventRemaining: 0,
     lastUpgrade: state.lastUpgrade ? { ...state.lastUpgrade, undoAvailable: false } : null,
-    toast: `${train.name} is approaching platform 1.`,
-    spawnCountdown: 0,
-    // Rain extends the dwell after the approach phase.
-    ...(state.raining ? { rng: payoutSeed, activeTrain: { ...activeTrain, phaseDuration: 5 + dwell * 0 } } : {}),
+    toast: `${train.name} is approaching platform ${platformIndex + 1}.`,
   };
 }
 
@@ -180,7 +190,7 @@ function incrementMission(state: GameState, mission: MissionState["id"], amount 
   };
 }
 
-function completeTrain(state: GameState, active: ActiveTrain): GameState {
+function completeTrain(state: GameState, platformIndex: number, active: ActiveTrain): GameState {
   const train = TRAINS.find((candidate) => candidate.id === active.trainId)!;
   const dirt = (0.8 + 0.1 * train.cars) * (state.raining ? 1.5 : 1);
   const rating = stationRating(state);
@@ -192,51 +202,47 @@ function completeTrain(state: GameState, active: ActiveTrain): GameState {
         ? { id: `br01-${state.simSeconds}`, label: "Steam festival", amount: 15, remaining: 600 }
         : null;
   let next: GameState = {
-    ...state,
-    activeTrain: null,
+    ...updatePlatformLane(state, platformIndex, { activeTrain: null, spawnCountdown: interval }),
     coins: state.coins + active.payout,
     lifetimeCoins: state.lifetimeCoins + active.payout,
     cleanliness: clamp(state.cleanliness - dirt, 0, 100),
     firstTrainComplete: true,
     arrivals: state.arrivals + 1,
-    spawnCountdown: interval,
     boosts: eventBoost ? [...state.boosts, eventBoost] : state.boosts,
-    toast: `${train.name} departed · +${active.payout.toLocaleString()} coins`,
+    toast: `Platform ${platformIndex + 1}: ${train.name} departed · +${active.payout.toLocaleString()} coins`,
   };
   next = incrementMission(next, "serve");
   return next;
 }
 
-function advanceActiveTrain(state: GameState, delta: number): GameState {
-  const active = state.activeTrain;
+function advanceActiveTrain(state: GameState, platformIndex: number, delta: number): GameState {
+  const active = state.platformLanes.find((lane) => lane.platformIndex === platformIndex)?.activeTrain;
   if (!active) return state;
   const elapsed = active.phaseElapsed + delta;
   if (elapsed < active.phaseDuration) {
-    return { ...state, activeTrain: { ...active, phaseElapsed: elapsed } };
+    return updatePlatformLane(state, platformIndex, { activeTrain: { ...active, phaseElapsed: elapsed } });
   }
   const train = TRAINS.find((candidate) => candidate.id === active.trainId)!;
   if (active.phase === "approach") {
     const [dwell, rng] = randomInteger(state.rng, train.dwell[0], train.dwell[1]);
     return {
-      ...state,
-      rng,
-      activeTrain: {
+      ...updatePlatformLane(state, platformIndex, { activeTrain: {
         ...active,
         phase: "dwell",
         phaseElapsed: 0,
         phaseDuration: dwell * (state.raining ? 1.1 : 1),
-      },
-      toast: `${train.name} boarding · ${Math.ceil(dwell)}s dwell`,
+      } }),
+      rng,
+      toast: `Platform ${platformIndex + 1}: ${train.name} boarding · ${Math.ceil(dwell)}s dwell`,
     };
   }
   if (active.phase === "dwell") {
     return {
-      ...state,
-      activeTrain: { ...active, phase: "depart", phaseElapsed: 0, phaseDuration: 5 },
-      toast: `${train.name} ready to depart.`,
+      ...updatePlatformLane(state, platformIndex, { activeTrain: { ...active, phase: "depart", phaseElapsed: 0, phaseDuration: 5 } }),
+      toast: `Platform ${platformIndex + 1}: ${train.name} ready to depart.`,
     };
   }
-  return completeTrain(state, active);
+  return completeTrain(state, platformIndex, active);
 }
 
 function rollSeasonWeather(state: GameState): GameState {
@@ -264,7 +270,10 @@ export function tickGame(state: GameState, wallDelta: number): GameState {
     boosts: state.boosts
       .map((boost) => ({ ...boost, remaining: boost.remaining - delta }))
       .filter((boost) => boost.remaining > 0),
+    eventRemaining: state.eventWindow ? Math.max(0, state.eventRemaining - delta) : 0,
   };
+
+  if (next.eventWindow && next.eventRemaining <= 0) next = { ...next, eventWindow: null };
 
   if (next.raining) {
     next = {
@@ -279,23 +288,33 @@ export function tickGame(state: GameState, wallDelta: number): GameState {
 
   if (next.simSeconds >= next.nextSeasonAt) next = rollSeasonWeather(next);
 
-  if (next.activeTrain) {
-    next = advanceActiveTrain(next, delta);
-  } else {
-    const spawnCountdown = next.spawnCountdown - delta;
-    next = { ...next, spawnCountdown };
-    if (spawnCountdown <= 0) next = startTrain(next);
+  if (next.eventWindow) {
+    const eventTrain = TRAINS.find((train) => train.id === next.eventWindow);
+    const idleLane = next.platformLanes.find((lane) => !lane.activeTrain);
+    if (eventTrain && idleLane) next = startTrain(next, idleLane.platformIndex, eventTrain);
+  }
+
+  for (let platformIndex = 0; platformIndex < next.platforms; platformIndex += 1) {
+    const lane = next.platformLanes.find((candidate) => candidate.platformIndex === platformIndex);
+    if (!lane) continue;
+    if (lane.activeTrain) {
+      next = advanceActiveTrain(next, platformIndex, delta);
+    } else {
+      const spawnCountdown = lane.spawnCountdown - delta;
+      next = updatePlatformLane(next, platformIndex, { spawnCountdown });
+      if (spawnCountdown <= 0) next = startTrain(next, platformIndex);
+    }
   }
 
   const crossedHour = Math.floor(state.wallSeconds / 3_600) < Math.floor(next.wallSeconds / 3_600);
-  if (crossedHour && !next.eventWindow && !next.activeTrain) {
+  if (crossedHour && !next.eventWindow) {
     const candidates = TRAINS.filter((train) => train.kind === "event" && trainMeetsRequirements(next, train));
     if (candidates.length > 0) {
       const [roll, rng] = nextRandom(next.rng);
       next = { ...next, rng };
       if (roll < 0.35) {
         const chosen = candidates[Math.floor(roll * candidates.length) % candidates.length];
-        next = { ...next, eventWindow: chosen.id as "ice-s" | "br01", eventRemaining: 600, spawnCountdown: 1, toast: `${chosen.name} announced!` };
+        next = { ...next, eventWindow: chosen.id as "ice-s" | "br01", eventRemaining: 600, toast: `${chosen.name} announced!` };
       }
     }
   }
@@ -309,7 +328,12 @@ export function selectRegion(state: GameState): GameState {
 
 export function placeFreePlatform(state: GameState): GameState {
   if (state.platformPlaced) return state;
-  return { ...state, platformPlaced: true, spawnCountdown: 2, toast: "Platform ready. A local DMU is on its way." };
+  return {
+    ...state,
+    platformPlaced: true,
+    platformLanes: [{ platformIndex: 0, spawnCountdown: 2, activeTrain: null }],
+    toast: "Platform ready. A local DMU is on its way.",
+  };
 }
 
 export function purchaseCost(state: GameState, action: UpgradeAction): number | null {
@@ -349,6 +373,10 @@ export function purchaseUpgrade(state: GameState, action: UpgradeAction): GameSt
     next = {
       ...next,
       platforms: state.platforms + 1,
+      platformLanes: [
+        ...state.platformLanes,
+        { platformIndex: state.platforms, spawnCountdown: 6 + state.platforms * 4, activeTrain: null },
+      ],
       lastUpgrade: { kind: "platform", key: "platforms", cost, previous: state.platforms, undoAvailable: true },
       toast: `Platform ${state.platforms + 1} opened.`,
     };
@@ -380,7 +408,10 @@ export function undoLastUpgrade(state: GameState): GameState {
     lastUpgrade: null,
     toast: `Upgrade undone · +${receipt.cost.toLocaleString()} coins`,
   };
-  if (receipt.kind === "platform") next = { ...next, platforms: receipt.previous as number };
+  if (receipt.kind === "platform") {
+    const platforms = receipt.previous as number;
+    next = { ...next, platforms, platformLanes: next.platformLanes.filter((lane) => lane.platformIndex < platforms) };
+  }
   if (receipt.kind === "length") next = { ...next, lengthLevel: receipt.previous as number };
   if (receipt.kind === "system") next = { ...next, systems: { ...next.systems, [receipt.key]: false } };
   return next;
@@ -439,7 +470,11 @@ export function triggerEvent(state: GameState, eventId: "ice-s" | "br01"): GameS
   if (!trainMeetsRequirements(state, train)) {
     return { ...state, toast: `${train.name} is locked — check its requirements.` };
   }
-  return startTrain({ ...state, activeTrain: null, eventWindow: eventId, eventRemaining: 600, spawnCountdown: 0 }, train);
+  const idleLane = state.platformLanes.find((lane) => !lane.activeTrain);
+  if (!idleLane) {
+    return { ...state, eventWindow: eventId, eventRemaining: 600, toast: `${train.name} queued for the next free platform.` };
+  }
+  return startTrain({ ...state, eventWindow: eventId, eventRemaining: 600 }, idleLane.platformIndex, train);
 }
 
 export function prestigeStation(state: GameState): GameState {
@@ -461,7 +496,11 @@ export function debugState(state: GameState, mode: "tier5" | "rain" | "night" | 
       lengthLevel: 5,
       firstTrainComplete: true,
       systems: Object.fromEntries(Object.keys(state.systems).map((key) => [key, true])) as GameState["systems"],
-      spawnCountdown: 2,
+      platformLanes: Array.from({ length: 5 }, (_, platformIndex) => ({
+        platformIndex,
+        spawnCountdown: 2 + platformIndex * 3,
+        activeTrain: null,
+      })),
       toast: "Debug: Tier 5 station ready.",
     };
   }

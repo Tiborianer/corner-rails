@@ -117,6 +117,12 @@ function clockLabel(simSeconds: number) {
   return `${hours}:${mins}`;
 }
 
+function shortDuration(seconds: number) {
+  const total = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(total / 60);
+  return `${minutes}:${(total % 60).toString().padStart(2, "0")}`;
+}
+
 function cleanTone(cleanliness: number) {
   if (cleanliness >= 80) return "clean";
   if (cleanliness >= 60) return "used";
@@ -194,6 +200,15 @@ export default function CornerRails() {
   const currentMission = MISSIONS[state.mission.id];
   const cleanPrice = cleaningCost(state);
   const activeLanes = state.platformLanes.filter((lane) => lane.activeTrain);
+  const eventLane = state.platformLanes.find((lane) => lane.activeTrain?.trainId === "ice-s" || lane.activeTrain?.trainId === "br01");
+  const eventBoost = state.boosts.find((boost) => boost.label === "ICE-S record excitement" || boost.label === "Steam festival");
+  const eventId = eventLane?.activeTrain?.trainId === "ice-s" || eventLane?.activeTrain?.trainId === "br01"
+    ? eventLane.activeTrain.trainId
+    : eventBoost?.label === "ICE-S record excitement" ? "ice-s" : eventBoost ? "br01" : null;
+  const eventTrain = eventId ? TRAINS.find((train) => train.id === eventId) : null;
+  const eventRemaining = eventLane?.activeTrain
+    ? eventLane.activeTrain.phaseDuration - eventLane.activeTrain.phaseElapsed
+    : eventBoost?.remaining ?? 0;
 
   useEffect(() => {
     let previous = performance.now();
@@ -332,6 +347,17 @@ export default function CornerRails() {
         </div>
       )}
 
+      {eventId && eventTrain && (
+        <aside className={`event-banner ${eventId}`} aria-live="assertive">
+          <span aria-hidden="true">{eventId === "ice-s" ? "⚡" : "🚂"}</span>
+          <div>
+            <small>{eventLane ? "SPECIAL EVENT · RUN-THROUGH" : "STATION CELEBRATION"}</small>
+            <strong>{eventId === "ice-s" ? "ICE-S Record Run" : "Steam Locomotive Festival"}</strong>
+            <em>{eventLane ? `${eventTrain.name} is passing Platform ${(eventLane.platformIndex ?? 0) + 1} without stopping` : `Party lights · rating boost · ${shortDuration(eventRemaining)} remaining`}</em>
+          </div>
+        </aside>
+      )}
+
       {state.region && state.platformPlaced && (
         <aside className={`mission-chip ${state.mission.complete ? "complete" : ""}`}>
           <span>DAILY BOARD</span>
@@ -354,7 +380,7 @@ export default function CornerRails() {
                 <i style={{ backgroundColor: definition?.colors.accent ?? "#71817b" }} />
                 <small>P{lane.platformIndex + 1}</small>
                 <strong>{definition ? definition.name.replace(/^DB /u, "") : `Next in ${Math.max(0, Math.ceil(lane.spawnCountdown))}s`}</strong>
-                <span>{active ? `${active.phase.toUpperCase()} · +${formatCoins(active.payout)}` : "Platform available"}</span>
+                <span>{active ? `${active.phase === "pass" ? "RUN-THROUGH" : active.phase.toUpperCase()} · +${formatCoins(active.payout)}` : "Platform available"}</span>
                 {active && <em><b style={{ width: `${progress * 100}%` }} /></em>}
               </div>
             );

@@ -286,6 +286,83 @@ button:disabled {
   gap: 6px;
 }
 
+.event-banner {
+  position: absolute;
+  z-index: 13;
+  top: 88px;
+  left: 50%;
+  width: min(390px, calc(100vw - 440px));
+  min-width: 310px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px 10px 11px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 13px;
+  color: #fff8e8;
+  background: linear-gradient(120deg, rgba(111, 25, 31, 0.94), rgba(37, 42, 39, 0.92));
+  box-shadow: 0 0 0 1px rgba(255, 205, 79, 0.2), 0 12px 42px rgba(43, 20, 18, 0.35);
+  backdrop-filter: blur(14px);
+  transform: translateX(-50%);
+  animation: event-banner-pulse 1.6s ease-in-out infinite;
+}
+
+.event-banner.ice-s {
+  background: linear-gradient(120deg, rgba(20, 90, 114, 0.96), rgba(42, 54, 63, 0.93) 58%, rgba(154, 26, 44, 0.92));
+  box-shadow: 0 0 0 1px rgba(98, 220, 255, 0.25), 0 12px 42px rgba(13, 71, 91, 0.42);
+}
+
+.event-banner > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 1.35rem;
+}
+
+.event-banner div {
+  min-width: 0;
+}
+
+.event-banner small,
+.event-banner strong,
+.event-banner em {
+  display: block;
+}
+
+.event-banner small {
+  color: #ffd968;
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+
+.event-banner.ice-s small {
+  color: #8fe8ff;
+}
+
+.event-banner strong {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-banner em {
+  margin-top: 2px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.64rem;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .speed-control {
   display: flex;
   padding: 4px;
@@ -1350,12 +1427,18 @@ button:disabled {
   50% { box-shadow: 0 0 0 6px rgba(181, 31, 46, 0.17); }
 }
 
+@keyframes event-banner-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.13); }
+}
+
 @media (max-width: 1040px) {
   .brand small { display: none; }
   .hud { left: 110px; transform: none; }
   .metric { min-width: 82px; padding: 7px; }
   .metric > span { display: none; }
   .mission-chip { top: 82px; }
+  .event-banner { top: 82px; width: min(360px, calc(100vw - 420px)); }
   .region-screen { padding: 80px 6vw 50px; gap: 5vw; }
 }
 
@@ -1387,6 +1470,17 @@ button:disabled {
     width: 160px;
     padding: 9px 10px;
   }
+  .event-banner {
+    top: 147px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    min-width: 0;
+    padding: 8px 10px;
+    transform: none;
+  }
+  .event-banner > span { width: 34px; height: 34px; font-size: 1.05rem; }
+  .event-banner em { font-size: 0.58rem; }
   .mission-chip p { display: none; }
   .game-nav {
     right: 8px;

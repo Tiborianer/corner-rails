@@ -52,7 +52,7 @@ export interface TrainDefinition {
 
 export interface ActiveTrain {
   trainId: string;
-  phase: "approach" | "dwell" | "depart";
+  phase: "approach" | "dwell" | "depart" | "pass";
   phaseElapsed: number;
   phaseDuration: number;
   payout: number;

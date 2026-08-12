@@ -8,12 +8,14 @@ import {
   cleanStation,
   cleaningCost,
   daylightFactor,
+  debugState,
   isNight,
   purchaseUpgrade,
   stationRating,
   tickGame,
   tierUp,
   trainMeetsRequirements,
+  triggerEvent,
   undoLastUpgrade,
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
@@ -83,6 +85,15 @@ describe("render helpers", () => {
     const nextFrame = trainMotionPosition("approach", 1 + 1 / 60, 5, -20, 4, 30);
     expect(nextFrame).toBeGreaterThan(first);
     expect(nextFrame - first).toBeLessThan(1);
+  });
+
+  it("moves a run-through train continuously from entry to exit", () => {
+    const entry = trainMotionPosition("pass", 0, 10, -34, 4, 36);
+    const halfway = trainMotionPosition("pass", 5, 10, -34, 4, 36);
+    const exit = trainMotionPosition("pass", 10, 10, -34, 4, 36);
+    expect(entry).toBe(-34);
+    expect(halfway).toBeCloseTo(1);
+    expect(exit).toBe(36);
   });
 
   it("ships three structurally distinct Tier 1 GLB models", async () => {
@@ -247,6 +258,21 @@ describe("train content and eligibility", () => {
     expect(isNight(night)).toBe(true);
     expect(trainMeetsRequirements(night, nightjet)).toBe(true);
     expect(nightjet.payout).toEqual([20_000, 20_000]);
+  });
+
+  it("runs event trains through without a dwell or stop", () => {
+    const eligible = debugState(fundedState(), "tier5");
+    const triggered = triggerEvent(eligible, "ice-s");
+    expect(triggered.platformLanes[0].activeTrain).toMatchObject({ trainId: "ice-s", phase: "pass", phaseDuration: 10 });
+
+    const midRun = tickGame(triggered, 5);
+    expect(midRun.platformLanes[0].activeTrain).toMatchObject({ trainId: "ice-s", phase: "pass" });
+    expect(midRun.coins).toBe(150_000);
+
+    const completed = tickGame(midRun, 5.1);
+    expect(completed.platformLanes[0].activeTrain).toBeNull();
+    expect(completed.coins).toBe(175_000);
+    expect(completed.boosts.some((boost) => boost.label === "ICE-S record excitement" && boost.amount === 20)).toBe(true);
   });
 });
 

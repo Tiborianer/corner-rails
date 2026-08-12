@@ -163,9 +163,9 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
     : randomInteger(rng, train.payout[0], train.payout[1]);
   const activeTrain: ActiveTrain = {
     trainId: train.id,
-    phase: "approach",
+    phase: train.kind === "event" ? "pass" : "approach",
     phaseElapsed: 0,
-    phaseDuration: 5,
+    phaseDuration: train.kind === "event" ? (train.id === "br01" ? 14 : 10) : 5,
     payout,
     firstService: isFirst,
   };
@@ -175,7 +175,9 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
     eventWindow: null,
     eventRemaining: 0,
     lastUpgrade: state.lastUpgrade ? { ...state.lastUpgrade, undoAvailable: false } : null,
-    toast: `${train.name} is approaching platform ${platformIndex + 1}.`,
+    toast: train.kind === "event"
+      ? `Special event: ${train.name} is running through platform ${platformIndex + 1}!`
+      : `${train.name} is approaching platform ${platformIndex + 1}.`,
   };
 }
 
@@ -209,7 +211,9 @@ function completeTrain(state: GameState, platformIndex: number, active: ActiveTr
     firstTrainComplete: true,
     arrivals: state.arrivals + 1,
     boosts: eventBoost ? [...state.boosts, eventBoost] : state.boosts,
-    toast: `Platform ${platformIndex + 1}: ${train.name} departed · +${active.payout.toLocaleString()} coins`,
+    toast: train.kind === "event"
+      ? `Platform ${platformIndex + 1}: ${train.name} completed its run-through · +${active.payout.toLocaleString()} coins`
+      : `Platform ${platformIndex + 1}: ${train.name} departed · +${active.payout.toLocaleString()} coins`,
   };
   next = incrementMission(next, "serve");
   return next;
@@ -223,6 +227,7 @@ function advanceActiveTrain(state: GameState, platformIndex: number, delta: numb
     return updatePlatformLane(state, platformIndex, { activeTrain: { ...active, phaseElapsed: elapsed } });
   }
   const train = TRAINS.find((candidate) => candidate.id === active.trainId)!;
+  if (active.phase === "pass") return completeTrain(state, platformIndex, active);
   if (active.phase === "approach") {
     const [dwell, rng] = randomInteger(state.rng, train.dwell[0], train.dwell[1]);
     return {

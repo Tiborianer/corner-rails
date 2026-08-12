@@ -130,17 +130,30 @@ function StationBuilding({ tier, daylight }: { tier: number; daylight: number })
   if (tier < 2) return null;
   const width = 2.2 + tier * 0.42;
   const height = 0.72 + tier * 0.26;
+  const bodyBottom = 0.34;
+  const bodyTop = bodyBottom + height;
   const windowColor = new Color("#ffd878").lerp(new Color("#547482"), daylight).getStyle();
   return (
-    <group position={[-1.2, 0, 3.8]}>
-      <Box position={[0, height / 2 + 0.2, 0]} scale={[width, height, 1.35]} color={tier >= 5 ? "#ede3c9" : "#d1b98e"} />
-      <Box position={[0, height + 0.35, 0]} scale={[width + 0.28, 0.16, 1.58]} color="#32494c" />
-      <Box position={[0.55, 0.72, -0.69]} scale={[0.58, 0.9, 0.06]} color="#2b4a55" />
-      <Box position={[-0.62, 0.86, -0.69]} scale={[0.52, 0.46, 0.06]} color={windowColor} />
-      <Box position={[0, height + 0.62, -0.78]} scale={[1.18, 0.35, 0.08]} color="#f0e9d7" />
-      <Box position={[0, height + 0.62, -0.83]} scale={[0.74, 0.06, 0.02]} color="#b51f2e" />
-      {tier >= 4 && <Box position={[-width / 2 + 0.5, height + 0.92, 0]} scale={[0.16, 1.1, 0.16]} color="#2f3e3f" />}
-      {tier >= 5 && <Box position={[-width / 2 + 0.5, height + 1.5, 0]} scale={[0.74, 0.12, 0.12]} color="#bf1d2e" />}
+    <group position={[1.25, 0, -3.45]}>
+      {/* The masonry plinth meets the terrain at y=-0.2 and makes the station
+          read as a built structure instead of a box hovering above the lawn. */}
+      <Box position={[0, 0.07, 0]} scale={[width + 0.34, 0.54, 1.62]} color="#8e8779" />
+      <Box position={[0, bodyBottom + height / 2, 0]} scale={[width, height, 1.35]} color={tier >= 5 ? "#ede3c9" : "#d1b98e"} />
+      <Box position={[0, bodyTop + 0.19, -0.34]} scale={[width + 0.34, 0.14, 0.96]} color="#32494c" rotation={[0.33, 0, 0]} />
+      <Box position={[0, bodyTop + 0.19, 0.34]} scale={[width + 0.34, 0.14, 0.96]} color="#32494c" rotation={[-0.33, 0, 0]} />
+
+      {/* The facade now faces the locked camera and the tracks. */}
+      <Box position={[0.55, bodyBottom + 0.45, 0.69]} scale={[0.58, 0.9, 0.06]} color="#2b4a55" />
+      <Box position={[-0.62, bodyBottom + 0.52, 0.69]} scale={[0.52, 0.46, 0.06]} color={windowColor} />
+      <Box position={[0, bodyTop + 0.51, 0.79]} scale={[1.18, 0.35, 0.08]} color="#f0e9d7" />
+      <Box position={[0, bodyTop + 0.51, 0.84]} scale={[0.74, 0.06, 0.02]} color="#b51f2e" />
+
+      {/* Entrance steps and a forecourt visually connect the building to the station. */}
+      <Box position={[0.55, 0.25, 0.98]} scale={[0.8, 0.12, 0.48]} color="#bbb3a1" />
+      <Box position={[0.55, 0.08, 1.28]} scale={[1.05, 0.12, 0.48]} color="#a9a290" />
+      <Box position={[0, -0.13, 1.9]} scale={[width + 1.15, 0.12, 1.28]} color="#b8b09d" castShadow={false} />
+      {tier >= 4 && <Box position={[-width / 2 + 0.5, bodyTop + 0.79, -0.18]} scale={[0.16, 1.1, 0.16]} color="#2f3e3f" />}
+      {tier >= 5 && <Box position={[-width / 2 + 0.5, bodyTop + 1.37, -0.18]} scale={[0.74, 0.12, 0.12]} color="#bf1d2e" />}
     </group>
   );
 }
@@ -531,14 +544,60 @@ function Atmosphere({ state }: { state: GameState }) {
   );
 }
 
-function FestivalDecor({ active }: { active: boolean }) {
-  if (!active) return null;
+function EventCelebration({ eventId, platformCount }: { eventId: "ice-s" | "br01" | null; platformCount: number }) {
+  const movingLights = useRef<Group>(null);
+  useFrame(({ clock }) => {
+    if (!movingLights.current || !eventId) return;
+    movingLights.current.position.x = Math.sin(clock.elapsedTime * 1.75) * 3.2;
+    movingLights.current.position.z = Math.cos(clock.elapsedTime * 1.2) * 0.35;
+  });
+  if (!eventId) return null;
+  const iceEvent = eventId === "ice-s";
+  const eventColors = iceEvent ? ["#62dcff", "#ffffff", "#e21e37"] : ["#ffd04d", "#e13a39", "#fff1bc"];
+  const rearZ = -1.62;
+  const frontZ = Math.max(1.25, platformCount * 1.25);
   return (
     <group>
-      {[-3, -1.5, 0, 1.5, 3].map((x, index) => (
-        <Box key={x} position={[x, 1.35, 0.55]} scale={[0.18, 0.22, 0.04]} color={index % 2 ? "#e6b64b" : "#b8202e"} rotation={[0, 0, index % 2 ? 0.2 : -0.2]} />
+      {[rearZ, frontZ].map((z) => (
+        <group key={z}>
+          <Box position={[-5.2, 1.45, z]} scale={[0.08, 2.9, 0.08]} color="#3c4b49" />
+          <Box position={[5.2, 1.45, z]} scale={[0.08, 2.9, 0.08]} color="#3c4b49" />
+          <Box position={[0, 2.83, z]} scale={[10.4, 0.025, 0.025]} color="#e7d9b2" castShadow={false} />
+          {Array.from({ length: 13 }, (_, index) => {
+            const color = eventColors[index % eventColors.length];
+            return (
+              <mesh key={index} position={[-4.8 + index * 0.8, 2.75 - Math.sin((index / 12) * Math.PI) * 0.3, z]}>
+                <sphereGeometry args={[0.095, 10, 10]} />
+                <meshStandardMaterial color={color} emissive={color} emissiveIntensity={3.5} />
+              </mesh>
+            );
+          })}
+        </group>
       ))}
-      <Box position={[0, 1.62, 0.56]} scale={[7, 0.025, 0.025]} color="#f2d6a1" />
+
+      {[-4.1, -2.45, -0.8, 0.85, 2.5, 4.15].map((x, index) => (
+        <Box
+          key={x}
+          position={[x, 1.25, frontZ - 0.04]}
+          scale={[0.22, 0.32, 0.045]}
+          color={eventColors[index % eventColors.length]}
+          rotation={[0, 0, index % 2 ? 0.18 : -0.18]}
+        />
+      ))}
+      <Box position={[0, 1.6, frontZ]} scale={[9.4, 0.025, 0.025]} color="#f3ddb0" castShadow={false} />
+
+      <group ref={movingLights} position={[0, 2.1, (rearZ + frontZ) / 2]}>
+        <pointLight intensity={2.4} distance={8} color={eventColors[0]} />
+        <pointLight position={[1.9, 0.35, 0]} intensity={2} distance={7} color={eventColors[1]} />
+        <pointLight position={[-1.9, -0.15, 0]} intensity={2} distance={7} color={eventColors[2]} />
+      </group>
+
+      <group position={[0, 1.16, frontZ + 0.12]}>
+        <Box position={[-2.9, 0, 0]} scale={[0.09, 1.8, 0.09]} color="#394745" />
+        <Box position={[2.9, 0, 0]} scale={[0.09, 1.8, 0.09]} color="#394745" />
+        <Box position={[0, 0.55, 0]} scale={[5.65, 0.72, 0.08]} color={iceEvent ? "#e8f6f8" : "#8c2428"} />
+        <Box position={[0, 0.55, 0.05]} scale={[3.7, 0.08, 0.025]} color={iceEvent ? "#d71935" : "#f2c95b"} />
+      </group>
     </group>
   );
 }
@@ -546,7 +605,11 @@ function FestivalDecor({ active }: { active: boolean }) {
 function Diorama({ state, onPlacePlatform }: SceneProps) {
   const platformLength = 6 + state.lengthLevel * 2.25;
   const trackCount = Math.max(1, state.platforms);
-  const activeEvent = state.platformLanes.some((lane) => lane.activeTrain?.trainId === "br01") || state.boosts.some((boost) => boost.label === "Steam festival");
+  const activeEventId = state.platformLanes.find((lane) => lane.activeTrain?.trainId === "ice-s" || lane.activeTrain?.trainId === "br01")?.activeTrain?.trainId;
+  const boostedEventId = state.boosts.some((boost) => boost.label === "ICE-S record excitement")
+    ? "ice-s"
+    : state.boosts.some((boost) => boost.label === "Steam festival") ? "br01" : null;
+  const eventId = activeEventId === "ice-s" || activeEventId === "br01" ? activeEventId : boostedEventId;
   return (
     <>
       <LockedCamera />
@@ -587,7 +650,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
       {state.systems.signaling && <Signal advanced={state.systems.advancedSignaling} />}
       {state.systems.roadAccess && <RoadAccess />}
       {state.systems.maintenance && <MaintenanceYard />}
-      <FestivalDecor active={activeEvent} />
+      <EventCelebration eventId={eventId} platformCount={trackCount} />
       {state.raining && <Rain />}
     </>
   );

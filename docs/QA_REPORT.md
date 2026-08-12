@@ -6,13 +6,15 @@ A second 2026-08-12 regression pass corrected the catenary crash, isolated train
 
 The per-platform operations revision replaces the global train timer with one serializable lane per built platform. Regression coverage verifies lane creation/refund, simultaneous automatic spawns, concurrent phase progression, independent completion/countdown reset, and multi-lane save-code round-trips. The DOM arrival surface is now a compact platform board rather than a single-service card.
 
+The complete-consist asset revision removes the shared runtime coach entirely. All 20 GLBs now include their full representative formation: recognisable regional articulated units, locomotive-hauled single- and double-deck stock, ICE end cars and intermediate equipment, Railjet and ComfortJet driving trailers, Nightjet sleeper variants, two-ended TGV Euroduplex power cars, the eleven-car Giruno, the ICE-S measurement car, and the BR 01 tender/heritage formation. Automated asset checks verify all twenty files, formation length, unique hierarchy signatures, international end-role nodes, and the complete bundle budget.
+
 QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/build validation.
 
 ## Automated acceptance coverage
 
 - Nine deterministic simulation tests cover exact structural prices, the shared cap, system purchases, Tier 5 unlimited development, cleaning cost and cap exclusion, rating response, train and rain dirt, roster counts, Nightjet night eligibility/fixed payout, and save-code round-trip/damage rejection.
 - Production build and rendered-HTML smoke test are part of `npm test`.
-- The asset generator creates and optimizes all 20 train GLBs; the shipping bundle is approximately 160 KB before application compression.
+- The asset generator creates and optimizes all 20 complete-consist train GLBs; the shipping bundle is approximately 760 KB before application compression.
 
 ## Browser flows exercised
 
@@ -34,5 +36,5 @@ QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/
 
 ## Known scope limits
 
-- The train GLBs remain original compact low-poly interpretations with no protected logos. Train families now have distinct silhouettes, cab masks, roof equipment, window rhythms, liveries, and consist roles; they are readable game assets rather than museum-grade replicas.
+- The train GLBs remain original low-poly interpretations with no protected logos, but no longer share a generic coach. Train families have distinct full-length silhouettes, cab masks, roof equipment, bogies, articulated or locomotive-hauled structure, door/window rhythms, liveries, and correct end roles. They are detailed diorama assets rather than scanned museum replicas.
 - Longer soak balancing, China/France/Japan, extra steam variants, additional events, and second-station expansion remain future work.

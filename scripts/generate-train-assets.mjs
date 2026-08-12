@@ -32,6 +32,32 @@ const assets = [
   { id: "br01", family: "steam", body: "#17191a", accent: "#b42025", roof: "#111213", windows: "#e9b75e" },
 ];
 
+/* Complete consist recipes.  The first vehicle is authored by the family
+ * branches below; the remaining vehicles are generated here as recognisable
+ * coach/EMU modules rather than being faked by one runtime box template. */
+const consistSpecs = {
+  br650: { cars: 1, style: "regional" },
+  br642: { cars: 2, style: "regional-emu", tailCab: true, pitch: 1.78 },
+  br648: { cars: 2, style: "regional-emu", tailCab: true, pitch: 1.82 },
+  "desiro-hc": { cars: 4, style: "desiro-hc", tailCab: true, pitch: 1.62 },
+  metronom: { cars: 6, style: "double", tailCab: true, pitch: 1.55 },
+  talent2: { cars: 4, style: "regional-emu", tailCab: true, pitch: 1.48 },
+  flixtrain: { cars: 10, style: "intercity", pitch: 1.54 },
+  ic1: { cars: 9, style: "intercity", pitch: 1.54 },
+  ic2: { cars: 6, style: "double", tailCab: true, pitch: 1.56 },
+  ice2: { cars: 8, style: "ice", tailCab: true, pitch: 1.5 },
+  ice3: { cars: 8, style: "ice", tailCab: true, pitch: 1.46 },
+  ice4: { cars: 12, style: "ice4", tailCab: true, pitch: 1.48 },
+  railjet: { cars: 8, style: "railjet", tailCab: true, pitch: 1.56 },
+  nightjet: { cars: 11, style: "nightjet", pitch: 1.56 },
+  "tgv-duplex": { cars: 10, style: "tgv-double", tailCab: true, pitch: 1.48 },
+  "regiojet-cz": { cars: 9, style: "regiojet", pitch: 1.55 },
+  giruno: { cars: 11, style: "giruno", tailCab: true, pitch: 1.42 },
+  comfortjet: { cars: 9, style: "comfortjet", tailCab: true, pitch: 1.56 },
+  "ice-s": { cars: 3, style: "measurement", tailCab: true, pitch: 1.52 },
+  br01: { cars: 6, style: "heritage", tender: true, pitch: 1.56 },
+};
+
 function hexToFactor(hex) {
   const value = hex.replace("#", "");
   return [
@@ -178,6 +204,10 @@ function makeAsset(asset) {
     redLamp: ["#d51e35", 0.05, 0.3],
     steamRod: ["#d7b86a", 0.42, 0.35],
     destination: ["#f3b53f", 0.05, 0.28],
+    heritage: ["#6d3427", 0.08, 0.72],
+    cream: ["#d8bb79", 0.03, 0.68],
+    silver: ["#c8ced0", 0.32, 0.42],
+    equipment: ["#586265", 0.48, 0.4],
   };
   const materials = Object.fromEntries(Object.entries(materialDefs).map(([name, [hex, metallic, roughness]]) => [
     name,
@@ -234,6 +264,113 @@ function makeAsset(asset) {
     } else {
       addBox("front_glass", "windows", [0.04, height, width], [x, y, 0], qz(-0.08));
     }
+  };
+
+  const addCoachWheelPair = (prefix, x, radius = 0.12) => {
+    [-0.35, 0.35].forEach((z, side) => addCylinder(`${prefix}_wheel_${side}`, "wheel", [radius, 0.075, radius], [x, 0.12, z], qx(Math.PI / 2)));
+  };
+  const addCoachBogie = (prefix, x, length = 1.42, shared = false) => {
+    addBox(`${prefix}_underframe`, "equipment", [length * 0.74, 0.12, 0.57], [x, 0.2, 0]);
+    addCoachWheelPair(`${prefix}_front_bogie`, x - length * (shared ? 0.37 : 0.3));
+    addCoachWheelPair(`${prefix}_rear_bogie`, x + length * (shared ? 0.37 : 0.3));
+    addBox(`${prefix}_equipment_box_a`, "equipment", [0.28, 0.18, 0.48], [x - 0.22, 0.29, 0]);
+    addBox(`${prefix}_equipment_box_b`, "wheel", [0.2, 0.14, 0.5], [x + 0.25, 0.28, 0]);
+  };
+  const addCoachWindows = (prefix, x, y, count, length = 1.36, height = 0.17, material = "windows", gap = 0.07) => {
+    const usable = length - gap * 2;
+    const spacing = usable / count;
+    for (let pane = 0; pane < count; pane += 1) {
+      const paneX = x - usable / 2 + spacing * (pane + 0.5);
+      [-0.376, 0.376].forEach((z, side) => addBox(`${prefix}_window_${pane}_${side}`, material, [spacing * 0.68, height, 0.023], [paneX, y, z]));
+    }
+  };
+  const addCoachDoors = (prefix, x, positions, material = "accent", height = 0.46) => {
+    positions.forEach((localX, door) => [-0.382, 0.382].forEach((z, side) => {
+      addBox(`${prefix}_door_${door}_${side}`, material, [0.16, height, 0.025], [x + localX, 0.55, z]);
+      addBox(`${prefix}_door_glass_${door}_${side}`, "windows", [0.1, 0.18, 0.027], [x + localX, 0.69, z]);
+    }));
+  };
+  const addCoachPantograph = (prefix, x, y = 1.18) => {
+    addBox(`${prefix}_panto_left`, "equipment", [0.38, 0.03, 0.03], [x - 0.08, y, 0], qz(0.7));
+    addBox(`${prefix}_panto_right`, "equipment", [0.38, 0.03, 0.03], [x + 0.08, y, 0], qz(-0.7));
+    addBox(`${prefix}_panto_head`, "equipment", [0.38, 0.025, 0.16], [x, y + 0.13, 0]);
+  };
+  const addTailCab = (prefix, x, style, tall = false) => {
+    const streamlined = ["ice", "ice4", "tgv-double", "giruno", "measurement"].includes(style);
+    const cabMaterial = style === "railjet" ? "body" : style === "comfortjet" ? "body" : "body";
+    if (streamlined) {
+      addBox(`${prefix}_tail_nose_upper`, cabMaterial, [0.42, tall ? 0.55 : 0.46, 0.62], [x - 0.72, tall ? 0.62 : 0.52, 0], qz(0.2));
+      addBox(`${prefix}_tail_nose_tip`, cabMaterial, [0.24, 0.25, 0.48], [x - 0.98, 0.34, 0], qz(0.18));
+      addBox(`${prefix}_tail_glass`, "windows", [0.22, tall ? 0.3 : 0.26, 0.55], [x - 0.86, tall ? 0.79 : 0.7, 0], qz(0.18));
+      addLights(x - 1.12, 0.4);
+    } else {
+      addBox(`${prefix}_tail_cab_face`, cabMaterial, [0.28, tall ? 0.77 : 0.65, 0.69], [x - 0.68, tall ? 0.63 : 0.57, 0], qz(0.07));
+      addBox(`${prefix}_tail_windscreen`, "windows", [0.08, tall ? 0.3 : 0.26, 0.55], [x - 0.84, tall ? 0.83 : 0.76, 0], qz(0.07));
+      addLights(x - 0.9, 0.4);
+    }
+  };
+
+  const addConsistCoach = (index, x, spec) => {
+    const prefix = `${asset.id}_car_${index}`;
+    const last = index === spec.cars - 1;
+    const doubleDeck = spec.style === "double" || spec.style === "desiro-hc" || spec.style === "tgv-double";
+    const streamlined = ["ice", "ice4", "giruno", "measurement"].includes(spec.style);
+    const bodyHeight = doubleDeck ? 0.92 : spec.style === "ice4" ? 0.78 : 0.72;
+    const bodyY = doubleDeck ? 0.66 : 0.58;
+    const length = spec.style === "giruno" ? 1.3 : spec.style === "regional-emu" ? 1.58 : 1.4;
+
+    if (spec.tender && index === 1) {
+      addBox(`${prefix}_coal_tender`, "body", [1.02, 0.66, 0.68], [x, 0.52, 0]);
+      addBox(`${prefix}_coal_load`, "wheel", [0.82, 0.12, 0.54], [x, 0.9, 0]);
+      addBox(`${prefix}_red_frame`, "accent", [1.08, 0.11, 0.69], [x, 0.23, 0]);
+      addCoachBogie(prefix, x, 0.92);
+      return;
+    }
+
+    const coachMaterial = spec.style === "heritage" ? "heritage" : "body";
+    addRailcar(`${prefix}_chamfered_train_shell`, coachMaterial, [length, bodyHeight, 0.72], [x, bodyY, 0]);
+    addBox(`${prefix}_roof`, spec.style === "heritage" ? "roof" : "roof", [length * 0.96, 0.09, 0.62], [x, bodyY + bodyHeight / 2 + 0.08, 0]);
+    addBox(`${prefix}_lower_skirt`, spec.style === "heritage" ? "accent" : "equipment", [length * 0.96, 0.1, 0.7], [x, 0.29, 0]);
+
+    if (spec.style === "heritage") {
+      addCoachWindows(prefix, x, 0.68, 6, length, 0.19, "cream");
+      addBox(`${prefix}_cream_waistline`, "cream", [length * 0.94, 0.045, 0.74], [x, 0.49, 0]);
+      addCoachDoors(prefix, x, [-length * 0.39, length * 0.39], "heritage", 0.5);
+    } else if (doubleDeck) {
+      addCoachWindows(`${prefix}_lower`, x, 0.5, 5, length, 0.15);
+      addCoachWindows(`${prefix}_upper`, x, 0.82, 6, length, 0.16);
+      addBox(`${prefix}_window_divider`, spec.style === "tgv-double" ? "accent" : "body", [length * 0.95, 0.055, 0.74], [x, 0.66, 0]);
+      addCoachDoors(prefix, x, spec.style === "tgv-double" ? [0] : [-length * 0.38, length * 0.38], "accent", 0.62);
+      if (spec.style === "tgv-double") addBox(`${prefix}_purple_end_caps`, "accent", [0.15, 0.7, 0.735], [x + (index % 2 ? -0.58 : 0.58), 0.64, 0]);
+    } else if (spec.style === "nightjet") {
+      const sleeper = index % 3 !== 0;
+      addCoachWindows(prefix, x, 0.67, sleeper ? 5 : 7, length, sleeper ? 0.2 : 0.16, "windows", 0.1);
+      addBox(`${prefix}_night_blue_wave`, "accent", [length * 0.96, 0.09, 0.735], [x, index % 2 ? 0.39 : 0.47, 0], qz(index % 2 ? 0.06 : -0.05));
+      addCoachDoors(prefix, x, [-length * 0.4, length * 0.4], "accent", 0.5);
+      if (index % 4 === 0) addBox(`${prefix}_accessible_low_door`, "silver", [0.22, 0.31, 0.75], [x + 0.37, 0.4, 0]);
+    } else {
+      const windowCount = spec.style === "giruno" ? 5 : spec.style === "regional-emu" ? 6 : 7;
+      const windowY = streamlined ? 0.68 : 0.67;
+      addCoachWindows(prefix, x, windowY, windowCount, length, streamlined ? 0.17 : 0.18);
+      const stripeMaterial = spec.style === "regiojet" ? "windows" : "accent";
+      const stripeY = spec.style === "railjet" ? 0.43 : spec.style === "comfortjet" ? 0.38 : spec.style === "ice" || spec.style === "ice4" || spec.style === "giruno" || spec.style === "measurement" ? 0.4 : 0.42;
+      addBox(`${prefix}_identity_stripe`, stripeMaterial, [length * 0.97, spec.style === "railjet" ? 0.13 : 0.065, 0.735], [x, stripeY, 0]);
+      const doorMaterial = spec.style === "ice" || spec.style === "ice4" ? "body" : "accent";
+      addCoachDoors(prefix, x, spec.style === "giruno" ? [-length * 0.35, length * 0.35] : [-length * 0.4, length * 0.4], doorMaterial, 0.5);
+      if (spec.style === "comfortjet") addBox(`${prefix}_blue_window_ribbon`, "accent", [length * 0.88, 0.035, 0.74], [x, 0.54, 0]);
+      if (spec.style === "railjet") addBox(`${prefix}_ivory_roof_sweep`, "accent", [length * 0.5, 0.04, 0.74], [x - 0.25, 0.82, 0], qz(-0.08));
+      if (spec.style === "measurement") {
+        addBox(`${prefix}_measurement_band`, "silver", [length * 0.9, 0.12, 0.74], [x, 0.54, 0]);
+        addCoachPantograph(`${prefix}_measurement`, x, 1.17);
+        addBox(`${prefix}_sensor_rack`, "equipment", [0.48, 0.07, 0.34], [x + 0.28, 1.03, 0]);
+      }
+      if ((spec.style === "ice4" && index % 4 === 0) || (spec.style === "giruno" && index % 3 === 0)) addCoachPantograph(prefix, x, 1.15);
+    }
+
+    addBox(`${prefix}_front_bellows`, "wheel", [0.06, bodyHeight * 0.78, 0.66], [x + length / 2 + 0.015, bodyY, 0]);
+    addBox(`${prefix}_rear_bellows`, "wheel", [0.06, bodyHeight * 0.78, 0.66], [x - length / 2 - 0.015, bodyY, 0]);
+    addCoachBogie(prefix, x, length, spec.style === "tgv-double" || spec.style === "giruno");
+    if (last && spec.tailCab) addTailCab(prefix, x, spec.style, doubleDeck);
   };
 
   const locomotive = ({ length = 1.3, height = 0.78, sloped = false, rounded = false, stripeY = 0.43, pantograph = true, splitGlass = false } = {}) => {
@@ -390,6 +527,11 @@ function makeAsset(asset) {
     addBox("vectron_livery_face", "accent", [0.3, 0.23, 0.64], [0.88, 0.45, 0], qz(-0.12));
   }
 
+  const consist = consistSpecs[asset.id];
+  for (let index = 1; index < consist.cars; index += 1) {
+    addConsistCoach(index, -(consist.pitch ?? 1.52) * index, consist);
+  }
+
   return doc;
 }
 
@@ -402,4 +544,4 @@ for (const asset of assets) {
   await io.write(path.join(outputDirectory, `${asset.id}.glb`), doc);
 }
 
-console.log(`Generated ${assets.length} distinct low-poly GLB lead vehicles in ${outputDirectory}`);
+console.log(`Generated ${assets.length} complete, train-specific low-poly GLB consists in ${outputDirectory}`);

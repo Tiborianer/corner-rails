@@ -4,7 +4,7 @@
 
 1. Responsive Sites/Vinext shell, Germany selection, fixed R3F orthographic diorama, free-platform tutorial, first automatic DMU, and exact 10-coin fare.
 2. Deterministic economy, independent per-platform train lanes with simultaneous services, active cleanliness, Station Rating, shared development cap, confirmation/undo protection, four platform upgrades, four length upgrades, six station systems, tier progression, and Tier 5 unlimited development.
-3. Eighteen scheduled Germany definitions and twenty optimized train-family-specific GLB lead vehicles, with recognizable modular formations for authentic relative consist lengths.
+3. Eighteen scheduled Germany definitions and twenty optimized train-family-specific complete-consist GLBs, with recognisable locomotives, coaches, EMU articulation, control cars, rear power cars, and authentic relative formation lengths.
 4. ICE-S and BR 01 events with distinct presentation, rewards, audio cues, temporary rating boosts, and deterministic debug triggers.
 5. Missions, 15-minute day/night cycle, seasons, rain, 1×/2×/3× speed, Web Audio, prestige, and integrity-checked manual save codes.
 6. Desktop/mobile HUD, keyboard shortcuts, mute, reduced-motion support, source-linked train requirements, automated logic tests, and screenshot QA.

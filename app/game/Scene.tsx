@@ -10,7 +10,7 @@ import { CatmullRomCurve3, Color, MathUtils, Object3D, Vector3 } from "three";
 import { daylightFactor, isNight } from "./simulation";
 import { TRAINS } from "./data";
 import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "./visual";
-import type { ActiveTrain, GameState, TrainDefinition } from "./types";
+import type { ActiveTrain, GameState } from "./types";
 
 interface SceneProps {
   state: GameState;
@@ -476,115 +476,14 @@ function SteamPuffs({ active }: { active: boolean }) {
   );
 }
 
-const DOUBLE_DECK_TRAINS = new Set(["desiro-hc", "metronom", "ic2", "tgv-duplex"]);
-const DOUBLE_ENDED_TRAINS = new Set(["br642", "br648", "desiro-hc", "talent2", "ice2", "ice3", "ice4", "tgv-duplex", "giruno", "ice-s"]);
-const TIER_ONE_CAR_PITCH: Record<string, number> = { br642: 1.65, br648: 1.7 };
-const TRAIN_ASSET_VERSION = "4";
-
-function carPitch(train: TrainDefinition): number {
-  return TIER_ONE_CAR_PITCH[train.id] ?? 1.12;
-}
-
-function CoachWheels() {
-  return (
-    <>
-      {[-0.29, 0.29].map((x) => [-0.33, 0.33].map((z) => (
-        <mesh key={`${x}-${z}`} position={[x, 0.1, z]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.11, 0.11, 0.08, 12]} />
-          <meshStandardMaterial color="#1a2223" metalness={0.7} roughness={0.42} />
-        </mesh>
-      )))}
-    </>
-  );
-}
-
-function CoachWindows({ y, color, count = 4 }: { y: number; color: string; count?: number }) {
-  return (
-    <>
-      {Array.from({ length: count }, (_, pane) => [-0.351, 0.351].map((z) => (
-        <Box key={`${pane}-${z}`} position={[-0.32 + pane * (0.64 / Math.max(1, count - 1)), y, z]} scale={[0.12, 0.15, 0.025]} color={color} />
-      )))}
-    </>
-  );
-}
-
-function ProceduralCoach({ train, index }: { train: TrainDefinition; index: number }) {
-  const x = -carPitch(train) * (index + 1);
-  const isSteam = train.id === "br01";
-  const isTender = isSteam && index === 0;
-  const isHeritage = isSteam && !isTender;
-  const isMeasurement = train.id === "ice-s" && index === 0;
-  const doubleDeck = DOUBLE_DECK_TRAINS.has(train.id) && !(train.id === "desiro-hc" && index > 1);
-  const isSleeper = train.id === "nightjet";
-  const body = isHeritage ? "#6d3427" : isTender ? "#17191a" : train.colors.body;
-  const accent = isHeritage ? "#d4b26e" : train.colors.accent;
-  const height = doubleDeck ? 0.88 : isTender ? 0.62 : 0.68;
-  const centerY = doubleDeck ? 0.6 : 0.5;
-  const controlCab = (train.id === "metronom" || train.id === "ic2" || train.id === "railjet" || train.id === "comfortjet") && index === train.cars - 2;
-  const pantograph = isMeasurement || (["desiro-hc", "talent2", "ice3", "ice4", "giruno"].includes(train.id) && index % 3 === 0);
-
-  if (isTender) {
-    return (
-      <group position={[x, 0, 0]}>
-        <Box position={[0, 0.48, 0]} scale={[0.86, 0.64, 0.65]} color={body} />
-        <Box position={[0, 0.83, 0]} scale={[0.7, 0.09, 0.54]} color="#2c2b28" />
-        <Box position={[0, 0.88, 0]} scale={[0.58, 0.08, 0.46]} color="#0e1111" />
-        <Box position={[0, 0.24, 0]} scale={[0.88, 0.11, 0.66]} color={train.colors.accent} />
-        <CoachWheels />
-      </group>
-    );
-  }
-
-  return (
-    <group position={[x, 0, 0]}>
-      <Box position={[0, centerY, 0]} scale={[0.98, height, 0.69]} color={body} />
-      <Box position={[0, centerY + height / 2 + 0.055, 0]} scale={[0.92, 0.09, 0.61]} color={isHeritage ? "#3b2d29" : train.colors.roof} />
-      <Box position={[0, 0.28, 0]} scale={[0.98, 0.065, 0.71]} color={accent} />
-      <Box position={[0, 0.18, 0]} scale={[0.82, 0.12, 0.52]} color="#222a2b" />
-      {doubleDeck ? (
-        <>
-          <CoachWindows y={0.48} color={train.colors.windows} />
-          <CoachWindows y={0.78} color={train.colors.windows} />
-        </>
-      ) : isSleeper ? (
-        <>
-          <CoachWindows y={0.64} color={train.colors.windows} count={3} />
-          {[-0.351, 0.351].map((z) => <Box key={z} position={[0.32, 0.52, z]} scale={[0.13, 0.45, 0.026]} color="#274d7d" />)}
-        </>
-      ) : (
-        <CoachWindows y={isHeritage ? 0.6 : 0.62} color={isHeritage ? "#d9bd82" : train.colors.windows} />
-      )}
-      {[-0.351, 0.351].map((z) => <Box key={z} position={[0.35, centerY, z]} scale={[0.13, height * 0.68, 0.026]} color={isHeritage ? "#4b271f" : accent} />)}
-      {controlCab && (
-        <>
-          <Box position={[-0.455, centerY + 0.14, 0]} scale={[0.035, 0.28, 0.54]} color={train.colors.windows} />
-          <Box position={[-0.465, centerY - 0.15, 0]} scale={[0.04, 0.08, 0.58]} color={accent} />
-        </>
-      )}
-      {isMeasurement && (
-        <>
-          <Box position={[0, 0.52, 0]} scale={[0.86, 0.08, 0.71]} color="#7d8589" />
-          <Box position={[0, 1.02, 0]} scale={[0.4, 0.05, 0.22]} color="#2d3538" rotation={[0, 0, 0.35]} />
-        </>
-      )}
-      {pantograph && (
-        <group position={[0, centerY + height / 2 + 0.2, 0]}>
-          <Box position={[-0.09, 0, 0]} scale={[0.38, 0.035, 0.035]} color="#303839" rotation={[0, 0, 0.68]} />
-          <Box position={[0.09, 0, 0]} scale={[0.38, 0.035, 0.035]} color="#303839" rotation={[0, 0, -0.68]} />
-          <Box position={[0, 0.13, 0]} scale={[0.38, 0.025, 0.16]} color="#303839" />
-        </group>
-      )}
-      <CoachWheels />
-    </group>
-  );
-}
+const TRAIN_ASSET_VERSION = "5";
 
 function TrainConsist({ active, platformIndex, speed }: { active: ActiveTrain; platformIndex: number; speed: 1 | 2 | 3 }) {
   const group = useRef<Group>(null);
   const motion = useRef({ trainId: "", phase: "", elapsed: 0 });
   const train = TRAINS.find((candidate) => candidate.id === active.trainId);
   const gltf = useGLTF(train ? `/models/trains/${train.modelKey}.glb?v=${TRAIN_ASSET_VERSION}` : `/models/trains/br650.glb?v=${TRAIN_ASSET_VERSION}`);
-  const head = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  const consist = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const entryX = train ? -34 - train.cars * 1.6 : -34;
   const exitX = train ? 36 + train.cars * 1.6 : 36;
   useFrame((_, delta) => {
@@ -602,16 +501,9 @@ function TrainConsist({ active, platformIndex, speed }: { active: ActiveTrain; p
     group.current.position.x = trainMotionPosition(active.phase, visual.elapsed, active.phaseDuration, entryX, 4.4, exitX);
   });
   if (!train) return null;
-  const tailIndex = train.cars - 2;
-  const hasMirroredTail = DOUBLE_ENDED_TRAINS.has(train.id) && train.cars > 1;
   return (
-    <group ref={group} position={[entryX, 0.25, -0.72 + platformIndex * 1.25]} scale={[1.5, 0.82, 0.82]}>
-      <Clone object={head} castShadow />
-      {Array.from({ length: Math.max(0, train.cars - 1) }, (_, index) => hasMirroredTail && index === tailIndex ? (
-        <group key={index} position={[-carPitch(train) * (index + 1), 0, 0]} rotation={[0, Math.PI, 0]}>
-          <Clone object={head} castShadow />
-        </group>
-      ) : <ProceduralCoach key={index} train={train} index={index} />)}
+    <group ref={group} position={[entryX, 0.25, -0.72 + platformIndex * 1.25]} scale={[1.42, 0.86, 0.86]}>
+      <Clone object={consist} castShadow />
       <SteamPuffs active={train.style === "steam"} />
     </group>
   );

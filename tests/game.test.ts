@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { NodeIO } from "@gltf-transform/core";
+import { getBounds, NodeIO } from "@gltf-transform/core";
 import path from "node:path";
+import { stat } from "node:fs/promises";
 import { LENGTH_COSTS, PLATFORM_COSTS, TRAINS, createInitialState } from "../app/game/data";
 import { decodeSave, encodeSave } from "../app/game/save";
 import {
@@ -101,7 +102,7 @@ describe("render helpers", () => {
     expect(new Set(TRAFFIC_CAR_KINDS).size).toBe(TRAFFIC_CAR_KINDS.length);
   });
 
-  it("ships three structurally distinct Tier 1 GLB models", async () => {
+  it("ships three structurally distinct Tier 1 complete-consist GLBs", async () => {
     const io = new NodeIO();
     const modelDirectory = path.resolve("public/models/trains");
     const signatures = [
@@ -116,6 +117,50 @@ describe("render helpers", () => {
       return names.join("|");
     }));
     expect(new Set(nodeSets).size).toBe(3);
+  });
+
+  it("ships all twenty full consists with unique hierarchies and realistic formation extents", async () => {
+    const io = new NodeIO();
+    const modelDirectory = path.resolve("public/models/trains");
+    const hierarchySignatures = new Set<string>();
+    let bundleBytes = 0;
+
+    for (const train of TRAINS) {
+      const modelPath = path.join(modelDirectory, `${train.modelKey}.glb`);
+      const document = await io.read(modelPath);
+      const nodes = document.getRoot().listNodes();
+      const bounds = getBounds(document.getRoot().listScenes()[0]);
+      const formationLength = bounds.max[0] - bounds.min[0];
+      bundleBytes += (await stat(modelPath)).size;
+      hierarchySignatures.add(nodes.map((node) => node.getName()).sort().join("|"));
+
+      expect(nodes.some((node) => node.getName() === `${train.id}_train_root`)).toBe(true);
+      if (train.cars > 1) {
+        expect(nodes.some((node) => node.getName().startsWith(`${train.id}_car_1_`))).toBe(true);
+        expect(formationLength).toBeGreaterThan(train.cars * 0.75);
+      }
+      expect(formationLength).toBeLessThan(train.cars * 2.2 + 2);
+    }
+
+    expect(hierarchySignatures.size).toBe(TRAINS.length);
+    expect(bundleBytes).toBeLessThan(1_000_000);
+  });
+
+  it("gives every international formation its defining consist role", async () => {
+    const io = new NodeIO();
+    const modelDirectory = path.resolve("public/models/trains");
+    const requiredNodes: Record<string, string> = {
+      railjet: "railjet_car_7_tail_cab_face",
+      nightjet: "nightjet_car_10_chamfered_train_shell",
+      "tgv-duplex": "tgv-duplex_car_9_tail_nose_tip",
+      "regiojet-cz": "regiojet-cz_car_8_chamfered_train_shell",
+      giruno: "giruno_car_10_tail_nose_tip",
+      comfortjet: "comfortjet_car_8_tail_cab_face",
+    };
+    for (const [modelKey, requiredNode] of Object.entries(requiredNodes)) {
+      const document = await io.read(path.join(modelDirectory, `${modelKey}.glb`));
+      expect(document.getRoot().listNodes().map((node) => node.getName())).toContain(requiredNode);
+    }
   });
 });
 

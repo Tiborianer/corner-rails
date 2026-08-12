@@ -18,7 +18,7 @@ npm test
 npm run lint
 ```
 
-Regenerate the original low-poly GLB train heads with:
+Regenerate the original complete low-poly GLB train consists with:
 
 ```bash
 npm run assets:generate
@@ -31,7 +31,7 @@ npm run assets:generate
 - `app/game/data.ts` — economy, systems, missions, and 20 sourced train records.
 - `app/game/Scene.tsx` — locked isometric R3F diorama.
 - `app/game/save.ts` — versioned base64url save codes with integrity checking.
-- `scripts/generate-train-assets.mjs` — original GLB asset pipeline.
+- `scripts/generate-train-assets.mjs` — original complete-consist GLB asset pipeline.
 - `docs/` — design, balance, sources, onboarding, asset inventory, and QA.
 
 There is intentionally no autosave, local storage, backend, account, or offline income. Copy the in-game save code before closing the page.

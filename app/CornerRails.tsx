@@ -1,7 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import {
+  type ComponentType,
   useEffect,
   useMemo,
   useReducer,
@@ -50,10 +50,37 @@ import type {
   UpgradeAction,
 } from "./game/types";
 
-const StationScene = dynamic(() => import("./game/Scene"), {
-  ssr: false,
-  loading: () => <div className="scene-loading">Preparing the station diorama…</div>,
-});
+type StationSceneProps = {
+  state: GameState;
+  onPlacePlatform: () => void;
+};
+
+function StationScene(props: StationSceneProps) {
+  const [Scene, setScene] = useState<ComponentType<StationSceneProps> | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    import("./game/Scene")
+      .then(({ default: component }) => {
+        if (mounted) setScene(() => component);
+      })
+      .catch(() => {
+        if (mounted) setLoadFailed(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loadFailed) {
+    return <div className="scene-loading">The station diorama could not load. Refresh to try again.</div>;
+  }
+  if (!Scene) {
+    return <div className="scene-loading">Preparing the station diorama…</div>;
+  }
+  return <Scene {...props} />;
+}
 
 type Action =
   | { type: "tick"; delta: number }

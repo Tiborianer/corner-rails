@@ -477,12 +477,17 @@ function SteamPuffs({ active }: { active: boolean }) {
 }
 
 const TRAIN_ASSET_VERSION = "5";
+const TRAIN_ASSET_BASE = `${import.meta.env.BASE_URL}models/trains/`;
+
+function trainAssetUrl(modelKey: string) {
+  return `${TRAIN_ASSET_BASE}${modelKey}.glb?v=${TRAIN_ASSET_VERSION}`;
+}
 
 function TrainConsist({ active, platformIndex, speed }: { active: ActiveTrain; platformIndex: number; speed: 1 | 2 | 3 }) {
   const group = useRef<Group>(null);
   const motion = useRef({ trainId: "", phase: "", elapsed: 0 });
   const train = TRAINS.find((candidate) => candidate.id === active.trainId);
-  const gltf = useGLTF(train ? `/models/trains/${train.modelKey}.glb?v=${TRAIN_ASSET_VERSION}` : `/models/trains/br650.glb?v=${TRAIN_ASSET_VERSION}`);
+  const gltf = useGLTF(trainAssetUrl(train?.modelKey ?? "br650"));
   const consist = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
   const entryX = train ? -34 - train.cars * 1.6 : -34;
   const exitX = train ? 36 + train.cars * 1.6 : 36;
@@ -692,6 +697,6 @@ export default function StationScene(props: SceneProps) {
   );
 }
 
-useGLTF.preload(`/models/trains/br650.glb?v=${TRAIN_ASSET_VERSION}`);
-useGLTF.preload(`/models/trains/br642.glb?v=${TRAIN_ASSET_VERSION}`);
-useGLTF.preload(`/models/trains/br648.glb?v=${TRAIN_ASSET_VERSION}`);
+useGLTF.preload(trainAssetUrl("br650"));
+useGLTF.preload(trainAssetUrl("br642"));
+useGLTF.preload(trainAssetUrl("br648"));

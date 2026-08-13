@@ -1,6 +1,8 @@
 # Corner Rails
 
-A playable Germany-first incremental station game built as a private Sites/Vinext app with React, TypeScript, React Three Fiber, Three.js, and Drei.
+A playable Germany-first incremental station game built with React, TypeScript, React Three Fiber, Three.js, and Drei.
+
+Play the public GitHub Pages build at [tiborianer.github.io/corner-rails](https://tiborianer.github.io/corner-rails/).
 
 ## Run locally
 
@@ -16,6 +18,7 @@ Open `http://localhost:3000`. Add `?debug=1` to reveal deterministic Tier 5, nig
 ```bash
 npm test
 npm run lint
+npm run build:pages
 ```
 
 Regenerate the original complete low-poly GLB train consists with:
@@ -32,6 +35,8 @@ npm run assets:generate
 - `app/game/Scene.tsx` — locked isometric R3F diorama.
 - `app/game/save.ts` — versioned base64url save codes with integrity checking.
 - `scripts/generate-train-assets.mjs` — original complete-consist GLB asset pipeline.
+- `static-entry/` — client-only entry point for the GitHub Pages build.
+- `.github/workflows/deploy-pages.yml` — automatic Pages deployment from `main`.
 - `docs/` — design, balance, sources, onboarding, asset inventory, and QA.
 
 There is intentionally no autosave, local storage, backend, account, or offline income. Copy the in-game save code before closing the page.

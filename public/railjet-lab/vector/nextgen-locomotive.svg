@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256" role="img" aria-label="Unbranded nextgen Railjet electric locomotive vector module">
+  <defs><linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#53727b"/><stop offset="1" stop-color="#142d38"/></linearGradient></defs>
+  <g stroke-linejoin="round">
+    <path d="M55 100 L385 70 L421 86 L104 130 Z" fill="#33373b"/>
+    <path d="M55 100 L104 130 L104 209 L55 180 Z" fill="#bd1232"/>
+    <path d="M104 130 L421 88 M421 88 L469 116 L459 185 L404 198 L104 221 Z" fill="#e12b46"/>
+    <path d="M104 172 L433 139 L454 186 L397 203 L104 221 Z" fill="#ddd9d0"/>
+    <path d="M110 137 L373 104 L390 150 L111 184 Z" fill="#24262a"/>
+    <path d="M404 95 L448 120 L441 151 L398 139 Z" fill="url(#glass)" stroke="#0b171c" stroke-width="5"/>
+    <path d="M401 161 L443 163 L437 173 L400 174 Z" fill="#f7e7ad"/><circle cx="433" cy="169" r="5" fill="#fff0a8"/>
+    <path d="M55 180 L104 209 L397 188 L454 178 L454 194 L397 207 L104 225 L55 191 Z" fill="#34383a"/>
+    <g fill="none" stroke="#1d2528" stroke-width="6" stroke-linecap="round"><path d="M188 76 L218 34 L248 76"/><path d="M205 54 L235 31"/><path d="M207 27 L249 22"/></g><rect x="267" y="67" width="72" height="11" rx="4" fill="#666d70"/>
+    <g class="wheel"><ellipse cx="139" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="139" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="139" cy="210" r="3" fill="#b6b8b5"/></g><g class="wheel"><ellipse cx="177" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="177" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="177" cy="210" r="3" fill="#b6b8b5"/></g><g class="wheel"><ellipse cx="350" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="350" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="350" cy="210" r="3" fill="#b6b8b5"/></g><g class="wheel"><ellipse cx="389" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="389" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="389" cy="210" r="3" fill="#b6b8b5"/></g>
+  </g></svg>

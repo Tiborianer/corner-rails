@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256" role="img" aria-label="Unbranded nextgen Railjet multifunction vector module">
+  <defs><linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#456974"/><stop offset="1" stop-color="#142d38"/></linearGradient></defs>
+  <g stroke-linejoin="round">
+    <path d="M55 104 L422 72 L462 100 L96 135 Z" fill="#33373b"/>
+    <path d="M55 104 L96 135 L96 207 L55 180 Z" fill="#bd1232"/>
+    <path d="M96 135 L462 100 L462 178 L96 207 Z" fill="#ddd9d0"/>
+    <path d="M96 129 L462 95 L462 157 L96 191 Z" fill="#24262a"/>
+    <path d="M96 112 L462 80 L462 101 L96 135 Z" fill="#e12b46"/>
+    <path d="M96 185 L462 156 L462 171 L96 201 Z" fill="#bd1232"/>
+    <path d="M105 185 L405 161 L405 202 L105 213 Z" fill="#ddd9d0" opacity=".92"/><path d="M119 122 L175 117 L175 149 L119 154 Z" fill="url(#glass)"/><path d="M183 122 L239 117 L239 149 L183 154 Z" fill="url(#glass)"/><path d="M247 122 L303 117 L303 149 L247 154 Z" fill="url(#glass)"/><path d="M311 122 L367 117 L367 149 L311 154 Z" fill="url(#glass)"/><path d="M375 122 L431 117 L431 149 L375 154 Z" fill="url(#glass)"/><g><path d="M124 121 L146 119 L146 190 L124 193 Z" fill="#b81734" stroke="#ef6a7d" stroke-width="2"/><path d="M128 127 L142 125 L142 151 L128 153 Z" fill="#19333e"/></g><g><path d="M352 121 L374 119 L374 190 L352 193 Z" fill="#b81734" stroke="#ef6a7d" stroke-width="2"/><path d="M356 127 L370 125 L370 151 L356 153 Z" fill="#19333e"/></g><rect x="202" y="66" width="90" height="13" rx="5" fill="#63696b"/><rect x="223" y="59" width="48" height="9" rx="3" fill="#8c9292"/>
+    <path d="M55 180 L96 207 L462 178 L462 191 L96 221 L55 191 Z" fill="#34383a"/>
+    <g class="wheel"><ellipse cx="139" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="139" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="139" cy="210" r="3" fill="#b6b8b5"/></g><g class="wheel"><ellipse cx="178" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="178" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="178" cy="210" r="3" fill="#b6b8b5"/></g><g class="wheel"><ellipse cx="386" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="386" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="386" cy="210" r="3" fill="#b6b8b5"/></g><g class="wheel"><ellipse cx="425" cy="213" rx="18" ry="10" fill="#171b1d"/><ellipse cx="425" cy="211" rx="10" ry="6" fill="#596064"/><circle cx="425" cy="210" r="3" fill="#b6b8b5"/></g>
+  </g></svg>

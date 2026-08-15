@@ -11,6 +11,9 @@
     "build:pages": "vite build --config vite.pages.config.ts",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "assets:generate": "node scripts/generate-train-assets.mjs",
+    "assets:railjet-lab": "node scripts/process-railjet-lab-sprites.mjs && node scripts/generate-railjet-vector-assets.mjs && node scripts/generate-railjet-lab-assets.mjs",
+    "qa:railjet-mobile": "node scripts/capture-railjet-lab.mjs",
+    "qa:railjet-contact-sheets": "node scripts/build-railjet-contact-sheets.mjs",
     "test": "vitest run --config vitest.config.ts && npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern dist-pages --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
@@ -42,6 +45,7 @@
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
     "globals": "16.4.0",
+    "sharp": "^0.34.5",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",

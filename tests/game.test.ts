@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { getBounds, NodeIO } from "@gltf-transform/core";
 import path from "node:path";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import sharp from "sharp";
 import { LENGTH_COSTS, PLATFORM_COSTS, TRAINS, createInitialState } from "../app/game/data";
 import { decodeSave, encodeSave } from "../app/game/save";
 import {
@@ -21,6 +22,12 @@ import {
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
 import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
+import {
+  RAILJET_METHODS,
+  RAILJET_PROTOTYPES,
+  generatedVehicleAsset,
+  railjetLabMotionPosition,
+} from "../app/game/railjetLabData";
 
 function fundedState(): GameState {
   return {
@@ -161,6 +168,81 @@ describe("render helpers", () => {
       const document = await io.read(path.join(modelDirectory, `${modelKey}.glb`));
       expect(document.getRoot().listNodes().map((node) => node.getName())).toContain(requiredNode);
     }
+  });
+});
+
+describe("Railjet visual bake-off assets", () => {
+  it("defines all three non-Blender methods for both authentic formation lengths", () => {
+    expect(RAILJET_METHODS.map((method) => method.id)).toEqual(["generated-2d", "vector-2d", "hybrid-3d"]);
+    expect(RAILJET_PROTOTYPES.classic).toMatchObject({ vehicleCount: 8, lengthMeters: 205.38 });
+    expect(RAILJET_PROTOTYPES.nextgen).toMatchObject({ vehicleCount: 10, lengthMeters: 258 });
+    expect(RAILJET_PROTOTYPES.classic.consist).toHaveLength(8);
+    expect(RAILJET_PROTOTYPES.nextgen.consist).toHaveLength(10);
+    expect(RAILJET_PROTOTYPES.classic.consist.at(-1)?.role).toBe("driving-trailer");
+    expect(RAILJET_PROTOTYPES.nextgen.consist.at(-1)?.role).toBe("driving-trailer");
+  });
+
+  it("ships transparent, normalized generated modules inside the per-generation budget", async () => {
+    for (const definition of Object.values(RAILJET_PROTOTYPES)) {
+      const uniqueFrames = [...new Set(definition.consist.map((vehicle) => vehicle.generatedFrame))];
+      let bytes = 0;
+      for (const frame of uniqueFrames) {
+        const assetPath = path.resolve("public", generatedVehicleAsset(definition, frame).slice(1));
+        const metadata = await sharp(assetPath).metadata();
+        bytes += (await stat(assetPath)).size;
+        expect(metadata).toMatchObject({ width: 512, height: 512, hasAlpha: true, format: "webp" });
+      }
+      expect(bytes).toBeLessThan(750_000);
+    }
+  });
+
+  it("ships deterministic SVG modules without embedded images, text, or protected operator marks", async () => {
+    for (const definition of Object.values(RAILJET_PROTOTYPES)) {
+      const uniqueAssets = [...new Set(definition.consist.map((vehicle) => vehicle.vectorAsset))];
+      let bytes = 0;
+      for (const asset of uniqueAssets) {
+        const assetPath = path.resolve("public", asset.slice(1));
+        const content = await readFile(assetPath, "utf8");
+        bytes += Buffer.byteLength(content);
+        expect(content).toContain("<svg");
+        expect(content).not.toMatch(/<(?:image|text)\b/i);
+        expect(content).not.toMatch(/ÖBB|logo|trademark/i);
+      }
+      expect(bytes).toBeLessThan(200_000);
+    }
+  });
+
+  it("ships optimized metre-scaled hybrid GLBs with stable pivots and correct relative lengths", async () => {
+    const io = new NodeIO();
+    const lengths: Record<string, number> = {};
+    for (const definition of Object.values(RAILJET_PROTOTYPES)) {
+      const modelPath = path.resolve("public", definition.hybridAsset.slice(1));
+      const document = await io.read(modelPath);
+      const root = document.getRoot();
+      const scene = root.listScenes()[0];
+      const bounds = getBounds(scene);
+      const length = bounds.max[0] - bounds.min[0];
+      lengths[definition.id] = length;
+      expect(root.listNodes().map((node) => node.getName())).toContain(`${definition.id}_railjet_hybrid_root`);
+      expect(root.listNodes().filter((node) => /^\w+_vehicle_\d+_(?:locomotive|economy|restaurant|first|multifunction|driving-trailer)$/.test(node.getName()))).toHaveLength(definition.vehicleCount);
+      expect(root.listMaterials().length).toBeLessThanOrEqual(9);
+      expect(bounds.min[1]).toBeGreaterThanOrEqual(0);
+      expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(1);
+      expect((await stat(modelPath)).size).toBeLessThan(500_000);
+    }
+    expect(lengths.nextgen).toBeGreaterThan(lengths.classic * 1.2);
+  });
+
+  it("keeps stopping and pass-through lab motion continuous and outside the map at cycle edges", () => {
+    expect(railjetLabMotionPosition("stationary", 999)).toBe(0);
+    expect(railjetLabMotionPosition("stopping", 0)).toBe(-27);
+    expect(railjetLabMotionPosition("stopping", 5)).toBe(0);
+    expect(railjetLabMotionPosition("stopping", 11)).toBe(0);
+    expect(railjetLabMotionPosition("stopping", 17.99)).toBeGreaterThan(26);
+    const passA = railjetLabMotionPosition("pass", 3);
+    const passB = railjetLabMotionPosition("pass", 3 + 1 / 60);
+    expect(passB).toBeGreaterThan(passA);
+    expect(passB - passA).toBeLessThan(1);
   });
 });
 

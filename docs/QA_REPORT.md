@@ -10,6 +10,8 @@ The complete-consist asset revision removes the shared runtime coach entirely. A
 
 QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/build validation.
 
+The non-Blender Railjet bake-off was added on **2026-08-15**. It preserves the production Railjet and introduces a private `?railjetLab=1` route with generated 2.5D, deterministic vector 2.5D, and procedural 3D candidates for both Railjet generations. Twenty-seven automated tests now cover the six combinations, exact 8/10-vehicle formations, transparent sprite bounds, SVG safety, GLB hierarchy/bounds/budgets, and continuous stop/pass motion. Direct non-default URLs were browser-tested after fixing a server/client query-state hydration mismatch. The first SVG pass also exposed missing intrinsic dimensions; the generator now writes explicit 512×256 dimensions so Three.js can upload the vectors reliably.
+
 ## Automated acceptance coverage
 
 - Nine deterministic simulation tests cover exact structural prices, the shared cap, system purchases, Tier 5 unlimited development, cleaning cost and cap exclusion, rating response, train and rain dirt, roster counts, Nightjet night eligibility/fixed payout, and save-code round-trip/damage rejection.
@@ -33,8 +35,13 @@ QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/
 - [BR 01 steam festival](../qa/steam-festival.jpg)
 - [Rain and dirty station](../qa/rain-dirty-station.jpg)
 - [Mobile onboarding](../qa/mobile-onboarding.jpg)
+- [Railjet desktop A/B/C contact sheet](../qa/railjet-lab/railjet-bakeoff-desktop.jpg)
+- [Railjet mobile A/B/C contact sheet](../qa/railjet-lab/railjet-bakeoff-mobile.jpg)
+- [Railjet night candidate](../qa/railjet-lab/classic-generated-night.jpg)
+- [Three simultaneous procedural formations](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 
 ## Known scope limits
 
 - The train GLBs remain original low-poly interpretations with no protected logos, but no longer share a generic coach. Train families have distinct full-length silhouettes, cab masks, roof equipment, bogies, articulated or locomotive-hauled structure, door/window rhythms, liveries, and correct end roles. They are detailed diorama assets rather than scanned museum replicas.
 - Longer soak balancing, China/France/Japan, extra steam variants, additional events, and second-station expansion remain future work.
+- Mobile captures used Chrome software WebGL so their displayed FPS is not a hardware performance measurement. The in-app browser sustained 60 FPS with three simultaneous procedural formations at its desktop viewport; representative physical-mobile GPU profiling remains a follow-up.

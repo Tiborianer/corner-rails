@@ -1422,6 +1422,360 @@ button:disabled {
   cursor: pointer;
 }
 
+/* Private Railjet rendering laboratory. It deliberately uses a compact DOM
+   control layer so the locked-camera comparison remains the dominant surface. */
+.railjet-lab-shell {
+  position: relative;
+  width: 100vw;
+  height: 100svh;
+  min-height: 620px;
+  overflow: hidden;
+  isolation: isolate;
+  color: #f5f2e8;
+  background: #a8d2df;
+}
+
+.railjet-lab-world,
+.railjet-lab-world canvas {
+  position: absolute !important;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.railjet-lab-shell::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(15, 26, 25, 0.28), transparent 30%, transparent 78%, rgba(15, 26, 25, 0.1)),
+    linear-gradient(0deg, rgba(15, 26, 25, 0.28), transparent 24%);
+  mix-blend-mode: multiply;
+}
+
+.railjet-lab-title,
+.railjet-lab-controls,
+.railjet-lab-metrics,
+.railjet-lab-score,
+.railjet-lab-caption {
+  position: absolute;
+  z-index: 6;
+}
+
+.railjet-lab-title {
+  top: 24px;
+  left: 26px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-shadow: 0 2px 18px rgba(12, 25, 23, 0.32);
+}
+
+.railjet-lab-blind {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 14px;
+  color: #172321;
+  background: #f0c552;
+  box-shadow: 0 10px 34px rgba(14, 26, 24, 0.18);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.railjet-lab-title small,
+.railjet-lab-title h1,
+.railjet-lab-title p {
+  display: block;
+  margin: 0;
+}
+
+.railjet-lab-title small {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.railjet-lab-title h1 {
+  margin-top: 2px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.2rem, 2vw, 1.72rem);
+  line-height: 1.1;
+}
+
+.railjet-lab-title p {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  opacity: 0.76;
+}
+
+.railjet-lab-controls {
+  top: 120px;
+  left: 26px;
+  width: 286px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 15px;
+  color: #eaf0ec;
+  background: rgba(20, 34, 31, 0.86);
+  box-shadow: 0 18px 54px rgba(14, 28, 25, 0.24);
+  backdrop-filter: blur(16px);
+}
+
+.railjet-lab-control-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.railjet-lab-control-head small,
+.railjet-lab-control-head strong {
+  display: block;
+}
+
+.railjet-lab-control-head small {
+  margin-bottom: 2px;
+  color: #f0c552;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.railjet-lab-control-head strong {
+  font-size: 0.86rem;
+}
+
+.railjet-lab-control-head > button {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  color: #e7eee9;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  font-size: 0.6rem;
+}
+
+.railjet-lab-controls > p {
+  margin: 8px 0 11px;
+  color: #b9c8c1;
+  font-size: 0.61rem;
+  line-height: 1.42;
+}
+
+.railjet-lab-segment {
+  min-width: 0;
+  margin: 0 0 9px;
+  padding: 0;
+  border: 0;
+}
+
+.railjet-lab-segment legend {
+  margin-bottom: 4px;
+  color: #aebdb7;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.railjet-lab-segment > div {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.railjet-lab-segment button,
+.railjet-lab-inline-controls button {
+  min-height: 28px;
+  border: 0;
+  border-radius: 7px;
+  color: #d9e2dd;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.58rem;
+  font-weight: 720;
+}
+
+.railjet-lab-segment button.active,
+.railjet-lab-inline-controls button.active {
+  color: #172321;
+  background: #f0c552;
+  box-shadow: 0 3px 10px rgba(10, 18, 16, 0.18);
+}
+
+.railjet-lab-inline-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 3px;
+}
+
+.railjet-lab-inline-controls button {
+  padding: 5px 7px;
+  color: #dce6e1;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.railjet-lab-metrics {
+  top: 24px;
+  right: 24px;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 13px;
+  color: #172321;
+  background: rgba(247, 243, 232, 0.9);
+  box-shadow: 0 8px 30px rgba(20, 38, 34, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.railjet-lab-metrics span {
+  min-width: 82px;
+  padding: 8px 11px;
+  border-right: 1px solid rgba(29, 47, 44, 0.12);
+  text-align: center;
+}
+
+.railjet-lab-metrics span:last-child {
+  border-right: 0;
+}
+
+.railjet-lab-metrics small,
+.railjet-lab-metrics strong {
+  display: block;
+}
+
+.railjet-lab-metrics small {
+  color: #6e7975;
+  font-size: 0.43rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.railjet-lab-metrics strong {
+  margin-top: 2px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.68rem;
+}
+
+.railjet-lab-score {
+  right: 24px;
+  bottom: 76px;
+  width: 300px;
+  color: #eaf0ec;
+}
+
+.railjet-score-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 11px;
+  color: inherit;
+  background: rgba(20, 34, 31, 0.88);
+  box-shadow: 0 10px 32px rgba(14, 26, 24, 0.2);
+  cursor: pointer;
+  font-size: 0.67rem;
+  backdrop-filter: blur(14px);
+}
+
+.railjet-score-toggle b {
+  color: #f0c552;
+}
+
+.railjet-score-body {
+  margin-top: 5px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  background: rgba(20, 34, 31, 0.91);
+  box-shadow: 0 14px 42px rgba(14, 26, 24, 0.22);
+  backdrop-filter: blur(14px);
+}
+
+.railjet-score-body label {
+  display: grid;
+  grid-template-columns: 1fr 92px 16px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+  font-size: 0.56rem;
+}
+
+.railjet-score-body label span small {
+  color: #8fa39a;
+}
+
+.railjet-score-body input {
+  width: 92px;
+  accent-color: #f0c552;
+}
+
+.railjet-score-body p {
+  margin: 10px 0 0;
+  color: #9cadA5;
+  font-size: 0.5rem;
+  line-height: 1.45;
+}
+
+.railjet-lab-caption {
+  left: 50%;
+  bottom: 20px;
+  min-width: 370px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: 12px;
+  color: #172321;
+  background: rgba(247, 243, 232, 0.91);
+  box-shadow: 0 8px 30px rgba(20, 38, 34, 0.15);
+  transform: translateX(-50%);
+  backdrop-filter: blur(14px);
+}
+
+.railjet-lab-caption strong {
+  font-size: 0.66rem;
+}
+
+.railjet-lab-caption span,
+.railjet-lab-caption a {
+  color: #63706c;
+  font-size: 0.57rem;
+}
+
+.railjet-lab-caption a {
+  color: #8d2637;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.railjet-lab-shell.capture-mode .railjet-lab-title {
+  top: 18px;
+  left: 18px;
+}
+
+.railjet-lab-shell.capture-mode .railjet-lab-metrics {
+  top: 18px;
+  right: 18px;
+}
+
 @keyframes drawer-in {
   from { opacity: 0; transform: translateX(18px); }
   to { opacity: 1; transform: translateX(0); }
@@ -1539,6 +1893,34 @@ button:disabled {
     padding: 13px 15px;
   }
   .debug-tools { right: 10px; bottom: 70px; }
+  .railjet-lab-shell { min-height: 560px; }
+  .railjet-lab-title { top: 12px; left: 12px; }
+  .railjet-lab-blind { width: 40px; height: 40px; border-radius: 10px; font-size: 1.1rem; }
+  .railjet-lab-title small { font-size: 0.46rem; }
+  .railjet-lab-title h1 { max-width: 195px; font-size: 0.98rem; }
+  .railjet-lab-title p { font-size: 0.52rem; }
+  .railjet-lab-metrics { top: 62px; right: 10px; }
+  .railjet-lab-metrics span { min-width: 66px; padding: 6px; }
+  .railjet-lab-metrics span:nth-child(2) { display: none; }
+  .railjet-lab-controls {
+    top: auto;
+    right: 10px;
+    bottom: 68px;
+    left: 10px;
+    width: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 9px;
+    padding: 10px;
+  }
+  .railjet-lab-control-head { grid-column: 1 / -1; }
+  .railjet-lab-controls > p { display: none; }
+  .railjet-lab-segment { margin-bottom: 0; }
+  .railjet-lab-inline-controls { grid-column: 1 / -1; }
+  .railjet-lab-score { right: 10px; bottom: 266px; width: 268px; }
+  .railjet-lab-caption { bottom: 10px; min-width: 0; width: calc(100vw - 20px); }
+  .railjet-lab-caption span { display: none; }
+  .railjet-lab-shell.capture-mode .railjet-lab-metrics { top: 62px; right: 10px; }
 }
 
 @media (max-width: 440px) {

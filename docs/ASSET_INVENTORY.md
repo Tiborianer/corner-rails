@@ -18,12 +18,15 @@
 | Railjet lab B | Twelve deterministic, editable SVG vehicle-role modules with no embedded imagery or branding | `public/railjet-lab/vector/` |
 | Railjet lab C | Separate classic and new-generation lofted procedural formations | `public/models/railjet-lab/*.glb` |
 | Railjet production/lab D | Editable Blender 5.2 masters, calibrated 1.435 m wheel/rail contract, modular Taurus/coach/driving-trailer GLBs, and complete classic/new-generation formations | `assets/blender/`, `public/models/trains/blender/railjet/` |
+| DB Regional-Express review R1 | Private four-vehicle BR 245 + double-deck push-pull candidate: diesel locomotive, mixed-class coach, second-class coach and driving trailer | `assets/blender/db-regional-express/`, `public/models/train-lab/db-regional-express/` |
 
 All GLBs use glTF 2.0. The two production Railjets additionally obey the approved metre-scale contract: X-forward, Y-lateral, Z-up in Blender, a named `rail_contact_origin`, standard-gauge wheel treads and a 0.071 world-units-per-metre runtime scale. The classic formation is about 227 KB and the new generation about 283 KB after glTF Transform deduplication and pruning.
 
 Candidate D is now the approved production Railjet. The laboratory and normal game load the same canonical GLBs; A–C remain comparison evidence. The old `public/models/trains/railjet.glb` remains only as a rollback/legacy artifact. Candidate D's calibration track stays inside its editable Blender review scenes and is deliberately excluded from the GLBs because React Three Fiber owns reusable railway infrastructure. Source image-generation sheets and Blender masters are not served publicly.
 
 Every other train remains on a temporary `legacy-v1` presentation profile. Those profiles correct only gross lane/contact presentation in the new metric environment; they do not claim physical accuracy or replace the underlying model. The per-train approval process is documented in [TRAIN_ASSET_APPROVAL_WORKFLOW.md](TRAIN_ASSET_APPROVAL_WORKFLOW.md).
+
+The DB Regional-Express R1 set is the first use of that process after Railjet. Its complete formation is about 157 KB after glTF Transform deduplication/pruning; its four reusable module GLBs are about 43–48 KB each. It is available only through `?trainLab=db-regional-express`. Its manifest records the supplied filenames but none of the local photographs are copied, embedded, served or used as textures. The candidate is deliberately unassigned to a production train record because the references depict a locomotive-hauled BR 245/Dosto set, not the current Siemens Desiro HC record. Production mapping will be decided only after visual approval.
 
 ## Planned assets
 

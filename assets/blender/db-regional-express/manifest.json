@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "generator": "Blender 5.2 LTS Python API",
+  "candidateId": "db-regional-express-dosto-br245",
+  "approvalStatus": "private-review",
+  "formation": "DB Regional-Express BR 245 double-deck push-pull",
+  "lengthMeters": 99.84,
+  "vehicleCount": 4,
+  "consist": [
+    "br245",
+    "mixed-class",
+    "second-class",
+    "driving-trailer"
+  ],
+  "vehicleDimensionsMeters": {
+    "br245": {
+      "length": 18.9,
+      "width": 2.978,
+      "height": 4.275
+    },
+    "doubleDeckCoach": {
+      "length": 26.8,
+      "width": 2.78,
+      "height": 4.63
+    }
+  },
+  "masterBlend": "assets/blender/db-regional-express/db-regional-express-master.blend",
+  "formationGlb": "public/models/train-lab/db-regional-express/db-regional-express-blender.glb",
+  "moduleGlbs": {
+    "br245": "public/models/train-lab/db-regional-express/db-regional-express-br245.glb",
+    "mixed_class": "public/models/train-lab/db-regional-express/db-regional-express-mixed-class.glb",
+    "second_class": "public/models/train-lab/db-regional-express/db-regional-express-second-class.glb",
+    "driving_trailer": "public/models/train-lab/db-regional-express/db-regional-express-driving-trailer.glb"
+  },
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "railContactPlaneZ": 0.0,
+    "railContactAnchor": "rail_contact_origin",
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "traction": "diesel",
+    "pantographContactHeightMeters": null,
+    "calibrationTrackExported": false
+  },
+  "userReferenceFilenames": [
+    "Regio_Clean_side_view.jpg",
+    "Regio_miniature_view.jpg",
+    "Regio_real_photo_back view.jpg",
+    "Regio_single_cabcar_side_view.jpg"
+  ],
+  "referencePolicy": "Research only. Local images are not copied, embedded, textured, or shipped.",
+  "sources": [
+    "https://www.alstom.com/solutions/rolling-stock/locomotives/traxx-passenger-locomotives-comfortable-borderless-operations-passengers",
+    "https://static.maerklin.de/damcontent/c5/f3/c5f37262c345d58891232c1a1d886e971470385112.pdf",
+    "https://static.maerklin.de/damcontent/e8/c7/e8c7b162b92f2a98c76550a19ffc900c1654606154.pdf",
+    "https://www.deutschebahn.com/resource/blob/12723972/27f230ccadd935116edcb92217fda017/DB-Wg-D_____11-2004_Doppelstock-data.pdf"
+  ],
+  "productionRegistryModified": false
+}

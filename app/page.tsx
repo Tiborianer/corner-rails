@@ -1,5 +1,6 @@
 import CornerRails from "./CornerRails";
 import RailjetLab, { type RailjetLabInitialState } from "./game/RailjetLab";
+import TrainReviewLab, { type TrainReviewLabInitialState } from "./game/TrainReviewLab";
 
 function queryValue<T extends string>(value: string | string[] | undefined, allowed: readonly T[], fallback: T): T {
   const candidate = Array.isArray(value) ? value[0] : value;
@@ -14,6 +15,20 @@ function numericQueryValue(value: string | string[] | undefined, fallback: numbe
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const parameters = await searchParams;
   const trainLab = Array.isArray(parameters.trainLab) ? parameters.trainLab[0] : parameters.trainLab;
+  if (trainLab === "db-regional-express") {
+    const initialState: TrainReviewLabInitialState = {
+      candidateId: "db-regional-express",
+      motion: queryValue(parameters.motion, ["stationary", "stopping", "pass"], "stationary"),
+      atmosphere: queryValue(parameters.atmosphere, ["day", "night", "rain"], "day"),
+      scale: queryValue(parameters.scale, ["normal", "inspect"], "normal"),
+      loadCount: queryValue(parameters.load, ["1", "3"], "1") === "3" ? 3 : 1,
+      captureMode: queryValue(parameters.capture, ["0", "1"], "0") === "1",
+      capturePhaseSeconds: numericQueryValue(parameters.phase, 0),
+      freezeMotion: queryValue(parameters.freeze, ["0", "1"], "0") === "1",
+    };
+    const stateKey = [initialState.candidateId, initialState.motion, initialState.atmosphere, initialState.scale, initialState.loadCount, Number(initialState.captureMode), initialState.capturePhaseSeconds, Number(initialState.freezeMotion)].join(":");
+    return <TrainReviewLab key={stateKey} initialState={initialState} />;
+  }
   const reviewMode = trainLab === "railjet";
   if (parameters.railjetLab !== "1" && !reviewMode) {
     const legacyVisuals = parameters.debug === "1" && parameters.visuals === "legacy";

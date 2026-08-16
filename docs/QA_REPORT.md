@@ -26,6 +26,14 @@ The normal scene now uses the shared metric rails, calculated five-lane/platform
 
 Thirty-four automated game/asset tests, lint, the Sites production build, rendered-HTML smoke test and GitHub Pages build pass. Browser flows verified the 10-coin first service, classic day arrival, new-generation night/rain arrival, five simultaneous platforms at 1× after a 3× dispatch, desktop layout, 390×844 layout, both focused `?trainLab=railjet` URLs and the debug rollback renderer. No WebGL errors occurred; only Three.js's existing `Clock` deprecation warning appeared. Mobile browser captures are responsive-layout evidence, not physical-device GPU benchmarks.
 
+## 2026-08-16 DB Regional-Express Blender review R1
+
+The first per-train approval branch adds an editable Blender 5.2 master, four modular GLBs and one 99.84 m nominal four-vehicle formation. The set follows the supplied BR 245, double-deck intermediate and double-deck driving-trailer views. The initial material pass exposed shared-mesh material inheritance; it was corrected with one cached primitive mesh per material before browser review. A second close-up pass made both cabs blunter and moved the recognition surfaces onto the outer front plane so the BR 245 windshields and grey driving-trailer face do not disappear into the lofted body.
+
+Thirty-eight automated tests now pass. Candidate-specific coverage verifies four distinct vehicle roots, engine grilles, upper/lower double-deck windows, driving-trailer windscreens, 1.435 m wheel-tread placement, Z=0 rail contact, a centred approximately 100.8 m exported bound including couplers, a named rail-contact origin, a 500 KB formation budget, recorded reference filenames, and `productionRegistryModified: false`. The existing Desiro HC remains `legacy-v1` and byte/path-independent from this candidate.
+
+The private `?trainLab=db-regional-express` route was exercised at desktop and 390×844 mobile sizes in stationary, stopping, pass-through, day, night, rain and three-lane-capable states. The controls update the URL/state correctly, the model loads without WebGL errors, and the visible FPS counter stayed above 100 in the in-app desktop software-WebGL session. The only console output was Three.js's existing `Clock` deprecation warning. The mobile screenshot is layout evidence, not a physical-device GPU result. Blender review startup exited once when chained directly after the Node optimizer; running the same saved master as a separate command rendered all five views successfully, so generation/export is unaffected.
+
 ## Automated acceptance coverage
 
 - Nine deterministic simulation tests cover exact structural prices, the shared cap, system purchases, Tier 5 unlimited development, cleaning cost and cap exclusion, rating response, train and rain dirt, roster counts, Nightjet night eligibility/fixed payout, and save-code round-trip/damage rejection.
@@ -65,6 +73,14 @@ Thirty-four automated game/asset tests, lint, the Sites production build, render
 - [New-generation production mobile layout](../qa/production-railjet-nextgen-mobile.png)
 - [Classic focused train-review route at night](../qa/train-review-railjet-classic-night.png)
 - [New-generation focused train-review mobile route](../qa/train-review-railjet-nextgen-mobile.png)
+- [DB Regional-Express Blender overview](../qa/train-review/db-regional-express/db-regional-express-blender-overview.jpg)
+- [DB Regional-Express BR 245 detail](../qa/train-review/db-regional-express/db-regional-express-blender-br245-detail.jpg)
+- [DB Regional-Express driving-trailer detail](../qa/train-review/db-regional-express/db-regional-express-blender-driving-trailer-detail.jpg)
+- [DB Regional-Express wheel/rail detail](../qa/train-review/db-regional-express/db-regional-express-blender-wheel-rail-detail.jpg)
+- [DB Regional-Express browser day](../qa/train-review/db-regional-express/db-regional-express-browser-day.png)
+- [DB Regional-Express browser night](../qa/train-review/db-regional-express/db-regional-express-browser-night.png)
+- [DB Regional-Express browser rain](../qa/train-review/db-regional-express/db-regional-express-browser-rain.png)
+- [DB Regional-Express browser mobile layout](../qa/train-review/db-regional-express/db-regional-express-browser-mobile.png)
 - [Railjet night candidate](../qa/railjet-lab/classic-generated-night.jpg)
 - [Three simultaneous procedural formations](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 

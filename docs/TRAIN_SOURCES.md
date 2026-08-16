@@ -27,6 +27,19 @@ Checked against primary operator, manufacturer, or museum material on **2026-08-
 
 “RegioJet” is used only for the Czech operator at Tier 5. Tier 2 contains a verified DB Regio Talent 2 instead; DB’s own service categories remain S-Bahn, Regionalbahn, and Regional-Express.
 
+## Private Blender candidate: BR 245 double-deck Regional-Express
+
+The user supplied four appearance references on **2026-08-16**, identified by their filenames rather than copied into the repository:
+
+- `Regio_Clean_side_view.jpg`: BR 245 and two double-deck intermediate side profiles.
+- `Regio_miniature_view.jpg`: three-quarter BR 245 006 and coach roof/side arrangement.
+- `Regio_real_photo_back view.jpg`: despite the filename, the useful content is the real double-deck driving-trailer front and cab-side treatment.
+- `Regio_single_cabcar_side_view.jpg`: complete driving-trailer side silhouette and door/window rhythm.
+
+The R1 review asset interprets these as a four-vehicle push-pull set: DB Class 245 diesel locomotive, mixed-class double-deck coach, second-class double-deck coach and a sloped-cab double-deck driving trailer. Alstom’s current [Traxx Passenger overview](https://www.alstom.com/solutions/rolling-stock/locomotives/traxx-passenger-locomotives-comfortable-borderless-operations-passengers) supports the locomotive-family, push-pull and standard-gauge contract. Official [Märklin 29479 service material](https://static.maerklin.de/damcontent/e8/c7/e8c7b162b92f2a98c76550a19ffc900c1654606154.pdf) corroborates the supplied miniature’s BR 245 representation, while DB’s [double-deck vehicle emergency sheet](https://www.deutschebahn.com/resource/blob/12723972/27f230ccadd935116edcb92217fda017/DB-Wg-D_____11-2004_Doppelstock-data.pdf) corroborates the conventional double-deck steel-bodied coach family.
+
+This is a visual review candidate, not yet a verified production roster replacement. In particular, it is not a Siemens Desiro HC. The eventual roster mapping and final class designations for the intermediate/control cars remain approval decisions.
+
 ## Implemented complete-consist visual-recognition pass
 
 The original procedural assets intentionally omit protected logos, but each GLB now includes the entire representative formation and encodes the train-family cues visible in the primary records:

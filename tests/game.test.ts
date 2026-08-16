@@ -44,6 +44,11 @@ import {
   selectTrainVisualVariant,
   trainVisualVariants,
 } from "../app/game/trainVisuals";
+import {
+  TRAIN_REVIEW_CANDIDATES,
+  TRAIN_REVIEW_METRIC_SCALE,
+  trainReviewMotionPosition,
+} from "../app/game/trainReviewData";
 
 function fundedState(): GameState {
   return {
@@ -356,6 +361,106 @@ describe("Railjet visual bake-off assets", () => {
     const passB = railjetLabMotionPosition("pass", 3 + 1 / 60);
     expect(passB).toBeGreaterThan(passA);
     expect(passB - passA).toBeLessThan(1);
+  });
+});
+
+describe("per-train Blender approval laboratory", () => {
+  it("registers the DB Regional-Express candidate only for private review", () => {
+    expect(TRAIN_REVIEW_CANDIDATES["db-regional-express"]).toMatchObject({
+      approvalStatus: "private-review",
+      productionTrainId: "unassigned",
+      assetRevision: "1",
+      vehicleCount: 4,
+      nominalLengthMeters: 99.84,
+      traction: "diesel",
+    });
+    expect(TRAIN_REVIEW_METRIC_SCALE).toBe(RAILWAY_METRIC_PROFILE.metersToWorld);
+    const productionVisual = trainVisualVariants({ id: "desiro-hc", modelKey: "desiro-hc" })[0];
+    expect(productionVisual.profile).toBe("legacy-v1");
+    expect(productionVisual.assetPath).toContain("models/trains/desiro-hc.glb");
+  });
+
+  it("ships a metre-scaled four-vehicle BR 245 double-deck review formation", async () => {
+    const candidate = TRAIN_REVIEW_CANDIDATES["db-regional-express"];
+    const modelPath = path.resolve("public", candidate.assetPath.slice(1));
+    const io = new NodeIO();
+    const document = await io.read(modelPath);
+    const root = document.getRoot();
+    const nodeNames = root.listNodes().map((node) => node.getName());
+    const formationRoot = root.listNodes().find((node) => node.getName() === "db_regional_express_blender_root");
+    const bounds = getBounds(root.listScenes()[0]);
+    const exportedLength = bounds.max[0] - bounds.min[0];
+
+    expect(formationRoot?.getExtras()).toMatchObject({
+      units: "meters",
+      forward_axis: "+X",
+      lateral_axis: "+Y",
+      up_axis: "+Z",
+      standard_gauge_m: 1.435,
+      wheel_tread_center_m: 0.7175,
+      rail_contact_plane_z: 0,
+      approval_status: "private review only",
+    });
+    expect(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).toHaveLength(4);
+    expect(nodeNames).toContain("vehicle_00_br245");
+    expect(nodeNames).toContain("vehicle_01_mixed_class");
+    expect(nodeNames).toContain("vehicle_02_second_class");
+    expect(nodeNames).toContain("vehicle_03_driving_trailer");
+    expect(nodeNames.some((name) => name.includes("br245_engine_grille"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("driving_trailer_front_windscreen"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("upper_window"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("lower_window"))).toBe(true);
+    expect(nodeNames.some((name) => name.startsWith("review_"))).toBe(false);
+    expect(root.listNodes().find((node) => node.getName() === "rail_contact_origin")?.getWorldTranslation()).toEqual([0, 0, 0]);
+    expect(exportedLength).toBeGreaterThan(99.8);
+    expect(exportedLength).toBeLessThan(101.2);
+    expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(0.1);
+    expect(root.listMaterials().length).toBeLessThanOrEqual(14);
+    expect((await stat(modelPath)).size).toBeLessThan(500_000);
+
+    const wheels = root.listNodes().filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
+    expect(wheels).toHaveLength(32);
+    for (const wheel of wheels) {
+      const [,, lateral] = wheel.getWorldTranslation();
+      const radius = wheel.getName().includes("br245") ? 0.625 : 0.46;
+      expect(Math.abs(lateral)).toBeCloseTo(0.7175, 4);
+      expect(wheel.getWorldTranslation()[1] - radius).toBeCloseTo(0, 4);
+    }
+  });
+
+  it("uses continuous stopping and pass-through motion for the review candidate", () => {
+    expect(trainReviewMotionPosition("stationary", 999)).toBe(0);
+    expect(trainReviewMotionPosition("stopping", 0)).toBe(-27);
+    expect(trainReviewMotionPosition("stopping", 5)).toBe(0);
+    expect(trainReviewMotionPosition("stopping", 11)).toBe(0);
+    expect(trainReviewMotionPosition("stopping", 17.99)).toBeGreaterThan(26);
+    expect(trainReviewMotionPosition("pass", 3 + 1 / 60)).toBeGreaterThan(trainReviewMotionPosition("pass", 3));
+  });
+
+  it("records user reference filenames without copying or embedding the images", async () => {
+    const manifest = JSON.parse(await readFile(path.resolve("assets/blender/db-regional-express/manifest.json"), "utf8"));
+    expect(manifest).toMatchObject({
+      candidateId: "db-regional-express-dosto-br245",
+      approvalStatus: "private-review",
+      productionRegistryModified: false,
+      userReferenceFilenames: [
+        "Regio_Clean_side_view.jpg",
+        "Regio_miniature_view.jpg",
+        "Regio_real_photo_back view.jpg",
+        "Regio_single_cabcar_side_view.jpg",
+      ],
+      assetContract: {
+        units: "meters",
+        standardGaugeMeters: 1.435,
+        railContactPlaneZ: 0,
+        railContactAnchor: "rail_contact_origin",
+        wheelTreadCentersMeters: [-0.7175, 0.7175],
+        traction: "diesel",
+        pantographContactHeightMeters: null,
+        calibrationTrackExported: false,
+      },
+    });
+    expect(manifest.referencePolicy).toContain("not copied");
   });
 });
 

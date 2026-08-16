@@ -36,6 +36,10 @@ COACH_WIDTH = 2.825
 COACH_HEIGHT = 4.05
 FORMATION_GAP = 0.085
 FORMATION_LENGTH = TAURUS_LENGTH + 7 * COACH_LENGTH + 7 * FORMATION_GAP
+STANDARD_GAUGE_METERS = 1.435
+WHEEL_TREAD_CENTER_METERS = STANDARD_GAUGE_METERS / 2
+RAIL_CONTACT_PLANE_Z = 0.0
+PANTOGRAPH_CONTACT_HEIGHT_METERS = 5.5
 
 OFFICIAL_SOURCES = (
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
@@ -182,6 +186,29 @@ def add_empty(collection: bpy.types.Collection, name: str, parent: bpy.types.Obj
     obj.empty_display_type = "PLAIN_AXES"
     obj.empty_display_size = 0.55
     return obj
+
+
+def add_metric_contract(
+    collection: bpy.types.Collection,
+    root: bpy.types.Object,
+    *,
+    add_anchor: bool = False,
+) -> bpy.types.Object | None:
+    """Attach the shared rail-contact contract to a shipping root."""
+    anchor = None
+    if add_anchor:
+        anchor = add_empty(collection, "rail_contact_origin", root)
+        anchor.location = (0.0, 0.0, RAIL_CONTACT_PLANE_Z)
+        anchor.empty_display_size = 0.28
+    root["units"] = "meters"
+    root["forward_axis"] = "+X"
+    root["lateral_axis"] = "+Y"
+    root["up_axis"] = "+Z"
+    root["standard_gauge_m"] = STANDARD_GAUGE_METERS
+    root["wheel_tread_center_m"] = WHEEL_TREAD_CENTER_METERS
+    root["rail_contact_plane_z"] = RAIL_CONTACT_PLANE_Z
+    root["pantograph_contact_height_m"] = PANTOGRAPH_CONTACT_HEIGHT_METERS
+    return anchor
 
 
 def add_box(
@@ -344,7 +371,18 @@ def add_bogie(
                 f"{name}_wheel_{side}_{axle_index}",
                 wheel_radius,
                 0.22,
-                (axle_x, side * bogie_width / 2, wheel_radius),
+                (axle_x, side * WHEEL_TREAD_CENTER_METERS, wheel_radius),
+                materials["wheel"],
+                bogie,
+                rotation=(math.pi / 2, 0, 0),
+            )
+            add_cylinder(
+                collection,
+                cylinder,
+                f"{name}_flange_{side}_{axle_index}",
+                wheel_radius * 1.07,
+                0.035,
+                (axle_x, side * (WHEEL_TREAD_CENTER_METERS - 0.105), wheel_radius),
                 materials["wheel"],
                 bogie,
                 rotation=(math.pi / 2, 0, 0),
@@ -355,7 +393,7 @@ def add_bogie(
                 f"{name}_brake_disc_{side}_{axle_index}",
                 wheel_radius * 0.55,
                 0.035,
-                (axle_x, side * (bogie_width / 2 + 0.125), wheel_radius),
+                (axle_x, side * (WHEEL_TREAD_CENTER_METERS + 0.145), wheel_radius),
                 materials["steel"],
                 bogie,
                 rotation=(math.pi / 2, 0, 0),
@@ -469,6 +507,7 @@ def build_coach(
     if role == "first":
         for side in (-1, 1):
             add_box(collection, cube, f"first_class_marker_{side}", (4.8, 0.055, 0.06), (2.4, side * 1.48, 3.48), materials["lamp"], root)
+    add_metric_contract(collection, root)
     return root
 
 
@@ -543,14 +582,14 @@ def add_pantograph(
         add_cylinder(collection, cylinder, f"{prefix}_insulator_{side}", 0.10, 0.34, (x - 0.55, side * 0.38, 4.67), materials["deep_red"], root)
     if raised:
         points = [
-            ((x - 0.88, -0.42, 4.75), (x + 0.22, 0.0, 5.62)),
-            ((x + 0.88, 0.42, 4.75), (x - 0.22, 0.0, 5.62)),
-            ((x + 0.22, 0.0, 5.62), (x - 0.70, -0.12, 6.30)),
-            ((x - 0.22, 0.0, 5.62), (x + 0.70, 0.12, 6.30)),
+            ((x - 0.88, -0.42, 4.75), (x + 0.22, 0.0, 5.18)),
+            ((x + 0.88, 0.42, 4.75), (x - 0.22, 0.0, 5.18)),
+            ((x + 0.22, 0.0, 5.18), (x - 0.70, -0.12, 5.46)),
+            ((x - 0.22, 0.0, 5.18), (x + 0.70, 0.12, 5.46)),
         ]
         for index, (start, end) in enumerate(points):
             add_beam_between(collection, cube, f"{prefix}_arm_{index}", start, end, 0.075, materials["steel"], root)
-        add_box(collection, cube, f"{prefix}_collector", (2.45, 0.12, 0.08), (x, 0, 6.34), materials["anthracite"], root)
+        add_box(collection, cube, f"{prefix}_collector", (2.45, 0.12, 0.08), (x, 0, PANTOGRAPH_CONTACT_HEIGHT_METERS - 0.04), materials["anthracite"], root)
     else:
         add_beam_between(collection, cube, f"{prefix}_folded_arm_a", (x - 0.9, -0.35, 4.72), (x + 0.75, 0.28, 4.88), 0.07, materials["steel"], root)
         add_beam_between(collection, cube, f"{prefix}_folded_arm_b", (x + 0.9, 0.35, 4.72), (x - 0.75, -0.28, 4.88), 0.07, materials["steel"], root)
@@ -610,6 +649,7 @@ def build_taurus(
     for index, x in enumerate((-5.0, 0.0, 5.0)):
         add_box(collection, cube, f"taurus_roof_cabinet_{index}", (2.15, 1.42, 0.30), (x, 0, 4.52), materials["steel"], root)
     add_beam_between(collection, cube, "taurus_roof_bus", (-5.6, 0.0, 4.82), (5.7, 0.0, 4.82), 0.055, materials["steel"], root)
+    add_metric_contract(collection, root)
     return root
 
 
@@ -641,6 +681,7 @@ def build_driving_trailer(
     for side in (-1, 1):
         add_box(collection, cube, f"driving_trailer_side_cab_window_{side}", (1.65, 0.064, 0.78), (-10.85, side * 1.44, 3.06), materials["glass"], root)
         add_box(collection, cube, f"driving_trailer_cab_red_mask_{side}", (3.0, 0.052, 0.28), (-11.42, side * 1.43, 3.77), materials["railjet_red"], root)
+    add_metric_contract(collection, root)
     return root
 
 
@@ -720,6 +761,7 @@ def build_formation(
     formation_root["source_1"] = OFFICIAL_SOURCES[0]
     formation_root["source_2"] = OFFICIAL_SOURCES[1]
     formation_root["source_3"] = OFFICIAL_SOURCES[2]
+    add_metric_contract(formation_collection, formation_root, add_anchor=True)
 
     consist = [
         ("taurus", TAURUS_LENGTH),
@@ -755,12 +797,13 @@ def add_review_environment(
 ) -> None:
     review = make_collection("Review_Environment", root_collection)
     environment_root = add_empty(review, "review_environment_root")
-    add_box(review, cube, "review_ground", (280, 80, 0.24), (0, 0, -0.38), materials["ground"], environment_root)
-    add_box(review, cube, "review_ballast", (224, 3.8, 0.28), (0, 0, -0.14), materials["ballast"], environment_root)
-    for y in (-0.7175, 0.7175):
-        add_box(review, cube, f"review_rail_{y}", (224, 0.075, 0.12), (0, y, 0.02), materials["steel"], environment_root)
+    add_box(review, cube, "review_ground", (280, 80, 0.24), (0, 0, -0.59), materials["ground"], environment_root)
+    add_box(review, cube, "review_ballast", (224, 3.8, 0.28), (0, 0, -0.36), materials["ballast"], environment_root)
+    for y in (-WHEEL_TREAD_CENTER_METERS, WHEEL_TREAD_CENTER_METERS):
+        add_box(review, cube, f"review_rail_{y}", (224, 0.075, 0.12), (0, y, -0.06), materials["steel"], environment_root)
     for index in range(225):
-        add_box(review, cube, f"review_sleeper_{index:03d}", (0.16, 2.58, 0.095), (-112 + index, 0, -0.08), materials["sleeper"], environment_root)
+        add_box(review, cube, f"review_sleeper_{index:03d}", (0.16, 2.58, 0.095), (-112 + index, 0, -0.1675), materials["sleeper"], environment_root)
+    add_box(review, cube, "review_catenary_contact_wire", (224, 0.028, 0.028), (0, 0, PANTOGRAPH_CONTACT_HEIGHT_METERS), materials["steel"], environment_root)
 
     target = add_empty(review, "review_camera_target")
     target.location.z = 1.7
@@ -824,7 +867,7 @@ def main() -> None:
     bpy.ops.wm.save_as_mainfile(filepath=str(MASTER_PATH), compress=True)
 
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "generator": "Blender 5.2 LTS Python API",
         "formation": "Classic ÖBB Railjet",
         "lengthMeters": round(FORMATION_LENGTH, 3),
@@ -833,6 +876,18 @@ def main() -> None:
         "masterBlend": str(MASTER_PATH.relative_to(PROJECT_ROOT)),
         "formationGlb": str(formation_path.relative_to(PROJECT_ROOT)),
         "moduleGlbs": module_paths,
+        "assetContract": {
+            "units": "meters",
+            "forwardAxis": "+X",
+            "lateralAxis": "+Y",
+            "upAxis": "+Z",
+            "standardGaugeMeters": STANDARD_GAUGE_METERS,
+            "railContactPlaneZ": RAIL_CONTACT_PLANE_Z,
+            "railContactAnchor": "rail_contact_origin",
+            "wheelTreadCentersMeters": [-WHEEL_TREAD_CENTER_METERS, WHEEL_TREAD_CENTER_METERS],
+            "pantographContactHeightMeters": PANTOGRAPH_CONTACT_HEIGHT_METERS,
+            "calibrationTrackExported": False,
+        },
         "sources": list(OFFICIAL_SOURCES),
         "productionRailjetModified": False,
     }

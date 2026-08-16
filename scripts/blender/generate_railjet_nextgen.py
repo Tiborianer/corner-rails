@@ -156,6 +156,7 @@ def build_nextgen_coach(
     if role == "multifunction":
         for side in (-1, 1):
             common.add_box(collection, cube, f"{variant}_accessible_door_marker_{side}", (1.58, 0.075, 0.20), (-9.7, side * 1.49, 1.00), materials["lamp"], root)
+    common.add_metric_contract(collection, root)
     return root
 
 
@@ -191,6 +192,7 @@ def build_nextgen_driving_trailer(
     for side in (-1, 1):
         common.add_box(collection, cube, f"nextgen_driving_side_window_{side}", (1.75, 0.07, 0.82), (-half + 2.62, side * 1.43, 3.12), materials["glass"], root)
         common.add_box(collection, cube, f"nextgen_driving_red_cab_arc_{side}", (3.5, 0.06, 0.26), (-half + 2.05, side * 1.45, 3.82), materials["signal_red"], root)
+    common.add_metric_contract(collection, root)
     return root
 
 
@@ -207,6 +209,7 @@ def build_formation(
     root["length_m"] = FORMATION_LENGTH
     for index, source in enumerate(OFFICIAL_SOURCES):
         root[f"source_{index + 1}"] = source
+    common.add_metric_contract(formation_collection, root, add_anchor=True)
 
     consist = [
         "taurus", "first_a", "first_b", "restaurant", "economy_a",
@@ -270,7 +273,7 @@ def main() -> None:
     bpy.ops.wm.save_as_mainfile(filepath=str(MASTER_PATH), compress=True)
 
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "generator": "Blender 5.2 LTS Python API",
         "formation": "ÖBB Railjet new generation",
         "lengthMeters": FORMATION_LENGTH,
@@ -280,6 +283,18 @@ def main() -> None:
         "masterBlend": str(MASTER_PATH.relative_to(PROJECT_ROOT)),
         "formationGlb": str(formation_path.relative_to(PROJECT_ROOT)),
         "moduleGlbs": module_paths,
+        "assetContract": {
+            "units": "meters",
+            "forwardAxis": "+X",
+            "lateralAxis": "+Y",
+            "upAxis": "+Z",
+            "standardGaugeMeters": common.STANDARD_GAUGE_METERS,
+            "railContactPlaneZ": common.RAIL_CONTACT_PLANE_Z,
+            "railContactAnchor": "rail_contact_origin",
+            "wheelTreadCentersMeters": [-common.WHEEL_TREAD_CENTER_METERS, common.WHEEL_TREAD_CENTER_METERS],
+            "pantographContactHeightMeters": common.PANTOGRAPH_CONTACT_HEIGHT_METERS,
+            "calibrationTrackExported": False,
+        },
         "sources": list(OFFICIAL_SOURCES),
         "productionRailjetModified": False,
     }

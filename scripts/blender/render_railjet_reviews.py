@@ -41,6 +41,7 @@ constraint.up_axis = "UP_Y"
 
 length = 205.375 if generation == "classic" else 258.0
 lead_center = length / 2 - 19.28 / 2
+lead_bogie_center = lead_center + 4.95
 tail_center = -length / 2 + (26.5 if generation == "classic" else 26.4394) / 2
 output = PROJECT_ROOT / "qa" / "railjet-lab"
 output.mkdir(parents=True, exist_ok=True)
@@ -60,6 +61,11 @@ views = {
         "camera": (tail_center - 19.0, -29.0, 16.5),
         "target": (tail_center, 0.0, 2.1),
         "ortho": 31.0,
+    },
+    "wheel-rail-detail": {
+        "camera": (lead_bogie_center + 4.5, -7.0, 3.8),
+        "target": (lead_bogie_center, 0.0, 0.48),
+        "ortho": 7.8,
     },
 }
 

@@ -13,7 +13,7 @@ Candidate D is the Blender 5.2 LTS path. It is loaded only by the private lab; t
 | A | Generated transparent 2.5D modules | Taurus + 7 coaches | Locomotive + 9 Viaggio Next Level cars | 196 KB / 172 KB |
 | B | Deterministic SVG 2.5D modules | 8 world cards | 10 world cards | 24 KB / 24 KB |
 | C | Procedural low-poly GLB | 210.7 m generated bounds | 266.1 m generated bounds | 70 KB / 82 KB |
-| D | Blender-authored low-poly GLB | 205.38 m, 8 vehicles | 258 m, 10 vehicles | 219 KB / 288 KB |
+| D | Blender-authored low-poly GLB | 205.38 m, 8 vehicles | 258 m, 10 vehicles | 227 KB / 283 KB |
 
 Candidate A was created with built-in Image Generation as two original five-module sheets, one per generation. The prompt set requested a consistent locked orthographic isometric angle, unbranded Taurus/coach/restaurant/first-class/driving-trailer modules, authentic red/dark-grey/light-grey blocking, recognisable cab and roof-equipment rhythm, a transparent/chroma background, and no logos, text, watermarks, or copied photography. The normalized source frames are under `public/railjet-lab/generated/`; the full source sheets are under `assets/railjet-lab/source/`.
 
@@ -22,6 +22,8 @@ Candidate B is regenerated entirely from `scripts/generate-railjet-vector-assets
 Candidate C is regenerated from `scripts/generate-railjet-lab-assets.mjs`. It uses lofted cross-sections, curved roofs, separate cab masks, windscreens, doors, windows, bogies, wheelsets, couplers, underframe equipment, pantographs, roof cabinets, HVAC, and a new-generation low-floor module. Both GLBs are glTF 2.0, Y-up, metre-based, and optimized with shared geometry/materials.
 
 Candidate D is regenerated from `scripts/blender/generate_railjet_classic.py` and `scripts/blender/generate_railjet_nextgen.py`. The editable masters live under `assets/blender/`; modular locomotive/coach GLBs and the complete formations live under `public/models/railjet-lab/blender/`. It uses measured metre-scale bodies, curved cross-sections, separate driving cabs, windows, doors, bogies, wheelsets, underframes, couplers, pantographs, HVAC, and low-floor new-generation entrances. It contains no downloaded mesh, photo texture, logo, or operator wordmark.
+
+Candidate D alone now uses a physical scene contract: 1.435 m standard gauge, tread centres at ±0.7175 m, wheel contact at Z=0, one 0.071 world-units-per-metre scale for both generations, and a 5.5 m raised-pantograph/contact-wire height. The browser rail centres are therefore ±0.05094 world units, the classic formation is about 14.58 units long, and the new generation is about 18.32 units long. The platform, catenary, shadows, lane spacing, and camera use the same profile. Candidates A–C retain their original comparison transforms.
 
 ## Rebuild and QA
 
@@ -42,9 +44,15 @@ Automated coverage checks method/generation resolution, exact vehicle counts, re
 - [Mobile A/B/C/D comparison](../qa/railjet-lab/railjet-bakeoff-mobile.jpg)
 - [Classic Blender formation review](../qa/railjet-lab/classic-blender-overview.jpg)
 - [Classic Taurus detail](../qa/railjet-lab/classic-blender-taurus-detail.jpg)
+- [Classic Blender wheel/rail detail](../qa/railjet-lab/classic-blender-wheel-rail-detail.jpg)
 - [Classic driving-trailer detail](../qa/railjet-lab/classic-blender-driving-trailer-detail.jpg)
 - [New-generation Blender formation review](../qa/railjet-lab/nextgen-blender-overview.jpg)
 - [New-generation driving-trailer detail](../qa/railjet-lab/nextgen-blender-driving-trailer-detail.jpg)
+- [New-generation Blender wheel/rail detail](../qa/railjet-lab/nextgen-blender-wheel-rail-detail.jpg)
+- [Classic calibrated browser view](../qa/railjet-lab/classic-blender-desktop.png)
+- [Wheel/rail inspection view](../qa/railjet-lab/classic-blender-wheel-rail-detail.png)
+- [New-generation calibrated browser view](../qa/railjet-lab/nextgen-blender-desktop.png)
+- [Three-train calibrated rain load](../qa/railjet-lab/nextgen-blender-game-rain.png)
 - [Classic night view](../qa/railjet-lab/classic-generated-night.jpg)
 - [New-generation rain/platform view](../qa/railjet-lab/nextgen-hybrid-rain-platform.jpg)
 - [Three-train procedural load](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)

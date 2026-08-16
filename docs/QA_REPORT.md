@@ -14,7 +14,9 @@ The non-Blender Railjet bake-off was added on **2026-08-15**. It preserves the p
 
 The 2026-08-16 Blender pass adds editable Blender 5.2 LTS masters, modular vehicle GLBs, and complete classic/new-generation formations as private-lab candidate D. The classic model follows the official 205.38 m formation and Class 1116/Viaggio Comfort dimensions; the new-generation model follows the official ten-vehicle-with-locomotive, 258 m formation and includes visibly lower entrances on seven cars. Production Railjet bytes remain unchanged pending user selection.
 
-Twenty-eight automated tests now include Blender hierarchy, exact vehicle count, metre-scale bounds, distinct cab/door/bogie nodes, material count, grounding, and the 500 KB per-formation budget. Direct candidate-D URLs were browser-tested at desktop and 390×844 mobile sizes in parked, rain, night, pass-through, and three-simultaneous-train states. Both assets loaded without WebGL errors; the only console warning was Three.js's existing `Clock` deprecation notice.
+The physical-calibration revision gives Candidate D a 1.435 m gauge contract, wheel-tread centres at ±0.7175 m, a Z=0 rail-contact anchor, a shared 0.071 world-units-per-metre scale, and a 5.5 m pantograph/contact-wire height. Its R3F rails, platform, catenary, shadows, lane spacing, and locked camera are derived from that contract instead of inheriting the oversized legacy comparison environment. Calibration rails remain in the editable Blender review scenes and are excluded from every shipping GLB.
+
+Twenty-nine automated tests now include Blender hierarchy, exact vehicle count, metre-scale bounds, contact-anchor extras, tread gauge/contact height, manifest metadata, distinct cab/door/bogie nodes, material count, runtime world lengths, platform/catenary values, and the 500 KB per-formation budget. Direct candidate-D URLs were browser-tested at desktop and 390×844 mobile sizes in stationary, stopping, rain, night, pass-through, inspection, and three-simultaneous-train states. Both assets loaded without WebGL errors; the only console warning was Three.js's existing `Clock` deprecation notice.
 
 ## Automated acceptance coverage
 
@@ -42,7 +44,13 @@ Twenty-eight automated tests now include Blender hierarchy, exact vehicle count,
 - [Railjet desktop A/B/C/D contact sheet](../qa/railjet-lab/railjet-bakeoff-desktop.jpg)
 - [Railjet mobile A/B/C/D contact sheet](../qa/railjet-lab/railjet-bakeoff-mobile.jpg)
 - [Classic Blender Taurus detail](../qa/railjet-lab/classic-blender-taurus-detail.jpg)
+- [Classic Blender wheel/rail detail](../qa/railjet-lab/classic-blender-wheel-rail-detail.jpg)
 - [New-generation Blender driving-trailer detail](../qa/railjet-lab/nextgen-blender-driving-trailer-detail.jpg)
+- [New-generation Blender wheel/rail detail](../qa/railjet-lab/nextgen-blender-wheel-rail-detail.jpg)
+- [Classic calibrated browser view](../qa/railjet-lab/classic-blender-desktop.png)
+- [Candidate D wheel/rail inspection view](../qa/railjet-lab/classic-blender-wheel-rail-detail.png)
+- [New-generation calibrated browser view](../qa/railjet-lab/nextgen-blender-desktop.png)
+- [Three calibrated formations in rain](../qa/railjet-lab/nextgen-blender-game-rain.png)
 - [Railjet night candidate](../qa/railjet-lab/classic-generated-night.jpg)
 - [Three simultaneous procedural formations](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 

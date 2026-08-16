@@ -33,8 +33,26 @@ export interface RailjetPrototypeDefinition {
   worldScale: number;
   pivot: readonly [number, number, number];
   groundOffset: number;
-  blenderGroundOffset: number;
   source: string;
+}
+
+export const RAILJET_METRIC_PROFILE = {
+  metersToWorld: 0.071,
+  standardGaugeMeters: 1.435,
+  railTopY: 0.295,
+  platformLengthMeters: 280,
+  platformWidthMeters: 5,
+  platformHeightMeters: 0.55,
+  platformEdgeClearanceMeters: 0.2,
+  vehicleWidthMeters: 2.825,
+  catenaryContactHeightMeters: 5.5,
+  trackCenterSpacingMeters: 5,
+  sleeperLengthMeters: 2.58,
+  maxFormationLengthMeters: 258,
+} as const;
+
+export function railjetMetersToWorld(meters: number) {
+  return meters * RAILJET_METRIC_PROFILE.metersToWorld;
 }
 
 const vectorPath = (generation: RailjetGeneration, role: RailjetVehicleRole) =>
@@ -79,7 +97,6 @@ export const RAILJET_PROTOTYPES: Record<RailjetGeneration, RailjetPrototypeDefin
     worldScale: 0.071,
     pivot: [0, 0, 0],
     groundOffset: 0.14,
-    blenderGroundOffset: 0.25,
     source: "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
   },
   nextgen: {
@@ -96,7 +113,6 @@ export const RAILJET_PROTOTYPES: Record<RailjetGeneration, RailjetPrototypeDefin
     worldScale: 0.061,
     pivot: [0, 0, 0],
     groundOffset: 0.14,
-    blenderGroundOffset: 0.25,
     source: "https://press.siemens.com/global/en/pressrelease/obb-puts-first-new-generation-railjet-siemens-mobility-service-and-orders-19-more",
   },
 };

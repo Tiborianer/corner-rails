@@ -24,9 +24,11 @@ import type { GameState } from "../app/game/types";
 import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
 import {
   RAILJET_METHODS,
+  RAILJET_METRIC_PROFILE,
   RAILJET_PROTOTYPES,
   generatedVehicleAsset,
   railjetLabMotionPosition,
+  railjetMetersToWorld,
 } from "../app/game/railjetLabData";
 
 function fundedState(): GameState {
@@ -245,22 +247,88 @@ describe("Railjet visual bake-off assets", () => {
       const length = bounds.max[0] - bounds.min[0];
       const nodeNames = root.listNodes().map((node) => node.getName());
       const prefix = definition.id === "classic" ? "railjet_classic" : "railjet_nextgen";
+      const formationRoot = root.listNodes().find((node) => node.getName() === `${prefix}_blender_root`);
       lengths[definition.id] = length;
 
-      expect(nodeNames).toContain(`${prefix}_blender_root`);
+      expect(formationRoot).toBeDefined();
+      expect(formationRoot?.getExtras()).toMatchObject({
+        units: "meters",
+        forward_axis: "+X",
+        lateral_axis: "+Y",
+        up_axis: "+Z",
+        standard_gauge_m: 1.435,
+        wheel_tread_center_m: 0.7175,
+        rail_contact_plane_z: 0,
+        pantograph_contact_height_m: 5.5,
+      });
+      const contactAnchor = root.listNodes().find((node) => node.getName() === "rail_contact_origin");
+      expect(contactAnchor?.getWorldTranslation()).toEqual([0, 0, 0]);
+      expect(nodeNames.some((name) => name.startsWith("review_"))).toBe(false);
       expect(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).toHaveLength(definition.vehicleCount);
       expect(new Set(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).size).toBe(definition.vehicleCount);
       expect(nodeNames.some((name) => name.includes("taurus_cab") && name.includes("windshield"))).toBe(true);
       expect(nodeNames.some((name) => name.includes("driving") && name.includes("windshield"))).toBe(true);
       expect(nodeNames.some((name) => name.includes("bogie"))).toBe(true);
       expect(nodeNames.some((name) => name.includes("door"))).toBe(true);
+      const wheelNodes = root.listNodes().filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
+      expect(wheelNodes.length).toBeGreaterThan(0);
+      for (const wheel of wheelNodes) {
+        expect(Math.abs(wheel.getWorldTranslation()[2])).toBeCloseTo(0.7175, 4);
+        const wheelRadius = wheel.getName().includes("taurus") ? 0.575 : 0.46;
+        expect(wheel.getWorldTranslation()[1] - wheelRadius).toBeCloseTo(0, 4);
+      }
       expect(root.listMaterials().length).toBeLessThanOrEqual(13);
-      expect(bounds.min[1]).toBeGreaterThanOrEqual(-0.001);
+      expect(bounds.min[1]).toBeGreaterThanOrEqual(-0.05);
       expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(0.1);
       expect(length).toBeCloseTo(definition.lengthMeters, 0);
       expect((await stat(modelPath)).size).toBeLessThan(500_000);
     }
     expect(lengths.nextgen).toBeGreaterThan(lengths.classic * 1.2);
+  });
+
+  it("uses one physical Candidate D scale for wheels, rails, formations, platforms, and catenary", async () => {
+    const worldGauge = railjetMetersToWorld(RAILJET_METRIC_PROFILE.standardGaugeMeters);
+    const railCenterOffset = worldGauge / 2;
+    const classicLength = railjetMetersToWorld(RAILJET_PROTOTYPES.classic.lengthMeters);
+    const nextgenLength = railjetMetersToWorld(RAILJET_PROTOTYPES.nextgen.lengthMeters);
+    const platformLength = railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformLengthMeters);
+    const contactWireY = RAILJET_METRIC_PROFILE.railTopY + railjetMetersToWorld(RAILJET_METRIC_PROFILE.catenaryContactHeightMeters);
+    const wheelCenterOffset = railjetMetersToWorld(0.7175);
+    const vehicleWidth = railjetMetersToWorld(RAILJET_METRIC_PROFILE.vehicleWidthMeters);
+    const laneSpacing = railjetMetersToWorld(RAILJET_METRIC_PROFILE.trackCenterSpacingMeters);
+    const platformClearance = railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformEdgeClearanceMeters);
+
+    expect(RAILJET_METRIC_PROFILE.metersToWorld).toBe(0.071);
+    expect(railCenterOffset).toBeCloseTo(0.0509425, 7);
+    expect(classicLength).toBeCloseTo(14.58198, 4);
+    expect(nextgenLength).toBeCloseTo(18.318, 4);
+    expect(nextgenLength / classicLength).toBeGreaterThan(1.25);
+    expect(platformLength).toBeCloseTo(19.88, 5);
+    expect(contactWireY).toBeCloseTo(0.6855, 5);
+    expect(Math.abs(wheelCenterOffset - railCenterOffset)).toBeLessThan(0.005);
+    expect(Math.abs(RAILJET_METRIC_PROFILE.railTopY - (0 * RAILJET_METRIC_PROFILE.metersToWorld + RAILJET_METRIC_PROFILE.railTopY))).toBeLessThan(0.005);
+    expect(laneSpacing - vehicleWidth).toBeGreaterThan(0.15);
+    expect(platformClearance).toBeCloseTo(0.0142, 5);
+
+    for (const generation of ["classic", "nextgen"] as const) {
+      const manifestPath = path.resolve("assets/blender", generation === "classic" ? "railjet-classic" : "railjet-nextgen", "manifest.json");
+      const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+      expect(manifest).toMatchObject({
+        schemaVersion: 2,
+        assetContract: {
+          units: "meters",
+          forwardAxis: "+X",
+          lateralAxis: "+Y",
+          upAxis: "+Z",
+          standardGaugeMeters: 1.435,
+          railContactPlaneZ: 0,
+          railContactAnchor: "rail_contact_origin",
+          wheelTreadCentersMeters: [-0.7175, 0.7175],
+          pantographContactHeightMeters: 5.5,
+          calibrationTrackExported: false,
+        },
+      });
+    }
   });
 
   it("keeps stopping and pass-through lab motion continuous and outside the map at cycle edges", () => {

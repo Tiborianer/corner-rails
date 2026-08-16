@@ -6,13 +6,15 @@ import { Clone, useGLTF, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { Group, Points, Texture } from "three";
-import { RepeatWrapping, SRGBColorSpace } from "three";
+import { Box3, RepeatWrapping, SRGBColorSpace, Vector3 } from "three";
 import {
   RAILJET_METHODS,
+  RAILJET_METRIC_PROFILE,
   RAILJET_PROTOTYPES,
   generatedVehicleAsset,
   railjetFormationPitch,
   railjetLabMotionPosition,
+  railjetMetersToWorld,
   type RailjetAtmosphere,
   type RailjetGeneration,
   type RailjetMotionMode,
@@ -62,22 +64,71 @@ const DEFAULT_SCORES: Scores = {
   style: 3,
 };
 
-function LabCamera({ scale }: { scale: InspectionScale }) {
+function LabCamera({ scale, metric }: { scale: InspectionScale; metric: boolean }) {
   const { camera, size } = useThree();
   useEffect(() => {
     camera.position.set(15, 13, 15);
-    camera.lookAt(0, 0.55, 0.6);
+    camera.lookAt(0, metric ? 0.48 : 0.55, metric ? 0.18 : 0.6);
     if ("zoom" in camera) {
-      const base = size.width < 620 ? 32 : size.width < 980 ? 39 : 47;
-      camera.zoom = base * (scale === "inspect" ? 1.22 : 1);
+      let base = size.width < 620 ? 32 : size.width < 980 ? 39 : 47;
+      if (metric) {
+        camera.updateMatrixWorld(true);
+        const right = new Vector3().setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+        const up = new Vector3().setFromMatrixColumn(camera.matrixWorld, 1).normalize();
+        const halfExtents = new Vector3(
+          railjetMetersToWorld(RAILJET_METRIC_PROFILE.maxFormationLengthMeters) / 2,
+          railjetMetersToWorld(RAILJET_METRIC_PROFILE.catenaryContactHeightMeters) / 2,
+          railjetMetersToWorld(RAILJET_METRIC_PROFILE.vehicleWidthMeters) / 2,
+        );
+        const projectedHalfWidth = Math.abs(right.x) * halfExtents.x + Math.abs(right.y) * halfExtents.y + Math.abs(right.z) * halfExtents.z;
+        const projectedHalfHeight = Math.abs(up.x) * halfExtents.x + Math.abs(up.y) * halfExtents.y + Math.abs(up.z) * halfExtents.z;
+        const margin = 1.12;
+        base = Math.min(size.width / (2 * projectedHalfWidth * margin), size.height / (2 * projectedHalfHeight * margin));
+      }
+      camera.zoom = base * (scale === "inspect" ? (metric ? 2.4 : 1.22) : 1);
       camera.updateProjectionMatrix();
     }
-  }, [camera, scale, size.width]);
+  }, [camera, metric, scale, size.height, size.width]);
   return null;
 }
 
-function LabTrack({ z = 0 }: { z?: number }) {
-  const sleeperPositions = useMemo(() => Array.from({ length: 98 }, (_, index) => -29 + index * 0.6), []);
+function LabTrack({ z = 0, metric = false }: { z?: number; metric?: boolean }) {
+  const sleeperPositions = useMemo(() => {
+    const spacing = metric ? 0.3 : 0.6;
+    return Array.from({ length: Math.floor(58 / spacing) + 1 }, (_, index) => -29 + index * spacing);
+  }, [metric]);
+  if (metric) {
+    const railWidth = 0.012;
+    const railHeight = 0.014;
+    const sleeperHeight = 0.016;
+    const railTop = RAILJET_METRIC_PROFILE.railTopY;
+    const railOffset = railjetMetersToWorld(RAILJET_METRIC_PROFILE.standardGaugeMeters / 2);
+    const sleeperLength = railjetMetersToWorld(RAILJET_METRIC_PROFILE.sleeperLengthMeters);
+    const sleeperTop = railTop - railHeight;
+    const groundY = railTop - railjetMetersToWorld(1.75);
+    const ballastTop = sleeperTop - sleeperHeight + 0.002;
+    const ballastHeight = ballastTop - groundY;
+    return (
+      <group>
+        <mesh position={[0, groundY + ballastHeight / 2, z]} receiveShadow>
+          <boxGeometry args={[60, ballastHeight, railjetMetersToWorld(3.6)]} />
+          <meshStandardMaterial color="#59615e" roughness={0.96} />
+        </mesh>
+        {sleeperPositions.map((x) => (
+          <mesh key={x} position={[x, sleeperTop - sleeperHeight / 2, z]} receiveShadow>
+            <boxGeometry args={[0.025, sleeperHeight, sleeperLength]} />
+            <meshStandardMaterial color="#6f513b" roughness={0.9} />
+          </mesh>
+        ))}
+        {[-railOffset, railOffset].map((offset) => (
+          <mesh key={offset} position={[0, railTop - railHeight / 2, z + offset]} castShadow receiveShadow>
+            <boxGeometry args={[60, railHeight, railWidth]} />
+            <meshStandardMaterial color="#c4cac9" metalness={0.76} roughness={0.3} />
+          </mesh>
+        ))}
+      </group>
+    );
+  }
   return (
     <group>
       <mesh position={[0, 0.02, z]} receiveShadow>
@@ -100,7 +151,45 @@ function LabTrack({ z = 0 }: { z?: number }) {
   );
 }
 
-function LabPlatform() {
+function LabPlatform({ metric = false, outerLaneZ = 0 }: { metric?: boolean; outerLaneZ?: number }) {
+  if (metric) {
+    const railTop = RAILJET_METRIC_PROFILE.railTopY;
+    const groundY = railTop - railjetMetersToWorld(1.75);
+    const surfaceY = railTop + railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformHeightMeters);
+    const platformLength = railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformLengthMeters);
+    const platformWidth = railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformWidthMeters);
+    const innerEdge = outerLaneZ + railjetMetersToWorld(RAILJET_METRIC_PROFILE.vehicleWidthMeters / 2 + RAILJET_METRIC_PROFILE.platformEdgeClearanceMeters);
+    const centerZ = innerEdge + platformWidth / 2;
+    const slabHeight = surfaceY - groundY;
+    return (
+      <group>
+        <mesh position={[0, groundY + slabHeight / 2, centerZ]} castShadow receiveShadow>
+          <boxGeometry args={[platformLength, slabHeight, platformWidth]} />
+          <meshStandardMaterial color="#aaa493" roughness={0.88} />
+        </mesh>
+        <mesh position={[0, surfaceY + 0.006, centerZ]} castShadow receiveShadow>
+          <boxGeometry args={[platformLength - 0.04, 0.012, platformWidth - 0.02]} />
+          <meshStandardMaterial color="#ded7c4" roughness={0.82} />
+        </mesh>
+        <mesh position={[0, surfaceY + 0.014, innerEdge + 0.022]}>
+          <boxGeometry args={[platformLength - 0.12, 0.008, 0.025]} />
+          <meshStandardMaterial color="#f7e5a5" roughness={0.75} />
+        </mesh>
+        {[-7.2, -2.4, 2.4, 7.2].map((x) => (
+          <group key={x} position={[x, 0, centerZ]}>
+            <mesh position={[0, surfaceY + 0.13, 0]} castShadow>
+              <boxGeometry args={[0.025, 0.26, 0.025]} />
+              <meshStandardMaterial color="#40504f" />
+            </mesh>
+            <mesh position={[0, surfaceY + 0.27, 0]} castShadow>
+              <boxGeometry args={[0.55, 0.025, platformWidth * 0.82]} />
+              <meshStandardMaterial color="#315a5b" />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    );
+  }
   return (
     <group position={[0, 0, 1.24]}>
       <mesh position={[0, 0.24, 0]} castShadow receiveShadow>
@@ -131,8 +220,37 @@ function LabPlatform() {
   );
 }
 
-function LabCatenary({ laneCount }: { laneCount: LoadCount }) {
-  const laneZs = laneCount === 3 ? [-1.35, 0, 1.35] : [0];
+function LabCatenary({ laneZs, metric = false }: { laneZs: number[]; metric?: boolean }) {
+  if (metric) {
+    const groundY = RAILJET_METRIC_PROFILE.railTopY - railjetMetersToWorld(1.75);
+    const wireY = RAILJET_METRIC_PROFILE.railTopY + railjetMetersToWorld(RAILJET_METRIC_PROFILE.catenaryContactHeightMeters);
+    const poleTop = wireY + 0.085;
+    const poleHeight = poleTop - groundY;
+    return (
+      <group>
+        {laneZs.map((z) => (
+          <group key={z}>
+            {[-24, -18, -12, -6, 0, 6, 12, 18, 24].map((x) => (
+              <group key={x}>
+                <mesh position={[x, groundY + poleHeight / 2, z + 0.19]} castShadow>
+                  <boxGeometry args={[0.025, poleHeight, 0.025]} />
+                  <meshStandardMaterial color="#5d6867" metalness={0.35} roughness={0.54} />
+                </mesh>
+                <mesh position={[x, poleTop - 0.02, z]} castShadow>
+                  <boxGeometry args={[0.025, 0.02, 0.42]} />
+                  <meshStandardMaterial color="#5d6867" metalness={0.35} roughness={0.54} />
+                </mesh>
+              </group>
+            ))}
+            <mesh position={[0, wireY, z]}>
+              <boxGeometry args={[60, 0.01, 0.01]} />
+              <meshStandardMaterial color="#242d2c" metalness={0.5} roughness={0.4} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    );
+  }
   return (
     <group>
       {laneZs.map((z) => (
@@ -159,9 +277,9 @@ function LabCatenary({ laneCount }: { laneCount: LoadCount }) {
   );
 }
 
-function ContactShadow({ length, z }: { length: number; z: number }) {
+function ContactShadow({ length, width = 0.58, z, y = 0.295 }: { length: number; width?: number; z: number; y?: number }) {
   return (
-    <mesh position={[0, 0.295, z]} rotation={[-Math.PI / 2, 0, 0]} scale={[length, 0.58, 1]}>
+    <mesh position={[0, y, z]} rotation={[-Math.PI / 2, 0, 0]} scale={[length, width, 1]}>
       <circleGeometry args={[0.5, 48]} />
       <meshBasicMaterial color="#111716" transparent opacity={0.22} depthWrite={false} />
     </mesh>
@@ -219,11 +337,23 @@ function GlbFormation({ definition, method }: { definition: RailjetPrototypeDefi
   const asset = method === "blender-3d" ? definition.blenderAsset : definition.hybridAsset;
   const gltf = useGLTF(asset);
   const formation = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
-  const groundOffset = method === "blender-3d" ? definition.blenderGroundOffset : definition.groundOffset;
+  const bounds = useMemo(() => new Box3().setFromObject(formation), [formation]);
+  const size = useMemo(() => bounds.getSize(new Vector3()), [bounds]);
+  const metric = method === "blender-3d";
+  const worldScale = metric ? RAILJET_METRIC_PROFILE.metersToWorld : definition.worldScale;
+  const groundOffset = metric ? RAILJET_METRIC_PROFILE.railTopY : definition.groundOffset;
   return (
-    <group position={[definition.pivot[0], groundOffset, definition.pivot[2]]} scale={definition.worldScale}>
-      <Clone object={formation} castShadow receiveShadow />
-    </group>
+    <>
+      <ContactShadow
+        length={size.x * worldScale}
+        width={Math.max(0.12, size.z * worldScale * 0.86)}
+        z={definition.pivot[2]}
+        y={metric ? RAILJET_METRIC_PROFILE.railTopY - 0.018 : groundOffset - 0.01}
+      />
+      <group position={[definition.pivot[0], groundOffset, definition.pivot[2]]} scale={worldScale}>
+        <Clone object={formation} castShadow receiveShadow />
+      </group>
+    </>
   );
 }
 
@@ -236,7 +366,8 @@ function TrainMotion({
   definition,
   method,
   motion,
-  lane,
+  laneIndex,
+  laneZ,
   inspect,
   capturePhaseSeconds,
   freezeMotion,
@@ -244,7 +375,8 @@ function TrainMotion({
   definition: RailjetPrototypeDefinition;
   method: LabMethod;
   motion: RailjetMotionMode;
-  lane: number;
+  laneIndex: number;
+  laneZ: number;
   inspect: boolean;
   capturePhaseSeconds: number;
   freezeMotion: boolean;
@@ -253,10 +385,11 @@ function TrainMotion({
   useFrame(({ clock }) => {
     if (!group.current) return;
     const elapsed = freezeMotion ? capturePhaseSeconds : clock.elapsedTime + capturePhaseSeconds;
-    group.current.position.x = railjetLabMotionPosition(motion, elapsed + lane * 2.1);
+    group.current.position.x = railjetLabMotionPosition(motion, elapsed + laneIndex * 2.1);
   });
+  const metric = method === "blender-3d";
   return (
-    <group ref={group} position={[0, 0, lane * 1.35]} scale={inspect ? 1.18 : 1}>
+    <group ref={group} position={[0, 0, laneZ]} scale={inspect && !metric ? 1.18 : 1}>
       <TrainFormation definition={definition} method={method} />
     </group>
   );
@@ -326,29 +459,33 @@ function LabScene({
   const night = atmosphere === "night";
   const raining = atmosphere === "rain";
   const laneIndexes = loadCount === 3 ? [-1, 0, 1] : [0];
+  const metric = method === "blender-3d";
+  const laneSpacing = metric ? railjetMetersToWorld(RAILJET_METRIC_PROFILE.trackCenterSpacingMeters) : 1.35;
+  const laneZs = laneIndexes.map((lane) => lane * laneSpacing);
+  const groundY = metric ? RAILJET_METRIC_PROFILE.railTopY - railjetMetersToWorld(1.75) : -0.16;
   const sky = night ? "#101b2d" : raining ? "#637c82" : "#a8d2df";
   return (
     <>
-      <LabCamera scale={scale} />
+      <LabCamera scale={scale} metric={metric} />
       <color attach="background" args={[sky]} />
       <fog attach="fog" args={[sky, 35, 72]} />
       <ambientLight intensity={night ? 0.5 : 1.35} color={night ? "#839bc9" : "#fff0d2"} />
       <directionalLight position={[-7, 13, -5]} intensity={night ? 0.75 : 2.25} color={night ? "#9db2dd" : "#fff0bd"} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <hemisphereLight args={[night ? "#2f4167" : "#dcf1fb", raining ? "#536456" : "#718d55", night ? 0.55 : 1.05]} />
 
-      <mesh position={[0, -0.16, 1.2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <mesh position={[0, groundY, metric ? 0.25 : 1.2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[90, 50]} />
         <meshStandardMaterial color={night ? "#354238" : "#718c55"} roughness={raining ? 0.32 : 0.95} metalness={raining ? 0.12 : 0} />
       </mesh>
-      {laneIndexes.map((lane) => <LabTrack key={lane} z={lane * 1.35} />)}
-      <LabPlatform />
-      <LabCatenary laneCount={loadCount} />
-      {laneIndexes.map((lane) => (
-        <Suspense key={`${method}-${definition.id}-${lane}`} fallback={null}>
-          <TrainMotion definition={definition} method={method} motion={motion} lane={lane} inspect={scale === "inspect"} capturePhaseSeconds={capturePhaseSeconds} freezeMotion={freezeMotion} />
+      {laneZs.map((laneZ) => <LabTrack key={laneZ} z={laneZ} metric={metric} />)}
+      <LabPlatform metric={metric} outerLaneZ={Math.max(...laneZs)} />
+      <LabCatenary laneZs={laneZs} metric={metric} />
+      {laneIndexes.map((laneIndex, index) => (
+        <Suspense key={`${method}-${definition.id}-${laneIndex}`} fallback={null}>
+          <TrainMotion definition={definition} method={method} motion={motion} laneIndex={laneIndex} laneZ={laneZs[index]} inspect={scale === "inspect"} capturePhaseSeconds={capturePhaseSeconds} freezeMotion={freezeMotion} />
         </Suspense>
       ))}
-      {night && [-7, -2.4, 2.4, 7].map((x) => <pointLight key={x} position={[x, 2.7, 1.25]} intensity={1.6} distance={5} color="#ffd77f" />)}
+      {night && [-7, -2.4, 2.4, 7].map((x) => <pointLight key={x} position={[x, metric ? 0.72 : 2.7, metric ? Math.max(...laneZs) + 0.3 : 1.25]} intensity={1.6} distance={5} color="#ffd77f" />)}
       {raining && <LabRain />}
       <FpsProbe onSample={onFps} />
     </>

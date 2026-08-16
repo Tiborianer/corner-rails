@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generator": "Blender 5.2 LTS Python API",
   "formation": "Classic \u00d6BB Railjet",
   "lengthMeters": 205.375,
@@ -22,6 +22,21 @@
     "restaurant": "public/models/railjet-lab/blender/railjet-classic-restaurant.glb",
     "first": "public/models/railjet-lab/blender/railjet-classic-first.glb",
     "driving_trailer": "public/models/railjet-lab/blender/railjet-classic-driving-trailer.glb"
+  },
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "railContactPlaneZ": 0.0,
+    "railContactAnchor": "rail_contact_origin",
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "pantographContactHeightMeters": 5.5,
+    "calibrationTrackExported": false
   },
   "sources": [
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",

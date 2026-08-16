@@ -24,7 +24,7 @@ common = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(common)
 
 SOURCE_DIR = PROJECT_ROOT / "assets" / "blender" / "railjet-nextgen"
-OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / "railjet-lab" / "blender"
+OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / "trains" / "blender" / "railjet"
 MASTER_PATH = SOURCE_DIR / "railjet-nextgen-master.blend"
 
 LOCOMOTIVE_LENGTH = 19.28
@@ -296,7 +296,7 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "productionRailjetModified": False,
+        "productionRailjetModified": True,
     }
     (SOURCE_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("CORNER_RAILS_RAILJET_NEXTGEN_GENERATED")

@@ -47,6 +47,14 @@ function isValidState(value: unknown): value is GameState {
   );
 }
 
+function normalizeActiveTrain(activeTrain: ActiveTrain | null | undefined): ActiveTrain | null {
+  if (!activeTrain) return null;
+  if (activeTrain.trainId === "railjet" && !activeTrain.visualVariantId) {
+    return { ...activeTrain, visualVariantId: "railjet-classic" };
+  }
+  return activeTrain;
+}
+
 export function decodeSave(code: string): GameState {
   const [prefix, payload, suppliedChecksum, ...rest] = code.trim().split(".");
   if (prefix !== "CR1" || !payload || !suppliedChecksum || rest.length > 0) {
@@ -76,14 +84,14 @@ export function decodeSave(code: string): GameState {
       return {
         platformIndex,
         spawnCountdown: Math.max(0, supplied.spawnCountdown),
-        activeTrain: supplied.activeTrain ?? null,
+        activeTrain: normalizeActiveTrain(supplied.activeTrain),
       };
     }
     if (platformIndex === 0) {
       return {
         platformIndex,
         spawnCountdown: Math.max(0, legacy.spawnCountdown ?? 2),
-        activeTrain: legacy.activeTrain ?? null,
+        activeTrain: normalizeActiveTrain(legacy.activeTrain),
       };
     }
     return { platformIndex, spawnCountdown: 6 + platformIndex * 4, activeTrain: null };

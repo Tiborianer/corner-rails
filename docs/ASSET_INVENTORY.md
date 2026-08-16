@@ -4,11 +4,11 @@
 
 | Group | Implemented asset | Shipping form |
 |---|---|---|
-| Playfield | Base diorama, rails, sleepers, five platform slots, dirt pieces, wet ground response | Instanced/procedural R3F geometry |
-| Station | Tier 2–5 building growth, platform length states, lamps, shelters, kiosk | Procedural R3F geometry |
-| Systems | Catenary, signals/ETCS indicator, full-width road with twelve traffic variants, maintenance siding/depot, amenities | Reused low-poly geometry |
+| Playfield | Metric ground, 1.435 m-gauge rails, sleepers, five calculated train lanes, dirt pieces, wet ground response | Shared procedural R3F geometry |
+| Station | 90/130/170/220/280 m platform states, calculated clearances, lamps, shelters and metric-positioned building | Shared procedural R3F geometry |
+| Systems | 5.5 m catenary, signals, full-width road with twelve traffic variants, maintenance siding/depot, amenities | Shared low-poly R3F geometry |
 | Weather/time | Day, night, four ground palettes, rain particles, lighting and fog states | Runtime shaders/materials |
-| Scheduled trains | 18 visually distinct complete-consist GLBs, one per scheduled record | `public/models/trains/*.glb` |
+| Scheduled trains | 17 temporary legacy complete-consist GLBs plus two approved Blender Railjet formations behind one Tier 5 service record | `public/models/trains/*.glb`, `public/models/trains/blender/railjet/` |
 | Event trains | Complete three-car ICE-S and BR 01/tender/heritage-coach consists | `ice-s.glb`, `br01.glb` |
 | Consists | Train-specific locomotive, power-car, EMU, coach, double-deck, sleeper, control-car, articulated, and rear-power-car modules | Complete GLB composition |
 | Events | ICE-S test look; steam smoke, bunting, festival colour accents | Runtime effects |
@@ -17,11 +17,13 @@
 | Railjet lab A | Ten original transparent WebP modules for classic and new-generation Railjet formations | `public/railjet-lab/generated/` |
 | Railjet lab B | Twelve deterministic, editable SVG vehicle-role modules with no embedded imagery or branding | `public/railjet-lab/vector/` |
 | Railjet lab C | Separate classic and new-generation lofted procedural formations | `public/models/railjet-lab/*.glb` |
-| Railjet lab D | Editable Blender 5.2 masters, calibrated 1.435 m wheel/rail contract, modular Taurus/coach/driving-trailer GLBs, and complete classic/new-generation formations | `assets/blender/`, `public/models/railjet-lab/blender/` |
+| Railjet production/lab D | Editable Blender 5.2 masters, calibrated 1.435 m wheel/rail contract, modular Taurus/coach/driving-trailer GLBs, and complete classic/new-generation formations | `assets/blender/`, `public/models/trains/blender/railjet/` |
 
-All GLBs use glTF 2.0, metres, Y-up, applied transforms, a stable forward axis, reusable materials, and gameplay-friendly origins. Every multi-car record now ships as one complete consist, preventing generic runtime coaches from erasing its identity. The generated 20-file bundle is about 760 KB and remains far below the Tier 1 8 MB and later-tier 5 MB targets. Tier-based runtime requests provide practical lazy loading even though the files do not require separate archives.
+All GLBs use glTF 2.0. The two production Railjets additionally obey the approved metre-scale contract: X-forward, Y-lateral, Z-up in Blender, a named `rail_contact_origin`, standard-gauge wheel treads and a 0.071 world-units-per-metre runtime scale. The classic formation is about 227 KB and the new generation about 283 KB after glTF Transform deduplication and pruning.
 
-The private Railjet laboratory assets are comparison candidates, not replacements for `public/models/trains/railjet.glb`. Candidate A is approximately 196 KB for the classic formation and 172 KB for the new generation; Candidate B is approximately 24 KB per generation; Candidate C is approximately 70 KB classic and 82 KB new generation; Candidate D is approximately 227 KB classic and 283 KB new generation. Candidate D's calibration track is retained only in its editable Blender review scenes; it is deliberately excluded from the GLBs because the browser owns reusable infrastructure. Source image-generation sheets and Blender masters are not served publicly.
+Candidate D is now the approved production Railjet. The laboratory and normal game load the same canonical GLBs; A–C remain comparison evidence. The old `public/models/trains/railjet.glb` remains only as a rollback/legacy artifact. Candidate D's calibration track stays inside its editable Blender review scenes and is deliberately excluded from the GLBs because React Three Fiber owns reusable railway infrastructure. Source image-generation sheets and Blender masters are not served publicly.
+
+Every other train remains on a temporary `legacy-v1` presentation profile. Those profiles correct only gross lane/contact presentation in the new metric environment; they do not claim physical accuracy or replace the underlying model. The per-train approval process is documented in [TRAIN_ASSET_APPROVAL_WORKFLOW.md](TRAIN_ASSET_APPROVAL_WORKFLOW.md).
 
 ## Planned assets
 

@@ -1,3 +1,5 @@
+import { RAILWAY_METRIC_PROFILE, railwayMetersToWorld } from "./metricRailway";
+
 export type RailjetGeneration = "classic" | "nextgen";
 export type RailjetRenderMethod = "generated-2d" | "vector-2d" | "hybrid-3d" | "blender-3d";
 export type RailjetMotionMode = "stationary" | "stopping" | "pass";
@@ -37,22 +39,13 @@ export interface RailjetPrototypeDefinition {
 }
 
 export const RAILJET_METRIC_PROFILE = {
-  metersToWorld: 0.071,
-  standardGaugeMeters: 1.435,
-  railTopY: 0.295,
-  platformLengthMeters: 280,
-  platformWidthMeters: 5,
-  platformHeightMeters: 0.55,
-  platformEdgeClearanceMeters: 0.2,
-  vehicleWidthMeters: 2.825,
-  catenaryContactHeightMeters: 5.5,
-  trackCenterSpacingMeters: 5,
-  sleeperLengthMeters: 2.58,
-  maxFormationLengthMeters: 258,
+  ...RAILWAY_METRIC_PROFILE,
+  platformLengthMeters: RAILWAY_METRIC_PROFILE.platformLengthMetersByLevel[4],
+  trackCenterSpacingMeters: RAILWAY_METRIC_PROFILE.reviewTrackCenterSpacingMeters,
 } as const;
 
 export function railjetMetersToWorld(meters: number) {
-  return meters * RAILJET_METRIC_PROFILE.metersToWorld;
+  return railwayMetersToWorld(meters);
 }
 
 const vectorPath = (generation: RailjetGeneration, role: RailjetVehicleRole) =>
@@ -93,7 +86,7 @@ export const RAILJET_PROTOTYPES: Record<RailjetGeneration, RailjetPrototypeDefin
     consist: classicVehicles,
     generatedBase: "/railjet-lab/generated/classic",
     hybridAsset: "/models/railjet-lab/railjet-classic-hybrid.glb",
-    blenderAsset: "/models/railjet-lab/blender/railjet-classic-blender.glb",
+    blenderAsset: "/models/trains/blender/railjet/railjet-classic-blender.glb",
     worldScale: 0.071,
     pivot: [0, 0, 0],
     groundOffset: 0.14,
@@ -109,7 +102,7 @@ export const RAILJET_PROTOTYPES: Record<RailjetGeneration, RailjetPrototypeDefin
     consist: nextgenVehicles,
     generatedBase: "/railjet-lab/generated/nextgen",
     hybridAsset: "/models/railjet-lab/railjet-nextgen-hybrid.glb",
-    blenderAsset: "/models/railjet-lab/blender/railjet-nextgen-blender.glb",
+    blenderAsset: "/models/trains/blender/railjet/railjet-nextgen-blender.glb",
     worldScale: 0.061,
     pivot: [0, 0, 0],
     groundOffset: 0.14,

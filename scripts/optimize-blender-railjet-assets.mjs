@@ -3,7 +3,7 @@ import { dedup, prune } from "@gltf-transform/functions";
 import { readdir, rename, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 
-const assetDirectory = path.resolve("public/models/railjet-lab/blender");
+const assetDirectory = path.resolve("public/models/trains/blender/railjet");
 const io = new NodeIO();
 const files = (await readdir(assetDirectory)).filter((file) => file.endsWith(".glb")).sort();
 const report = [];

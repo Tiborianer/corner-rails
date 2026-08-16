@@ -27,7 +27,7 @@ from mathutils import Matrix, Vector
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_DIR = PROJECT_ROOT / "assets" / "blender" / "railjet-classic"
-OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / "railjet-lab" / "blender"
+OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / "trains" / "blender" / "railjet"
 MASTER_PATH = SOURCE_DIR / "railjet-classic-master.blend"
 
 TAURUS_LENGTH = 19.28
@@ -889,7 +889,7 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "productionRailjetModified": False,
+        "productionRailjetModified": True,
     }
     (SOURCE_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("CORNER_RAILS_RAILJET_CLASSIC_GENERATED")

@@ -8,6 +8,13 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { Group, Points, Texture } from "three";
 import { Box3, RepeatWrapping, SRGBColorSpace, Vector3 } from "three";
 import {
+  MetricCatenary,
+  MetricContactShadow,
+  MetricPlatform,
+  MetricTrack,
+  RAILWAY_GROUND_Y,
+} from "./metricRailway";
+import {
   RAILJET_METHODS,
   RAILJET_METRIC_PROFILE,
   RAILJET_PROTOTYPES,
@@ -98,36 +105,7 @@ function LabTrack({ z = 0, metric = false }: { z?: number; metric?: boolean }) {
     return Array.from({ length: Math.floor(58 / spacing) + 1 }, (_, index) => -29 + index * spacing);
   }, [metric]);
   if (metric) {
-    const railWidth = 0.012;
-    const railHeight = 0.014;
-    const sleeperHeight = 0.016;
-    const railTop = RAILJET_METRIC_PROFILE.railTopY;
-    const railOffset = railjetMetersToWorld(RAILJET_METRIC_PROFILE.standardGaugeMeters / 2);
-    const sleeperLength = railjetMetersToWorld(RAILJET_METRIC_PROFILE.sleeperLengthMeters);
-    const sleeperTop = railTop - railHeight;
-    const groundY = railTop - railjetMetersToWorld(1.75);
-    const ballastTop = sleeperTop - sleeperHeight + 0.002;
-    const ballastHeight = ballastTop - groundY;
-    return (
-      <group>
-        <mesh position={[0, groundY + ballastHeight / 2, z]} receiveShadow>
-          <boxGeometry args={[60, ballastHeight, railjetMetersToWorld(3.6)]} />
-          <meshStandardMaterial color="#59615e" roughness={0.96} />
-        </mesh>
-        {sleeperPositions.map((x) => (
-          <mesh key={x} position={[x, sleeperTop - sleeperHeight / 2, z]} receiveShadow>
-            <boxGeometry args={[0.025, sleeperHeight, sleeperLength]} />
-            <meshStandardMaterial color="#6f513b" roughness={0.9} />
-          </mesh>
-        ))}
-        {[-railOffset, railOffset].map((offset) => (
-          <mesh key={offset} position={[0, railTop - railHeight / 2, z + offset]} castShadow receiveShadow>
-            <boxGeometry args={[60, railHeight, railWidth]} />
-            <meshStandardMaterial color="#c4cac9" metalness={0.76} roughness={0.3} />
-          </mesh>
-        ))}
-      </group>
-    );
+    return <MetricTrack z={z} length={60} />;
   }
   return (
     <group>
@@ -153,42 +131,7 @@ function LabTrack({ z = 0, metric = false }: { z?: number; metric?: boolean }) {
 
 function LabPlatform({ metric = false, outerLaneZ = 0 }: { metric?: boolean; outerLaneZ?: number }) {
   if (metric) {
-    const railTop = RAILJET_METRIC_PROFILE.railTopY;
-    const groundY = railTop - railjetMetersToWorld(1.75);
-    const surfaceY = railTop + railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformHeightMeters);
-    const platformLength = railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformLengthMeters);
-    const platformWidth = railjetMetersToWorld(RAILJET_METRIC_PROFILE.platformWidthMeters);
-    const innerEdge = outerLaneZ + railjetMetersToWorld(RAILJET_METRIC_PROFILE.vehicleWidthMeters / 2 + RAILJET_METRIC_PROFILE.platformEdgeClearanceMeters);
-    const centerZ = innerEdge + platformWidth / 2;
-    const slabHeight = surfaceY - groundY;
-    return (
-      <group>
-        <mesh position={[0, groundY + slabHeight / 2, centerZ]} castShadow receiveShadow>
-          <boxGeometry args={[platformLength, slabHeight, platformWidth]} />
-          <meshStandardMaterial color="#aaa493" roughness={0.88} />
-        </mesh>
-        <mesh position={[0, surfaceY + 0.006, centerZ]} castShadow receiveShadow>
-          <boxGeometry args={[platformLength - 0.04, 0.012, platformWidth - 0.02]} />
-          <meshStandardMaterial color="#ded7c4" roughness={0.82} />
-        </mesh>
-        <mesh position={[0, surfaceY + 0.014, innerEdge + 0.022]}>
-          <boxGeometry args={[platformLength - 0.12, 0.008, 0.025]} />
-          <meshStandardMaterial color="#f7e5a5" roughness={0.75} />
-        </mesh>
-        {[-7.2, -2.4, 2.4, 7.2].map((x) => (
-          <group key={x} position={[x, 0, centerZ]}>
-            <mesh position={[0, surfaceY + 0.13, 0]} castShadow>
-              <boxGeometry args={[0.025, 0.26, 0.025]} />
-              <meshStandardMaterial color="#40504f" />
-            </mesh>
-            <mesh position={[0, surfaceY + 0.27, 0]} castShadow>
-              <boxGeometry args={[0.55, 0.025, platformWidth * 0.82]} />
-              <meshStandardMaterial color="#315a5b" />
-            </mesh>
-          </group>
-        ))}
-      </group>
-    );
+    return <MetricPlatform trackCenter={outerLaneZ} lengthMeters={280} amenities />;
   }
   return (
     <group position={[0, 0, 1.24]}>
@@ -222,34 +165,7 @@ function LabPlatform({ metric = false, outerLaneZ = 0 }: { metric?: boolean; out
 
 function LabCatenary({ laneZs, metric = false }: { laneZs: number[]; metric?: boolean }) {
   if (metric) {
-    const groundY = RAILJET_METRIC_PROFILE.railTopY - railjetMetersToWorld(1.75);
-    const wireY = RAILJET_METRIC_PROFILE.railTopY + railjetMetersToWorld(RAILJET_METRIC_PROFILE.catenaryContactHeightMeters);
-    const poleTop = wireY + 0.085;
-    const poleHeight = poleTop - groundY;
-    return (
-      <group>
-        {laneZs.map((z) => (
-          <group key={z}>
-            {[-24, -18, -12, -6, 0, 6, 12, 18, 24].map((x) => (
-              <group key={x}>
-                <mesh position={[x, groundY + poleHeight / 2, z + 0.19]} castShadow>
-                  <boxGeometry args={[0.025, poleHeight, 0.025]} />
-                  <meshStandardMaterial color="#5d6867" metalness={0.35} roughness={0.54} />
-                </mesh>
-                <mesh position={[x, poleTop - 0.02, z]} castShadow>
-                  <boxGeometry args={[0.025, 0.02, 0.42]} />
-                  <meshStandardMaterial color="#5d6867" metalness={0.35} roughness={0.54} />
-                </mesh>
-              </group>
-            ))}
-            <mesh position={[0, wireY, z]}>
-              <boxGeometry args={[60, 0.01, 0.01]} />
-              <meshStandardMaterial color="#242d2c" metalness={0.5} roughness={0.4} />
-            </mesh>
-          </group>
-        ))}
-      </group>
-    );
+    return <MetricCatenary laneZs={laneZs} length={60} />;
   }
   return (
     <group>
@@ -344,12 +260,20 @@ function GlbFormation({ definition, method }: { definition: RailjetPrototypeDefi
   const groundOffset = metric ? RAILJET_METRIC_PROFILE.railTopY : definition.groundOffset;
   return (
     <>
-      <ContactShadow
-        length={size.x * worldScale}
-        width={Math.max(0.12, size.z * worldScale * 0.86)}
-        z={definition.pivot[2]}
-        y={metric ? RAILJET_METRIC_PROFILE.railTopY - 0.018 : groundOffset - 0.01}
-      />
+      {metric ? (
+        <MetricContactShadow
+          length={size.x * worldScale}
+          width={Math.max(0.12, size.z * worldScale * 0.86)}
+          z={definition.pivot[2]}
+        />
+      ) : (
+        <ContactShadow
+          length={size.x * worldScale}
+          width={Math.max(0.12, size.z * worldScale * 0.86)}
+          z={definition.pivot[2]}
+          y={groundOffset - 0.01}
+        />
+      )}
       <group position={[definition.pivot[0], groundOffset, definition.pivot[2]]} scale={worldScale}>
         <Clone object={formation} castShadow receiveShadow />
       </group>
@@ -462,7 +386,7 @@ function LabScene({
   const metric = method === "blender-3d";
   const laneSpacing = metric ? railjetMetersToWorld(RAILJET_METRIC_PROFILE.trackCenterSpacingMeters) : 1.35;
   const laneZs = laneIndexes.map((lane) => lane * laneSpacing);
-  const groundY = metric ? RAILJET_METRIC_PROFILE.railTopY - railjetMetersToWorld(1.75) : -0.16;
+  const groundY = metric ? RAILWAY_GROUND_Y : -0.16;
   const sky = night ? "#101b2d" : raining ? "#637c82" : "#a8d2df";
   return (
     <>
@@ -507,7 +431,13 @@ function SegmentedControl<T extends string>({ label, value, options, onChange }:
   );
 }
 
-export default function RailjetLab({ initialState }: { initialState: RailjetLabInitialState }) {
+export default function RailjetLab({
+  initialState,
+  reviewMode = false,
+}: {
+  initialState: RailjetLabInitialState;
+  reviewMode?: boolean;
+}) {
   const [generation, setGeneration] = useState<RailjetGeneration>(initialState.generation);
   const [method, setMethod] = useState<LabMethod>(initialState.method);
   const [motion, setMotion] = useState<RailjetMotionMode>(initialState.motion);
@@ -526,15 +456,23 @@ export default function RailjetLab({ initialState }: { initialState: RailjetLabI
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    params.set("railjetLab", "1");
-    params.set("generation", generation);
-    params.set("method", method);
+    if (reviewMode) {
+      params.delete("railjetLab");
+      params.delete("generation");
+      params.delete("method");
+      params.set("trainLab", "railjet");
+      params.set("variant", generation === "classic" ? "railjet-classic" : "railjet-nextgen");
+    } else {
+      params.set("railjetLab", "1");
+      params.set("generation", generation);
+      params.set("method", method);
+    }
     params.set("motion", motion);
     params.set("atmosphere", atmosphere);
     params.set("scale", scale);
     params.set("load", String(loadCount));
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
-  }, [atmosphere, generation, loadCount, method, motion, scale]);
+  }, [atmosphere, generation, loadCount, method, motion, reviewMode, scale]);
 
   const updateScore = (key: ScoreKey, value: number) => {
     setScores((current) => ({ ...current, [scoreId]: { ...(current[scoreId] ?? DEFAULT_SCORES), [key]: value } }));
@@ -553,7 +491,7 @@ export default function RailjetLab({ initialState }: { initialState: RailjetLabI
       <header className="railjet-lab-title">
         <span className="railjet-lab-blind">{methodDefinition.blindLabel}</span>
         <div>
-          <small>Corner Rails · Visual bake-off</small>
+          <small>Corner Rails · {reviewMode ? "Train approval laboratory" : "Visual bake-off"}</small>
           <h1>{definition.label}</h1>
           <p>{definition.vehicleCount} vehicles · {definition.lengthMeters} m · {definition.serviceYear}</p>
         </div>
@@ -562,12 +500,12 @@ export default function RailjetLab({ initialState }: { initialState: RailjetLabI
       {!captureMode && (
         <aside className="railjet-lab-controls" aria-label="Railjet lab controls">
           <div className="railjet-lab-control-head">
-            <div><small>Candidate {methodDefinition.blindLabel}</small><strong>{methodDefinition.label}</strong></div>
+            <div><small>{reviewMode ? "Production candidate" : `Candidate ${methodDefinition.blindLabel}`}</small><strong>{methodDefinition.label}</strong></div>
             <button type="button" onClick={() => window.location.assign("/")} aria-label="Exit Railjet lab">Exit</button>
           </div>
-          <p>{methodDefinition.description}</p>
+          <p>{reviewMode ? "Approved Blender formation in the shared production railway environment." : methodDefinition.description}</p>
           <SegmentedControl label="Formation" value={generation} options={[{ value: "classic", label: "Classic" }, { value: "nextgen", label: "New gen" }]} onChange={setGeneration} />
-          <SegmentedControl label="Method" value={method} options={RAILJET_METHODS.map((item) => ({ value: item.id, label: item.blindLabel }))} onChange={setMethod} />
+          {!reviewMode && <SegmentedControl label="Method" value={method} options={RAILJET_METHODS.map((item) => ({ value: item.id, label: item.blindLabel }))} onChange={setMethod} />}
           <SegmentedControl label="Motion" value={motion} options={[{ value: "stationary", label: "Parked" }, { value: "stopping", label: "Stop" }, { value: "pass", label: "Pass" }]} onChange={setMotion} />
           <SegmentedControl label="Weather" value={atmosphere} options={[{ value: "day", label: "Day" }, { value: "night", label: "Night" }, { value: "rain", label: "Rain" }]} onChange={setAtmosphere} />
           <div className="railjet-lab-inline-controls">
@@ -583,7 +521,7 @@ export default function RailjetLab({ initialState }: { initialState: RailjetLabI
         <span><small>METHOD</small><strong>{methodDefinition.blindLabel}</strong></span>
       </div>
 
-      {!captureMode && (
+      {!captureMode && !reviewMode && (
         <aside className={`railjet-lab-score ${showScoring ? "open" : ""}`}>
           <button type="button" className="railjet-score-toggle" onClick={() => setShowScoring((current) => !current)} aria-expanded={showScoring}>
             Score candidate <b>{weightedScore.toFixed(1)}/5</b>
@@ -597,7 +535,7 @@ export default function RailjetLab({ initialState }: { initialState: RailjetLabI
                   <b>{currentScores[key]}</b>
                 </label>
               ))}
-              <p>Scores stay only in this open lab session. The production Railjet remains unchanged.</p>
+              <p>Scores stay only in this open lab session. Candidate D is the selected production direction.</p>
             </div>
           )}
         </aside>

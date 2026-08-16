@@ -30,6 +30,20 @@ import {
   railjetLabMotionPosition,
   railjetMetersToWorld,
 } from "../app/game/railjetLabData";
+import {
+  PRODUCTION_TRACK_CENTER_SPACING_METERS,
+  RAILWAY_METRIC_PROFILE,
+  metricPlatformCenter,
+  platformLengthMeters,
+  productionTrackCenter,
+  railwayMetersToWorld,
+} from "../app/game/metricRailway";
+import {
+  RAILJET_VISUAL_VARIANTS,
+  resolveTrainVisualVariant,
+  selectTrainVisualVariant,
+  trainVisualVariants,
+} from "../app/game/trainVisuals";
 
 function fundedState(): GameState {
   return {
@@ -315,6 +329,7 @@ describe("Railjet visual bake-off assets", () => {
       const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
       expect(manifest).toMatchObject({
         schemaVersion: 2,
+        productionRailjetModified: true,
         assetContract: {
           units: "meters",
           forwardAxis: "+X",
@@ -341,6 +356,65 @@ describe("Railjet visual bake-off assets", () => {
     const passB = railjetLabMotionPosition("pass", 3 + 1 / 60);
     expect(passB).toBeGreaterThan(passA);
     expect(passB - passA).toBeLessThan(1);
+  });
+});
+
+describe("production metric railway and Railjet registry", () => {
+  it("defines the complete production railway contract and calculated five-lane layout", () => {
+    expect(RAILWAY_METRIC_PROFILE).toMatchObject({
+      metersToWorld: 0.071,
+      standardGaugeMeters: 1.435,
+      railTopY: 0.295,
+      platformHeightMeters: 0.55,
+      platformWidthMeters: 5,
+      platformEdgeClearanceMeters: 0.2,
+      catenaryContactHeightMeters: 5.5,
+      platformLengthMetersByLevel: [90, 130, 170, 220, 280],
+    });
+    expect([1, 2, 3, 4, 5].map(platformLengthMeters)).toEqual([90, 130, 170, 220, 280]);
+    expect(PRODUCTION_TRACK_CENTER_SPACING_METERS).toBeCloseTo(8.225, 6);
+    const laneCenters = Array.from({ length: 5 }, (_, index) => productionTrackCenter(index, 5));
+    expect(laneCenters[2]).toBe(0);
+    expect(laneCenters[4] - laneCenters[3]).toBeCloseTo(railwayMetersToWorld(8.225), 6);
+    const platformCenter = metricPlatformCenter(laneCenters[4]);
+    const nearPlatformEdge = platformCenter - railwayMetersToWorld(RAILWAY_METRIC_PROFILE.platformWidthMeters / 2);
+    const trainSide = laneCenters[4] + railwayMetersToWorld(RAILWAY_METRIC_PROFILE.vehicleWidthMeters / 2);
+    expect(nearPlatformEdge - trainSide).toBeCloseTo(railwayMetersToWorld(0.2), 6);
+  });
+
+  it("promotes exactly two metric Railjet variants while every other train remains legacy", () => {
+    expect(RAILJET_VISUAL_VARIANTS).toHaveLength(2);
+    expect(RAILJET_VISUAL_VARIANTS.map((variant) => ({
+      id: variant.id,
+      profile: variant.profile,
+      minimumLengthLevel: variant.minimumLengthLevel,
+      selectionWeight: variant.selectionWeight,
+    }))).toEqual([
+      { id: "railjet-classic", profile: "metric-v1", minimumLengthLevel: 4, selectionWeight: 1 },
+      { id: "railjet-nextgen", profile: "metric-v1", minimumLengthLevel: 5, selectionWeight: 1 },
+    ]);
+    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet")) {
+      expect(trainVisualVariants(train)).toHaveLength(1);
+      expect(resolveTrainVisualVariant(train).profile).toBe("legacy-v1");
+    }
+  });
+
+  it("gates the new-generation formation by length and chooses equally using deterministic rolls", () => {
+    const railjet = TRAINS.find((train) => train.id === "railjet")!;
+    expect(selectTrainVisualVariant(railjet, 4, 0.99).id).toBe("railjet-classic");
+    expect(selectTrainVisualVariant(railjet, 5, 0.1).id).toBe("railjet-classic");
+    expect(selectTrainVisualVariant(railjet, 5, 0.9).id).toBe("railjet-nextgen");
+  });
+
+  it("creates reviewable production states for both Blender generations", () => {
+    expect(debugState(fundedState(), "railjet-classic").platformLanes[0].activeTrain).toMatchObject({
+      trainId: "railjet",
+      visualVariantId: "railjet-classic",
+    });
+    expect(debugState(fundedState(), "railjet-nextgen").platformLanes[0].activeTrain).toMatchObject({
+      trainId: "railjet",
+      visualVariantId: "railjet-nextgen",
+    });
   });
 });
 
@@ -550,5 +624,30 @@ describe("manual save codes", () => {
     expect(decoded.platformLanes).toHaveLength(2);
     expect(decoded.platformLanes.map((lane) => lane.spawnCountdown)).toEqual([17, 9]);
     expect(() => decodeSave(`${code}x`)).toThrow(/damaged|incomplete/u);
+  });
+
+  it("preserves a selected Railjet formation and safely defaults old active Railjets", () => {
+    const activeRailjet = {
+      trainId: "railjet",
+      phase: "dwell" as const,
+      phaseElapsed: 2,
+      phaseDuration: 14,
+      payout: 9_000,
+      firstService: false,
+      visualVariantId: "railjet-nextgen",
+    };
+    const state: GameState = {
+      ...fundedState(),
+      tier: 5,
+      lengthLevel: 5,
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: activeRailjet }],
+    };
+    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain?.visualVariantId).toBe("railjet-nextgen");
+
+    const oldState: GameState = {
+      ...state,
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeRailjet, visualVariantId: undefined } }],
+    };
+    expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.visualVariantId).toBe("railjet-classic");
   });
 });

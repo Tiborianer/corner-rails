@@ -18,18 +18,18 @@
     "driving-trailer"
   ],
   "masterBlend": "assets/blender/railjet-nextgen/railjet-nextgen-master.blend",
-  "formationGlb": "public/models/railjet-lab/blender/railjet-nextgen-blender.glb",
+  "formationGlb": "public/models/trains/blender/railjet/railjet-nextgen-blender.glb",
   "moduleGlbs": {
-    "taurus": "public/models/railjet-lab/blender/railjet-nextgen-taurus.glb",
-    "first_a": "public/models/railjet-lab/blender/railjet-nextgen-first-a.glb",
-    "first_b": "public/models/railjet-lab/blender/railjet-nextgen-first-b.glb",
-    "restaurant": "public/models/railjet-lab/blender/railjet-nextgen-restaurant.glb",
-    "economy_a": "public/models/railjet-lab/blender/railjet-nextgen-economy-a.glb",
-    "economy_b": "public/models/railjet-lab/blender/railjet-nextgen-economy-b.glb",
-    "economy_c": "public/models/railjet-lab/blender/railjet-nextgen-economy-c.glb",
-    "economy_d": "public/models/railjet-lab/blender/railjet-nextgen-economy-d.glb",
-    "multifunction": "public/models/railjet-lab/blender/railjet-nextgen-multifunction.glb",
-    "driving_trailer": "public/models/railjet-lab/blender/railjet-nextgen-driving-trailer.glb"
+    "taurus": "public/models/trains/blender/railjet/railjet-nextgen-taurus.glb",
+    "first_a": "public/models/trains/blender/railjet/railjet-nextgen-first-a.glb",
+    "first_b": "public/models/trains/blender/railjet/railjet-nextgen-first-b.glb",
+    "restaurant": "public/models/trains/blender/railjet/railjet-nextgen-restaurant.glb",
+    "economy_a": "public/models/trains/blender/railjet/railjet-nextgen-economy-a.glb",
+    "economy_b": "public/models/trains/blender/railjet/railjet-nextgen-economy-b.glb",
+    "economy_c": "public/models/trains/blender/railjet/railjet-nextgen-economy-c.glb",
+    "economy_d": "public/models/trains/blender/railjet/railjet-nextgen-economy-d.glb",
+    "multifunction": "public/models/trains/blender/railjet/railjet-nextgen-multifunction.glb",
+    "driving_trailer": "public/models/trains/blender/railjet/railjet-nextgen-driving-trailer.glb"
   },
   "assetContract": {
     "units": "meters",
@@ -52,5 +52,5 @@
     "https://www.mobility.siemens.com/global/en/portfolio/references/railjet.html",
     "https://konzern.oebb.at/de/dam/jcr%3A9a8a8bc6-35bd-4dc5-9cc0-fc4470742bcf/OEBB-Umsetzungsplan%202025-2030.pdf"
   ],
-  "productionRailjetModified": false
+  "productionRailjetModified": true
 }

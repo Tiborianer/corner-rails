@@ -13,10 +13,20 @@ function numericQueryValue(value: string | string[] | undefined, fallback: numbe
 
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const parameters = await searchParams;
-  if (parameters.railjetLab !== "1") return <CornerRails />;
+  const trainLab = Array.isArray(parameters.trainLab) ? parameters.trainLab[0] : parameters.trainLab;
+  const reviewMode = trainLab === "railjet";
+  if (parameters.railjetLab !== "1" && !reviewMode) {
+    const legacyVisuals = parameters.debug === "1" && parameters.visuals === "legacy";
+    return <CornerRails legacyVisuals={legacyVisuals} />;
+  }
+  const requestedVariant = Array.isArray(parameters.variant) ? parameters.variant[0] : parameters.variant;
   const initialState: RailjetLabInitialState = {
-    generation: queryValue(parameters.generation, ["classic", "nextgen"], "classic"),
-    method: queryValue(parameters.method, ["generated-2d", "vector-2d", "hybrid-3d", "blender-3d"], "generated-2d"),
+    generation: reviewMode
+      ? requestedVariant === "railjet-nextgen" ? "nextgen" : "classic"
+      : queryValue(parameters.generation, ["classic", "nextgen"], "classic"),
+    method: reviewMode
+      ? "blender-3d"
+      : queryValue(parameters.method, ["generated-2d", "vector-2d", "hybrid-3d", "blender-3d"], "generated-2d"),
     motion: queryValue(parameters.motion, ["stationary", "stopping", "pass"], "stationary"),
     atmosphere: queryValue(parameters.atmosphere, ["day", "night", "rain"], "day"),
     scale: queryValue(parameters.scale, ["normal", "inspect"], "normal"),
@@ -26,5 +36,5 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
     freezeMotion: queryValue(parameters.freeze, ["0", "1"], "0") === "1",
   };
   const labStateKey = [initialState.generation, initialState.method, initialState.motion, initialState.atmosphere, initialState.scale, initialState.loadCount, Number(initialState.captureMode), initialState.capturePhaseSeconds, Number(initialState.freezeMotion)].join(":");
-  return <RailjetLab key={labStateKey} initialState={initialState} />;
+  return <RailjetLab key={labStateKey} initialState={initialState} reviewMode={reviewMode} />;
 }

@@ -55,13 +55,14 @@ type StationSceneProps = {
   onPlacePlatform: () => void;
 };
 
-function StationScene(props: StationSceneProps) {
+function StationScene({ legacyVisuals, ...props }: StationSceneProps & { legacyVisuals: boolean }) {
   const [Scene, setScene] = useState<ComponentType<StationSceneProps> | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    import("./game/Scene")
+    const loader = legacyVisuals ? import("./game/LegacyScene") : import("./game/Scene");
+    loader
       .then(({ default: component }) => {
         if (mounted) setScene(() => component);
       })
@@ -71,7 +72,7 @@ function StationScene(props: StationSceneProps) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [legacyVisuals]);
 
   if (loadFailed) {
     return <div className="scene-loading">The station diorama could not load. Refresh to try again.</div>;
@@ -94,7 +95,7 @@ type Action =
   | { type: "claim-mission" }
   | { type: "event"; eventId: "ice-s" | "br01" }
   | { type: "prestige" }
-  | { type: "debug"; mode: "tier5" | "rain" | "night" | "dirty" }
+  | { type: "debug"; mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" }
   | { type: "import"; state: GameState }
   | { type: "toast"; message: string | null };
 
@@ -207,7 +208,7 @@ function Metric({ icon, label, value, tone, children }: { icon: string; label: s
   );
 }
 
-export default function CornerRails() {
+export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?: boolean }) {
   const [state, dispatch] = useReducer(reducer, undefined, () => createInitialState());
   const [drawer, setDrawer] = useState<"build" | "trains" | "tier" | "save" | "help" | null>(null);
   const [confirmUpgrade, setConfirmUpgrade] = useState<UpgradeAction | null>(null);
@@ -336,7 +337,7 @@ export default function CornerRails() {
   return (
     <main className={`game-shell ${isNight(state) ? "night" : "day"} ${state.raining ? "rainy" : ""}`}>
       <section className="world" aria-label="Corner Rails station diorama">
-        <StationScene state={state} onPlacePlatform={() => dispatch({ type: "place-platform" })} />
+        <StationScene legacyVisuals={legacyVisuals} state={state} onPlacePlatform={() => dispatch({ type: "place-platform" })} />
         <div className="world-vignette" />
       </section>
 
@@ -586,6 +587,8 @@ export default function CornerRails() {
         <div className="debug-tools">
           <span>DEBUG</span>
           {(["tier5", "night", "rain", "dirty"] as const).map((mode) => <button key={mode} onClick={() => dispatch({ type: "debug", mode })}>{mode}</button>)}
+          <button onClick={() => dispatch({ type: "debug", mode: "railjet-classic" })}>RJ classic</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "railjet-nextgen" })}>RJ new</button>
           <button onClick={() => dispatch({ type: "event", eventId: "ice-s" })}>ICE-S</button>
           <button onClick={() => dispatch({ type: "event", eventId: "br01" })}>BR 01</button>
         </div>

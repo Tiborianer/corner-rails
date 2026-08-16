@@ -12,11 +12,19 @@ QA completed on **2026-08-11** in the Codex in-app Chromium browser plus Vitest/
 
 The non-Blender Railjet bake-off was added on **2026-08-15**. It preserves the production Railjet and introduces a private `?railjetLab=1` route with generated 2.5D, deterministic vector 2.5D, and procedural 3D candidates for both Railjet generations. Twenty-seven automated tests now cover the six combinations, exact 8/10-vehicle formations, transparent sprite bounds, SVG safety, GLB hierarchy/bounds/budgets, and continuous stop/pass motion. Direct non-default URLs were browser-tested after fixing a server/client query-state hydration mismatch. The first SVG pass also exposed missing intrinsic dimensions; the generator now writes explicit 512×256 dimensions so Three.js can upload the vectors reliably.
 
-The 2026-08-16 Blender pass adds editable Blender 5.2 LTS masters, modular vehicle GLBs, and complete classic/new-generation formations as private-lab candidate D. The classic model follows the official 205.38 m formation and Class 1116/Viaggio Comfort dimensions; the new-generation model follows the official ten-vehicle-with-locomotive, 258 m formation and includes visibly lower entrances on seven cars. Production Railjet bytes remain unchanged pending user selection.
+The 2026-08-16 Blender pass adds editable Blender 5.2 LTS masters, modular vehicle GLBs, and complete classic/new-generation formations as candidate D. The classic model follows the official 205.38 m formation and Class 1116/Viaggio Comfort dimensions; the new-generation model follows the official ten-vehicle-with-locomotive, 258 m formation and includes visibly lower entrances on seven cars.
 
 The physical-calibration revision gives Candidate D a 1.435 m gauge contract, wheel-tread centres at ±0.7175 m, a Z=0 rail-contact anchor, a shared 0.071 world-units-per-metre scale, and a 5.5 m pantograph/contact-wire height. Its R3F rails, platform, catenary, shadows, lane spacing, and locked camera are derived from that contract instead of inheriting the oversized legacy comparison environment. Calibration rails remain in the editable Blender review scenes and are excluded from every shipping GLB.
 
 Twenty-nine automated tests now include Blender hierarchy, exact vehicle count, metre-scale bounds, contact-anchor extras, tread gauge/contact height, manifest metadata, distinct cab/door/bogie nodes, material count, runtime world lengths, platform/catenary values, and the 500 KB per-formation budget. Direct candidate-D URLs were browser-tested at desktop and 390×844 mobile sizes in stationary, stopping, rain, night, pass-through, inspection, and three-simultaneous-train states. Both assets loaded without WebGL errors; the only console warning was Three.js's existing `Clock` deprecation notice.
+
+## 2026-08-16 production metric migration
+
+Candidate D was selected by the user and promoted without changing the old `public/models/trains/railjet.glb`; its working-tree and committed Git hashes remain byte-identical. The normal game and private review route now share the canonical classic and new-generation GLBs under `public/models/trains/blender/railjet/`. One scheduled Railjet record remains in the six-service Tier 5 roster. Level 4 selects only classic; level 5 selects classic/new generation with equal deterministic weight, and the chosen variant is serialized on its active platform lane.
+
+The normal scene now uses the shared metric rails, calculated five-lane/platform placement, 90/130/170/220/280 m length levels, 5.5 m catenary, formation-bound entry/exit and contact shadows, metric-positioned station/road/maintenance/scenery, and the laboratory light balance. All other train records remain on temporary legacy profiles; browser QA showed five concurrent lanes containing one metric Railjet plus four legacy trains without loading stalls or obvious rail/platform displacement. The old scene remains available only at `?debug=1&visuals=legacy`.
+
+Thirty-four automated game/asset tests, lint, the Sites production build, rendered-HTML smoke test and GitHub Pages build pass. Browser flows verified the 10-coin first service, classic day arrival, new-generation night/rain arrival, five simultaneous platforms at 1× after a 3× dispatch, desktop layout, 390×844 layout, both focused `?trainLab=railjet` URLs and the debug rollback renderer. No WebGL errors occurred; only Three.js's existing `Clock` deprecation warning appeared. Mobile browser captures are responsive-layout evidence, not physical-device GPU benchmarks.
 
 ## Automated acceptance coverage
 
@@ -51,6 +59,12 @@ Twenty-nine automated tests now include Blender hierarchy, exact vehicle count, 
 - [Candidate D wheel/rail inspection view](../qa/railjet-lab/classic-blender-wheel-rail-detail.png)
 - [New-generation calibrated browser view](../qa/railjet-lab/nextgen-blender-desktop.png)
 - [Three calibrated formations in rain](../qa/railjet-lab/nextgen-blender-game-rain.png)
+- [Classic Railjet in the production station](../qa/production-railjet-classic-day.png)
+- [New-generation Railjet with production night/rain lighting](../qa/production-railjet-nextgen-night-rain.png)
+- [Five simultaneous metric/legacy production lanes](../qa/production-five-platform-concurrent.png)
+- [New-generation production mobile layout](../qa/production-railjet-nextgen-mobile.png)
+- [Classic focused train-review route at night](../qa/train-review-railjet-classic-night.png)
+- [New-generation focused train-review mobile route](../qa/train-review-railjet-nextgen-mobile.png)
 - [Railjet night candidate](../qa/railjet-lab/classic-generated-night.jpg)
 - [Three simultaneous procedural formations](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 

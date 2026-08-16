@@ -16,6 +16,7 @@ import type {
   TrainDefinition,
   UpgradeAction,
 } from "./types";
+import { eligibleTrainVisualVariants, selectTrainVisualVariant } from "./trainVisuals";
 
 export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 export const DEVELOPMENT_CAP = 3;
@@ -127,6 +128,17 @@ function chooseWeightedTrain(state: GameState, trains: TrainDefinition[]): [Trai
   return [trains[trains.length - 1], nextSeed];
 }
 
+function chooseTrainVisualVariantId(
+  train: Pick<TrainDefinition, "id" | "modelKey">,
+  lengthLevel: number,
+  seed: number,
+): [string, number] {
+  const variants = eligibleTrainVisualVariants(train, lengthLevel);
+  if (variants.length === 1) return [variants[0].id, seed];
+  const [roll, nextSeed] = nextRandom(seed);
+  return [selectTrainVisualVariant(train, lengthLevel, roll).id, nextSeed];
+}
+
 function updatePlatformLane(state: GameState, platformIndex: number, update: Partial<GameState["platformLanes"][number]>): GameState {
   return {
     ...state,
@@ -163,8 +175,10 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
   const [payout, payoutSeed] = isFirst
     ? [10, rng]
     : randomInteger(rng, train.payout[0], train.payout[1]);
+  const [visualVariantId, visualSeed] = chooseTrainVisualVariantId(train, state.lengthLevel, payoutSeed);
   const activeTrain: ActiveTrain = {
     trainId: train.id,
+    visualVariantId,
     phase: train.kind === "event" ? "pass" : "approach",
     phaseElapsed: 0,
     phaseDuration: train.kind === "event" ? (train.id === "br01" ? 14 : 10) : 5,
@@ -173,7 +187,7 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
   };
   return {
     ...updatePlatformLane(state, platformIndex, { activeTrain, spawnCountdown: 0 }),
-    rng: payoutSeed,
+    rng: visualSeed,
     lastUpgrade: state.lastUpgrade ? { ...state.lastUpgrade, undoAvailable: false } : null,
     toast: train.kind === "event"
       ? `Special event: ${train.name} is running through platform ${platformIndex + 1}!`
@@ -521,7 +535,30 @@ export function prestigeStation(state: GameState): GameState {
   return { ...next, region: "germany", toast: `Prestige ${next.prestige}: permanent +${next.prestige * 5} rating.` };
 }
 
-export function debugState(state: GameState, mode: "tier5" | "rain" | "night" | "dirty"): GameState {
+export function debugState(
+  state: GameState,
+  mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen",
+): GameState {
+  if (mode === "railjet-classic" || mode === "railjet-nextgen") {
+    const ready = debugState(state, "tier5");
+    return {
+      ...ready,
+      platformLanes: ready.platformLanes.map((lane) => lane.platformIndex === 0 ? {
+        ...lane,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: "railjet",
+          visualVariantId: mode,
+          phase: "approach",
+          phaseElapsed: 0,
+          phaseDuration: 5,
+          payout: 7_500,
+          firstService: false,
+        },
+      } : lane),
+      toast: `Debug: ${mode === "railjet-classic" ? "classic" : "new-generation"} Railjet approaching.`,
+    };
+  }
   if (mode === "tier5") {
     return {
       ...state,

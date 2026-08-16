@@ -2,9 +2,9 @@
 
 ## Open the laboratory
 
-Append `?railjetLab=1` to the game URL. The private comparison route keeps the production Railjet unchanged and exposes formation, method, motion, weather, scale, and 1×/3× load controls. Candidate scoring is deliberately session-only, and no winner is selected automatically.
+Append `?railjetLab=1` to the game URL. The private comparison route exposes formation, method, motion, weather, scale, and 1×/3× load controls. Candidate scoring remains session-only comparison evidence.
 
-Candidate D is the Blender 5.2 LTS path. It is loaded only by the private lab; the production `public/models/trains/railjet.glb` remains unchanged until the user selects a winner.
+Candidate D was explicitly selected and is now the production Railjet path. The normal game and laboratory load the same canonical files under `public/models/trains/blender/railjet/`. The old `public/models/trains/railjet.glb` remains unchanged as a rollback artifact. For a focused approval view, use `?trainLab=railjet&variant=railjet-classic` or `?trainLab=railjet&variant=railjet-nextgen`.
 
 ## Implemented candidates
 
@@ -21,7 +21,7 @@ Candidate B is regenerated entirely from `scripts/generate-railjet-vector-assets
 
 Candidate C is regenerated from `scripts/generate-railjet-lab-assets.mjs`. It uses lofted cross-sections, curved roofs, separate cab masks, windscreens, doors, windows, bogies, wheelsets, couplers, underframe equipment, pantographs, roof cabinets, HVAC, and a new-generation low-floor module. Both GLBs are glTF 2.0, Y-up, metre-based, and optimized with shared geometry/materials.
 
-Candidate D is regenerated from `scripts/blender/generate_railjet_classic.py` and `scripts/blender/generate_railjet_nextgen.py`. The editable masters live under `assets/blender/`; modular locomotive/coach GLBs and the complete formations live under `public/models/railjet-lab/blender/`. It uses measured metre-scale bodies, curved cross-sections, separate driving cabs, windows, doors, bogies, wheelsets, underframes, couplers, pantographs, HVAC, and low-floor new-generation entrances. It contains no downloaded mesh, photo texture, logo, or operator wordmark.
+Candidate D is regenerated from `scripts/blender/generate_railjet_classic.py` and `scripts/blender/generate_railjet_nextgen.py`. The editable masters live under `assets/blender/`; modular locomotive/coach GLBs and complete formations live under `public/models/trains/blender/railjet/`. It uses measured metre-scale bodies, curved cross-sections, separate driving cabs, windows, doors, bogies, wheelsets, underframes, couplers, pantographs, HVAC, and low-floor new-generation entrances. It contains no downloaded mesh, photo texture, logo, or operator wordmark.
 
 Candidate D alone now uses a physical scene contract: 1.435 m standard gauge, tread centres at ±0.7175 m, wheel contact at Z=0, one 0.071 world-units-per-metre scale for both generations, and a 5.5 m raised-pantograph/contact-wire height. The browser rail centres are therefore ±0.05094 world units, the classic formation is about 14.58 units long, and the new generation is about 18.32 units long. The platform, catenary, shadows, lane spacing, and camera use the same profile. Candidates A–C retain their original comparison transforms.
 
@@ -57,6 +57,6 @@ Automated coverage checks method/generation resolution, exact vehicle counts, re
 - [New-generation rain/platform view](../qa/railjet-lab/nextgen-hybrid-rain-platform.jpg)
 - [Three-train procedural load](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 
-The bake-off is ready for blind user review against the locked 50/20/15/10/5 rubric. Candidate D is the only candidate with editable Blender masters and independently modeled, measured vehicle modules; no winner has been declared.
+The user selected Candidate D after visual review. It is the only production candidate with editable Blender masters and independently modeled, measured vehicle modules. A–C remain available in the bake-off for historical comparison and are not loaded by normal gameplay.
 
 Official research references: [ÖBB fleet overview](https://static.web.oebb.at/konzern/oebb-flotte-2025/4/) and [Siemens new-generation Railjet](https://press.siemens.com/global/en/pressrelease/obb-puts-first-new-generation-railjet-siemens-mobility-service-and-orders-19-more).

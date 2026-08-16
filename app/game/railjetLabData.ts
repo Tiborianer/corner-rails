@@ -29,9 +29,11 @@ export interface RailjetPrototypeDefinition {
   consist: RailjetVehicleDefinition[];
   generatedBase: string;
   hybridAsset: string;
+  blenderAsset: string;
   worldScale: number;
   pivot: readonly [number, number, number];
   groundOffset: number;
+  blenderGroundOffset: number;
   source: string;
 }
 
@@ -73,9 +75,11 @@ export const RAILJET_PROTOTYPES: Record<RailjetGeneration, RailjetPrototypeDefin
     consist: classicVehicles,
     generatedBase: "/railjet-lab/generated/classic",
     hybridAsset: "/models/railjet-lab/railjet-classic-hybrid.glb",
+    blenderAsset: "/models/railjet-lab/blender/railjet-classic-blender.glb",
     worldScale: 0.071,
     pivot: [0, 0, 0],
     groundOffset: 0.14,
+    blenderGroundOffset: 0.25,
     source: "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
   },
   nextgen: {
@@ -88,17 +92,20 @@ export const RAILJET_PROTOTYPES: Record<RailjetGeneration, RailjetPrototypeDefin
     consist: nextgenVehicles,
     generatedBase: "/railjet-lab/generated/nextgen",
     hybridAsset: "/models/railjet-lab/railjet-nextgen-hybrid.glb",
+    blenderAsset: "/models/railjet-lab/blender/railjet-nextgen-blender.glb",
     worldScale: 0.061,
     pivot: [0, 0, 0],
     groundOffset: 0.14,
+    blenderGroundOffset: 0.25,
     source: "https://press.siemens.com/global/en/pressrelease/obb-puts-first-new-generation-railjet-siemens-mobility-service-and-orders-19-more",
   },
 };
 
-export const RAILJET_METHODS: Array<{ id: Exclude<RailjetRenderMethod, "blender-3d">; blindLabel: "A" | "B" | "C"; label: string; description: string }> = [
+export const RAILJET_METHODS: Array<{ id: RailjetRenderMethod; blindLabel: "A" | "B" | "C" | "D"; label: string; description: string }> = [
   { id: "generated-2d", blindLabel: "A", label: "Generated 2.5D", description: "Original rendered modules on transparent world cards." },
   { id: "vector-2d", blindLabel: "B", label: "Vector 2.5D", description: "Deterministic isometric SVG modules with exact consist assembly." },
   { id: "hybrid-3d", blindLabel: "C", label: "Procedural 3D", description: "Lofted GLB bodies with geometric livery and roof equipment." },
+  { id: "blender-3d", blindLabel: "D", label: "Blender 3D", description: "Measured Blender-authored cars with distinct cabs, bogies, doors, windows, underframes, and roof equipment." },
 ];
 
 export function generatedVehicleAsset(definition: RailjetPrototypeDefinition, frame: number) {

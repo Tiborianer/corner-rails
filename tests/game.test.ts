@@ -172,8 +172,8 @@ describe("render helpers", () => {
 });
 
 describe("Railjet visual bake-off assets", () => {
-  it("defines all three non-Blender methods for both authentic formation lengths", () => {
-    expect(RAILJET_METHODS.map((method) => method.id)).toEqual(["generated-2d", "vector-2d", "hybrid-3d"]);
+  it("defines all four methods for both authentic formation lengths", () => {
+    expect(RAILJET_METHODS.map((method) => method.id)).toEqual(["generated-2d", "vector-2d", "hybrid-3d", "blender-3d"]);
     expect(RAILJET_PROTOTYPES.classic).toMatchObject({ vehicleCount: 8, lengthMeters: 205.38 });
     expect(RAILJET_PROTOTYPES.nextgen).toMatchObject({ vehicleCount: 10, lengthMeters: 258 });
     expect(RAILJET_PROTOTYPES.classic.consist).toHaveLength(8);
@@ -228,6 +228,36 @@ describe("Railjet visual bake-off assets", () => {
       expect(root.listMaterials().length).toBeLessThanOrEqual(9);
       expect(bounds.min[1]).toBeGreaterThanOrEqual(0);
       expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(1);
+      expect((await stat(modelPath)).size).toBeLessThan(500_000);
+    }
+    expect(lengths.nextgen).toBeGreaterThan(lengths.classic * 1.2);
+  });
+
+  it("ships Blender-authored GLBs with exact formations, stable pivots, distinct vehicles, and web budgets", async () => {
+    const io = new NodeIO();
+    const lengths: Record<string, number> = {};
+    for (const definition of Object.values(RAILJET_PROTOTYPES)) {
+      const modelPath = path.resolve("public", definition.blenderAsset.slice(1));
+      const document = await io.read(modelPath);
+      const root = document.getRoot();
+      const scene = root.listScenes()[0];
+      const bounds = getBounds(scene);
+      const length = bounds.max[0] - bounds.min[0];
+      const nodeNames = root.listNodes().map((node) => node.getName());
+      const prefix = definition.id === "classic" ? "railjet_classic" : "railjet_nextgen";
+      lengths[definition.id] = length;
+
+      expect(nodeNames).toContain(`${prefix}_blender_root`);
+      expect(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).toHaveLength(definition.vehicleCount);
+      expect(new Set(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).size).toBe(definition.vehicleCount);
+      expect(nodeNames.some((name) => name.includes("taurus_cab") && name.includes("windshield"))).toBe(true);
+      expect(nodeNames.some((name) => name.includes("driving") && name.includes("windshield"))).toBe(true);
+      expect(nodeNames.some((name) => name.includes("bogie"))).toBe(true);
+      expect(nodeNames.some((name) => name.includes("door"))).toBe(true);
+      expect(root.listMaterials().length).toBeLessThanOrEqual(13);
+      expect(bounds.min[1]).toBeGreaterThanOrEqual(-0.001);
+      expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(0.1);
+      expect(length).toBeCloseTo(definition.lengthMeters, 0);
       expect((await stat(modelPath)).size).toBeLessThan(500_000);
     }
     expect(lengths.nextgen).toBeGreaterThan(lengths.classic * 1.2);

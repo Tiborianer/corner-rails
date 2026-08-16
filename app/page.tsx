@@ -16,7 +16,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
   if (parameters.railjetLab !== "1") return <CornerRails />;
   const initialState: RailjetLabInitialState = {
     generation: queryValue(parameters.generation, ["classic", "nextgen"], "classic"),
-    method: queryValue(parameters.method, ["generated-2d", "vector-2d", "hybrid-3d"], "generated-2d"),
+    method: queryValue(parameters.method, ["generated-2d", "vector-2d", "hybrid-3d", "blender-3d"], "generated-2d"),
     motion: queryValue(parameters.motion, ["stationary", "stopping", "pass"], "stationary"),
     atmosphere: queryValue(parameters.atmosphere, ["day", "night", "rain"], "day"),
     scale: queryValue(parameters.scale, ["normal", "inspect"], "normal"),

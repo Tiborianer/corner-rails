@@ -17,16 +17,16 @@
 | Railjet lab A | Ten original transparent WebP modules for classic and new-generation Railjet formations | `public/railjet-lab/generated/` |
 | Railjet lab B | Twelve deterministic, editable SVG vehicle-role modules with no embedded imagery or branding | `public/railjet-lab/vector/` |
 | Railjet lab C | Separate classic and new-generation lofted procedural formations | `public/models/railjet-lab/*.glb` |
+| Railjet lab D | Editable Blender 5.2 masters, modular Taurus/coach/driving-trailer GLBs, and complete classic/new-generation formations | `assets/blender/`, `public/models/railjet-lab/blender/` |
 
 All GLBs use glTF 2.0, metres, Y-up, applied transforms, a stable forward axis, reusable materials, and gameplay-friendly origins. Every multi-car record now ships as one complete consist, preventing generic runtime coaches from erasing its identity. The generated 20-file bundle is about 760 KB and remains far below the Tier 1 8 MB and later-tier 5 MB targets. Tier-based runtime requests provide practical lazy loading even though the files do not require separate archives.
 
-The private Railjet laboratory assets are comparison candidates, not replacements for `public/models/trains/railjet.glb`. Candidate A is approximately 196 KB for the classic formation and 172 KB for the new generation; Candidate B is approximately 24 KB per generation; Candidate C is approximately 70 KB classic and 82 KB new generation. Source image-generation sheets remain under `assets/railjet-lab/source/` and are not served publicly.
+The private Railjet laboratory assets are comparison candidates, not replacements for `public/models/trains/railjet.glb`. Candidate A is approximately 196 KB for the classic formation and 172 KB for the new generation; Candidate B is approximately 24 KB per generation; Candidate C is approximately 70 KB classic and 82 KB new generation; Candidate D is approximately 219 KB classic and 288 KB new generation. Source image-generation sheets and Blender masters are not served publicly.
 
 ## Planned assets
 
 - China, France, and Japan train rosters and station dressing.
 - Optional future LOD1/LOD2 meshes, KTX2 texture sets, animated doors, and operator-approved branding.
-- A Blender-authored Railjet candidate using the laboratory's existing `blender-3d` method slot.
 - BR 50 or another verified preserved locomotive, extra festivals, and special-charter decoration packs.
 - Second-station map/selector and expansion-specific station props.
 

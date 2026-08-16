@@ -9,9 +9,11 @@ const candidates = [
   ["classic", "generated-2d", "classic-generated-mobile.png"],
   ["classic", "vector-2d", "classic-vector-mobile.png"],
   ["classic", "hybrid-3d", "classic-hybrid-mobile.png"],
+  ["classic", "blender-3d", "classic-blender-mobile.png"],
   ["nextgen", "generated-2d", "nextgen-generated-mobile.png"],
   ["nextgen", "vector-2d", "nextgen-vector-mobile.png"],
   ["nextgen", "hybrid-3d", "nextgen-hybrid-mobile.png"],
+  ["nextgen", "blender-3d", "nextgen-blender-mobile.png"],
 ];
 
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));

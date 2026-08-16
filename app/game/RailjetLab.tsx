@@ -20,7 +20,7 @@ import {
   type RailjetRenderMethod,
 } from "./railjetLabData";
 
-type LabMethod = Exclude<RailjetRenderMethod, "blender-3d">;
+type LabMethod = RailjetRenderMethod;
 type InspectionScale = "normal" | "inspect";
 type LoadCount = 1 | 3;
 type ScoreKey = "recognizability" | "proportions" | "integration" | "performance" | "style";
@@ -215,18 +215,20 @@ function SpriteFormation({ definition, method }: { definition: RailjetPrototypeD
   );
 }
 
-function HybridFormation({ definition }: { definition: RailjetPrototypeDefinition }) {
-  const gltf = useGLTF(definition.hybridAsset);
+function GlbFormation({ definition, method }: { definition: RailjetPrototypeDefinition; method: "hybrid-3d" | "blender-3d" }) {
+  const asset = method === "blender-3d" ? definition.blenderAsset : definition.hybridAsset;
+  const gltf = useGLTF(asset);
   const formation = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
+  const groundOffset = method === "blender-3d" ? definition.blenderGroundOffset : definition.groundOffset;
   return (
-    <group position={[definition.pivot[0], definition.groundOffset, definition.pivot[2]]} scale={definition.worldScale}>
+    <group position={[definition.pivot[0], groundOffset, definition.pivot[2]]} scale={definition.worldScale}>
       <Clone object={formation} castShadow receiveShadow />
     </group>
   );
 }
 
 function TrainFormation({ definition, method }: { definition: RailjetPrototypeDefinition; method: LabMethod }) {
-  if (method === "hybrid-3d") return <HybridFormation definition={definition} />;
+  if (method === "hybrid-3d" || method === "blender-3d") return <GlbFormation definition={definition} method={method} />;
   return <SpriteFormation definition={definition} method={method} />;
 }
 
@@ -475,3 +477,5 @@ export default function RailjetLab({ initialState }: { initialState: RailjetLabI
 
 useGLTF.preload(RAILJET_PROTOTYPES.classic.hybridAsset);
 useGLTF.preload(RAILJET_PROTOTYPES.nextgen.hybridAsset);
+useGLTF.preload(RAILJET_PROTOTYPES.classic.blenderAsset);
+useGLTF.preload(RAILJET_PROTOTYPES.nextgen.blenderAsset);

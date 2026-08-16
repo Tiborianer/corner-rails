@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "generator": "Blender 5.2 LTS Python API",
+  "formation": "Classic \u00d6BB Railjet",
+  "lengthMeters": 205.375,
+  "vehicleCount": 8,
+  "consist": [
+    "taurus",
+    "economy",
+    "economy",
+    "economy",
+    "economy",
+    "restaurant",
+    "first",
+    "driving-trailer"
+  ],
+  "masterBlend": "assets/blender/railjet-classic/railjet-classic-master.blend",
+  "formationGlb": "public/models/railjet-lab/blender/railjet-classic-blender.glb",
+  "moduleGlbs": {
+    "taurus": "public/models/railjet-lab/blender/railjet-classic-taurus.glb",
+    "economy": "public/models/railjet-lab/blender/railjet-classic-economy.glb",
+    "restaurant": "public/models/railjet-lab/blender/railjet-classic-restaurant.glb",
+    "first": "public/models/railjet-lab/blender/railjet-classic-first.glb",
+    "driving_trailer": "public/models/railjet-lab/blender/railjet-classic-driving-trailer.glb"
+  },
+  "sources": [
+    "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
+    "https://data.oebb.at/dam/jcr%3A1e0c5a41-5293-439a-bed9-4f160d8aa1da/tfz1116.pdf",
+    "https://static.dc.siemens.com/mobility/webfeature/green-mobility/files/brochure/viaggio-comfort-en.pdf"
+  ],
+  "productionRailjetModified": false
+}

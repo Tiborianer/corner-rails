@@ -22,11 +22,12 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       atmosphere: queryValue(parameters.atmosphere, ["day", "night", "rain"], "day"),
       scale: queryValue(parameters.scale, ["normal", "inspect"], "normal"),
       loadCount: queryValue(parameters.load, ["1", "3"], "1") === "3" ? 3 : 1,
+      leadingEnd: queryValue(parameters.leading, ["taurus", "cab-car"], "taurus"),
       captureMode: queryValue(parameters.capture, ["0", "1"], "0") === "1",
       capturePhaseSeconds: numericQueryValue(parameters.phase, 0),
       freezeMotion: queryValue(parameters.freeze, ["0", "1"], "0") === "1",
     };
-    const stateKey = [initialState.candidateId, initialState.motion, initialState.atmosphere, initialState.scale, initialState.loadCount, Number(initialState.captureMode), initialState.capturePhaseSeconds, Number(initialState.freezeMotion)].join(":");
+    const stateKey = [initialState.candidateId, initialState.motion, initialState.atmosphere, initialState.scale, initialState.loadCount, initialState.leadingEnd, Number(initialState.captureMode), initialState.capturePhaseSeconds, Number(initialState.freezeMotion)].join(":");
     return <TrainReviewLab key={stateKey} initialState={initialState} />;
   }
   const reviewMode = trainLab === "railjet";

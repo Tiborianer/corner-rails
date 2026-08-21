@@ -306,6 +306,7 @@ def build_taurus(
     root["vehicle_role"] = "locomotive"
     root["class"] = "ÖBB Class 1116 / ES64U2 Taurus 2"
     root["length_m"] = TAURUS_LENGTH
+    root["livery_revision"] = "N2 layered red-and-silver sweep"
     sections = [
         (-9.64, 0.47, 0.62, -0.08), (-9.18, 0.72, 0.80, -0.02), (-8.20, 0.98, 0.97, 0),
         (-7.15, 1.0, 1.0, 0), (7.15, 1.0, 1.0, 0), (8.20, 0.98, 0.97, 0),
@@ -325,19 +326,45 @@ def build_taurus(
         for vent_index in range(6):
             x = -3.6 + vent_index * 1.42
             common.add_box(collection, cube, f"nightjet_taurus_vent_{side}_{vent_index}", (0.92, 0.065, 0.62), (x, y + side * 0.04, 2.88), materials["dark_blue"], root)
-        common.add_box(collection, cube, f"nightjet_taurus_red_stripe_{side}", (14.4, 0.06, 0.17), (0, y + side * 0.07, 2.02), materials["signal_red"], root)
+        # The supplied Taurus references show one continuous Nightjet gesture:
+        # a narrow red belt that gains depth toward one cab, a silver field
+        # directly below it, and a red cab-side block. Mirroring the geometry on
+        # the second side recreates the wrapped livery without shipping a photo
+        # texture or protected wordmark.
+        red_top = [
+            (-7.85, 2.27), (-6.60, 2.25), (-4.20, 2.23), (-1.20, 2.20),
+            (1.60, 2.13), (4.00, 1.98), (6.20, 1.75), (7.85, 1.58),
+        ]
+        red_bottom = [
+            (-7.85, 2.07), (-6.60, 2.05), (-4.20, 2.03), (-1.20, 2.00),
+            (1.60, 1.92), (4.00, 1.74), (6.20, 1.47), (7.85, 1.28),
+        ]
+        silver_bottom = [
+            (-7.85, 1.64), (-6.60, 1.56), (-4.20, 1.44), (-1.20, 1.35),
+            (1.60, 1.25), (4.00, 1.22), (6.20, 1.20), (7.85, 1.11),
+        ]
+
+        def wrap(points: list[tuple[float, float]], offset: float) -> list[tuple[float, float, float]]:
+            return [((x if side > 0 else -x), y + side * offset, z) for x, z in points]
+
         grey_swoosh = common.polygon_mesh(
-            f"nightjet_taurus_grey_swoosh_{side}_mesh",
-            [(-7.1, y + side * 0.077, 1.58), (7.15, y + side * 0.077, 1.18), (7.15, y + side * 0.077, 1.48), (-7.1, y + side * 0.077, 1.93)],
+            f"nightjet_taurus_silver_sweep_{side}_mesh",
+            wrap([(x, z - 0.035) for x, z in red_bottom], 0.077) + wrap(list(reversed(silver_bottom)), 0.077),
             materials["light_body"],
         )
-        common.link_object(collection, f"nightjet_taurus_grey_swoosh_{side}", grey_swoosh, parent=root)
+        common.link_object(collection, f"nightjet_taurus_silver_sweep_{side}", grey_swoosh, parent=root)
         red_swoosh = common.polygon_mesh(
-            f"nightjet_taurus_red_swoosh_{side}_mesh",
-            [(-7.1, y + side * 0.082, 1.93), (6.8, y + side * 0.082, 1.48), (7.15, y + side * 0.082, 1.67), (-7.1, y + side * 0.082, 2.14)],
+            f"nightjet_taurus_red_sweep_{side}_mesh",
+            wrap(red_top, 0.084) + wrap(list(reversed(red_bottom)), 0.084),
             materials["signal_red"],
         )
-        common.link_object(collection, f"nightjet_taurus_red_swoosh_{side}", red_swoosh, parent=root)
+        common.link_object(collection, f"nightjet_taurus_red_sweep_{side}", red_swoosh, parent=root)
+        cab_block = common.polygon_mesh(
+            f"nightjet_taurus_red_cab_block_{side}_mesh",
+            wrap([(-9.05, 1.02), (-7.85, 1.42), (-7.85, 2.07), (-8.55, 2.10), (-9.20, 1.80)], 0.087),
+            materials["signal_red"],
+        )
+        common.link_object(collection, f"nightjet_taurus_red_cab_block_{side}", cab_block, parent=root)
         for star_index, (x, z) in enumerate(((-5.2, 3.52), (-3.4, 1.62), (-0.8, 3.64), (2.4, 1.52), (4.9, 3.47))):
             common.add_box(collection, cube, f"nightjet_taurus_star_{side}_{star_index}", (0.11, 0.07, 0.11), (x, y + side * 0.09, z), materials["star"], root, rotation=(0, 0, math.radians(45)))
 
@@ -346,6 +373,7 @@ def build_taurus(
         common.add_cab_glazing(collection, root, materials, front_sign=front_sign, half_length=TAURUS_LENGTH / 2, prefix=prefix, wide=True)
         common.add_headlights(collection, root, cube, materials, front_sign=front_sign, half_length=TAURUS_LENGTH / 2, prefix=prefix)
         common.add_box(collection, cube, f"{prefix}_plough", (0.42, 2.0, 0.34), (front_sign * 9.42, 0, 0.54), materials["anthracite"], root, rotation=(0, front_sign * -0.10, 0))
+        common.add_box(collection, cube, f"{prefix}_red_nose_belt", (0.08, 2.25, 0.20), (front_sign * 9.22, 0, 1.84), materials["signal_red"], root, rotation=(0, front_sign * -0.13, 0))
 
     common.add_bogie(collection, root, cube, cylinder, materials, name="nightjet_taurus_bogie_a", x=-4.95, axle_spacing=3.0, wheel_radius=0.575, bogie_width=2.04)
     common.add_bogie(collection, root, cube, cylinder, materials, name="nightjet_taurus_bogie_b", x=4.95, axle_spacing=3.0, wheel_radius=0.575, bogie_width=2.04)
@@ -452,6 +480,7 @@ def build_formation(
     root["coach_set"] = "2 seating + 3 couchette + 2 sleeping"
     root["approval_status"] = "private review only"
     root["production_train_id"] = "nightjet"
+    root["asset_revision"] = "N2"
     for index, source in enumerate(OFFICIAL_SOURCES):
         root[f"source_{index + 1}"] = source
     common.add_metric_contract(collection, root, add_anchor=True)
@@ -537,6 +566,7 @@ def main() -> None:
         "schemaVersion": 1,
         "generator": "Blender 5.2 LTS Python API",
         "candidateId": "nightjet-new-generation-taurus-1116",
+        "assetRevision": "N2",
         "approvalStatus": "private-review",
         "formation": "ÖBB Nightjet new generation with Taurus 1116",
         "lengthMeters": round(FORMATION_LENGTH, 3),
@@ -565,6 +595,7 @@ def main() -> None:
         },
         "userReferenceFilenames": list(USER_REFERENCE_FILENAMES),
         "referencePolicy": "Research only. Local images are not copied, embedded, textured, or shipped.",
+        "revisionNotes": "Redrawn Taurus side livery with layered red and silver geometry sweeps, mirrored cab blocks, and nose belts.",
         "sources": list(OFFICIAL_SOURCES),
         "productionRegistryModified": False,
     }

@@ -9,6 +9,7 @@ import {
   canPurchase,
   cleanStation,
   cleaningCost,
+  chooseTrainTravelDirection,
   daylightFactor,
   debugState,
   isNight,
@@ -435,6 +436,9 @@ describe("per-train Blender approval laboratory", () => {
     expect(trainReviewMotionPosition("stopping", 11)).toBe(0);
     expect(trainReviewMotionPosition("stopping", 17.99)).toBeGreaterThan(26);
     expect(trainReviewMotionPosition("pass", 3 + 1 / 60)).toBeGreaterThan(trainReviewMotionPosition("pass", 3));
+    expect(trainReviewMotionPosition("stopping", 0, -1)).toBe(27);
+    expect(trainReviewMotionPosition("stopping", 17.99, -1)).toBeLessThan(-26);
+    expect(trainReviewMotionPosition("pass", 3 + 1 / 60, -1)).toBeLessThan(trainReviewMotionPosition("pass", 3, -1));
   });
 
   it("records user reference filenames without copying or embedding the images", async () => {
@@ -467,7 +471,7 @@ describe("per-train Blender approval laboratory", () => {
     expect(TRAIN_REVIEW_CANDIDATES["nightjet-new-generation"]).toMatchObject({
       approvalStatus: "private-review",
       productionTrainId: "nightjet",
-      assetRevision: "1",
+      assetRevision: "2",
       vehicleCount: 8,
       nominalLengthMeters: 204.675,
       traction: "electric",
@@ -500,6 +504,7 @@ describe("per-train Blender approval laboratory", () => {
       approval_status: "private review only",
       production_train_id: "nightjet",
       coach_set: "2 seating + 3 couchette + 2 sleeping",
+      asset_revision: "N2",
     });
     expect(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).toEqual([
       "vehicle_00_taurus_1116",
@@ -513,6 +518,9 @@ describe("per-train Blender approval laboratory", () => {
     ]);
     expect(nodeNames.some((name) => name.includes("nightjet_taurus_panto_raised_collector"))).toBe(true);
     expect(nodeNames.some((name) => name.includes("nightjet_taurus_vent"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("nightjet_taurus_red_sweep"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("nightjet_taurus_silver_sweep"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("nightjet_taurus_red_cab_block"))).toBe(true);
     expect(nodeNames.some((name) => name.includes("nightjet_control_cab_windshield"))).toBe(true);
     expect(nodeNames.some((name) => name.includes("nightjet_control_front_grille"))).toBe(true);
     expect(nodeNames.some((name) => name.includes("sleeping_a_window"))).toBe(true);
@@ -540,6 +548,7 @@ describe("per-train Blender approval laboratory", () => {
     const manifest = JSON.parse(await readFile(path.resolve("assets/blender/nightjet-new-generation/manifest.json"), "utf8"));
     expect(manifest).toMatchObject({
       candidateId: "nightjet-new-generation-taurus-1116",
+      assetRevision: "N2",
       approvalStatus: "private-review",
       productionRegistryModified: false,
       vehicleCount: 8,
@@ -585,6 +594,14 @@ describe("per-train Blender approval laboratory", () => {
       },
     });
     expect(manifest.referencePolicy).toContain("not copied");
+    expect(manifest.revisionNotes).toContain("Redrawn Taurus side livery");
+  });
+
+  it("chooses and persists both future Nightjet leading ends deterministically", () => {
+    expect(chooseTrainTravelDirection("nightjet-new-generation", 0)[0]).toBe(1);
+    expect(chooseTrainTravelDirection("nightjet-new-generation", 999)[0]).toBe(-1);
+    expect(chooseTrainTravelDirection("nightjet-new-generation", 999)).toEqual(chooseTrainTravelDirection("nightjet-new-generation", 999));
+    expect(chooseTrainTravelDirection("nightjet-legacy-v1", 999)).toEqual([1, 999]);
   });
 });
 
@@ -878,5 +895,31 @@ describe("manual save codes", () => {
       platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeRailjet, visualVariantId: undefined } }],
     };
     expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.visualVariantId).toBe("railjet-classic");
+  });
+
+  it("preserves the Nightjet leading end and defaults older candidate saves safely", () => {
+    const activeNightjet = {
+      trainId: "nightjet",
+      visualVariantId: "nightjet-new-generation",
+      travelDirection: -1 as const,
+      phase: "approach" as const,
+      phaseElapsed: 1,
+      phaseDuration: 5,
+      payout: 20_000,
+      firstService: false,
+    };
+    const state: GameState = {
+      ...fundedState(),
+      tier: 5,
+      lengthLevel: 5,
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: activeNightjet }],
+    };
+    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain?.travelDirection).toBe(-1);
+
+    const oldState: GameState = {
+      ...state,
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeNightjet, travelDirection: undefined } }],
+    };
+    expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.travelDirection).toBe(1);
   });
 });

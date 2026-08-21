@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "generator": "Blender 5.2 LTS Python API",
   "candidateId": "nightjet-new-generation-taurus-1116",
+  "assetRevision": "N2",
   "approvalStatus": "private-review",
   "formation": "\u00d6BB Nightjet new generation with Taurus 1116",
   "lengthMeters": 204.675,
@@ -75,6 +76,7 @@
     "nightjet_taurus_1116_front-side_view.jpg"
   ],
   "referencePolicy": "Research only. Local images are not copied, embedded, textured, or shipped.",
+  "revisionNotes": "Redrawn Taurus side livery with layered red and silver geometry sweeps, mirrored cab blocks, and nose belts.",
   "sources": [
     "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-present-interior-design-next-generation-nightjet",
     "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-sign-framework-agreement-passenger-coaches-austria",

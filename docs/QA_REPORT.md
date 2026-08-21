@@ -34,13 +34,13 @@ Thirty-eight automated tests now pass. Candidate-specific coverage verifies four
 
 The private `?trainLab=db-regional-express` route was exercised at desktop and 390×844 mobile sizes in stationary, stopping, pass-through, day, night, rain and three-lane-capable states. The controls update the URL/state correctly, the model loads without WebGL errors, and the visible FPS counter stayed above 100 in the in-app desktop software-WebGL session. The only console output was Three.js's existing `Clock` deprecation warning. The mobile screenshot is layout evidence, not a physical-device GPU result. Blender review startup exited once when chained directly after the Node optimizer; running the same saved master as a separate command rendered all five views successfully, so generation/export is unaffected.
 
-## 2026-08-21 Nightjet Blender review N1
+## 2026-08-21 Nightjet Blender review N2
 
-The second per-train approval branch adds an editable Blender 5.2 master, six modular GLBs and one eight-vehicle formation: Taurus 1116, two sleeping cars, three couchette cars, multifunction car and control/seat car. The full optimized GLB is 235,256 bytes. The user references are recorded by filename but are neither copied nor embedded; recognition details use original geometry and material colour blocking without protected logos or photo textures.
+The second per-train approval branch adds an editable Blender 5.2 master, six modular GLBs and one eight-vehicle formation: Taurus 1116, two sleeping cars, three couchette cars, multifunction car and control/seat car. N2 redraws the Taurus side treatment as layered, mirrored red and silver geometry sweeps with matching cab blocks and nose belts. The full optimized GLB is 238,364 bytes. The user references are recorded by filename but are neither copied nor embedded; recognition details use original geometry and material colour blocking without protected logos or photo textures.
 
-Forty-one focused automated tests pass. Candidate-specific coverage verifies the exact eight-root formation, 204.7–205.1 m exported bounds including couplers, 64 standard-gauge wheel objects, wheel contact at Z=0, 5.5 m pantograph contact, a named rail-contact origin, Taurus roof/vent signatures, the distinct control-car windshield/grille, sleeping/couchette/multifunction window signatures, the 500 KB budget, all nine reference filenames and `productionRegistryModified: false`. The normal Tier 5 Nightjet remains `legacy-v1`.
+Forty-three focused automated tests pass. Candidate-specific coverage verifies the exact eight-root formation, 204.7–205.1 m exported bounds including couplers, 64 standard-gauge wheel objects, wheel contact at Z=0, 5.5 m pantograph contact, a named rail-contact origin, Taurus roof/vent and N2 livery-sweep signatures, the distinct control-car windshield/grille, sleeping/couchette/multifunction window signatures, the 500 KB budget, all nine reference filenames and `productionRegistryModified: false`. Direction coverage verifies deterministic Taurus-leading/cab-car-leading selection, mirrored review motion, save-code persistence and a safe default for older candidate saves. The normal Tier 5 Nightjet remains `legacy-v1`, so the new direction selection will activate only after an approved production promotion.
 
-The private `?trainLab=nightjet-new-generation` route was exercised at 1440×900 and 390×844 in stationary, stopping, fixed-phase pass-through, day, night, rain, inspection and three-simultaneous-formation states. The visible desktop counter reported 94–118 FPS; the three-formation rain state reported 98 FPS. The asset loaded without WebGL or loading errors. Console review found only Three.js's existing `Clock` deprecation warning. Mobile evidence verifies responsive layout, not physical-device GPU performance.
+The private `?trainLab=nightjet-new-generation` route was exercised at 1440×900 and 390×844 in stationary, stopping, fixed-phase pass-through, day, night, rain, inspection and three-simultaneous-formation states. N2 was additionally captured at the same pass-through phase with the Taurus leading from the left and the cab car leading from the right. The semantic control updates its pressed state and the `leading` URL parameter. The asset loaded without WebGL or loading errors. Console review found only Three.js's existing `Clock` deprecation warning. Mobile evidence verifies responsive layout, not physical-device GPU performance.
 
 ## Automated acceptance coverage
 
@@ -99,6 +99,8 @@ The private `?trainLab=nightjet-new-generation` route was exercised at 1440×900
 - [Three Nightjet formations in rain](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-rain.png)
 - [Nightjet pass-through state](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-pass.png)
 - [Nightjet browser mobile layout](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-mobile.png)
+- [Nightjet N2 Taurus-leading pass](../qa/train-review/nightjet-new-generation/nightjet-new-generation-n2-taurus-leading.png)
+- [Nightjet N2 cab-car-leading pass](../qa/train-review/nightjet-new-generation/nightjet-new-generation-n2-cab-car-leading.png)
 - [Railjet night candidate](../qa/railjet-lab/classic-generated-night.jpg)
 - [Three simultaneous procedural formations](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 

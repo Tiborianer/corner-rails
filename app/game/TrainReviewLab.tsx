@@ -25,6 +25,7 @@ import {
   type TrainReviewCandidate,
   type TrainReviewCandidateId,
   type TrainReviewLoad,
+  type TrainReviewLeadingEnd,
   type TrainReviewMotion,
   type TrainReviewScale,
 } from "./trainReviewData";
@@ -35,6 +36,7 @@ export interface TrainReviewLabInitialState {
   atmosphere: TrainReviewAtmosphere;
   scale: TrainReviewScale;
   loadCount: TrainReviewLoad;
+  leadingEnd: TrainReviewLeadingEnd;
   captureMode: boolean;
   capturePhaseSeconds: number;
   freezeMotion: boolean;
@@ -128,6 +130,7 @@ function MovingCandidate({
   laneZ,
   capturePhaseSeconds,
   freezeMotion,
+  leadingEnd,
 }: {
   candidate: TrainReviewCandidate;
   motion: TrainReviewMotion;
@@ -135,12 +138,14 @@ function MovingCandidate({
   laneZ: number;
   capturePhaseSeconds: number;
   freezeMotion: boolean;
+  leadingEnd: TrainReviewLeadingEnd;
 }) {
   const group = useRef<Group>(null);
   useFrame(({ clock }) => {
     if (!group.current) return;
     const elapsed = freezeMotion ? capturePhaseSeconds : clock.elapsedTime + capturePhaseSeconds;
-    group.current.position.x = trainReviewMotionPosition(motion, elapsed + laneIndex * 2.1);
+    const direction = leadingEnd === "taurus" ? 1 : -1;
+    group.current.position.x = trainReviewMotionPosition(motion, elapsed + laneIndex * 2.1, direction);
   });
   return (
     <group ref={group} position={[0, 0, laneZ]}>
@@ -155,6 +160,7 @@ function ReviewScene({
   atmosphere,
   scale,
   loadCount,
+  leadingEnd,
   capturePhaseSeconds,
   freezeMotion,
   onFps,
@@ -185,7 +191,7 @@ function ReviewScene({
       <MetricCatenary laneZs={laneZs} length={60} />
       {laneIndexes.map((laneIndex, index) => (
         <Suspense key={`${candidate.id}-${laneIndex}`} fallback={null}>
-          <MovingCandidate candidate={candidate} motion={motion} laneIndex={laneIndex} laneZ={laneZs[index]} capturePhaseSeconds={capturePhaseSeconds} freezeMotion={freezeMotion} />
+          <MovingCandidate candidate={candidate} motion={motion} laneIndex={laneIndex} laneZ={laneZs[index]} capturePhaseSeconds={capturePhaseSeconds} freezeMotion={freezeMotion} leadingEnd={leadingEnd} />
         </Suspense>
       ))}
       {night && [-4.2, -1.4, 1.4, 4.2].map((x) => <pointLight key={x} position={[x, 0.72, Math.max(...laneZs) + 0.3]} intensity={1.6} distance={5} color="#ffd77f" />)}
@@ -210,6 +216,7 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
   const [atmosphere, setAtmosphere] = useState(initialState.atmosphere);
   const [scale, setScale] = useState(initialState.scale);
   const [loadCount, setLoadCount] = useState(initialState.loadCount);
+  const [leadingEnd, setLeadingEnd] = useState(initialState.leadingEnd);
   const [fps, setFps] = useState(60);
 
   useEffect(() => {
@@ -219,15 +226,16 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
     params.set("atmosphere", atmosphere);
     params.set("scale", scale);
     params.set("load", String(loadCount));
+    params.set("leading", leadingEnd);
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
-  }, [atmosphere, candidate.id, loadCount, motion, scale]);
+  }, [atmosphere, candidate.id, leadingEnd, loadCount, motion, scale]);
 
   return (
     <main className={`railjet-lab-shell ${initialState.captureMode ? "capture-mode" : ""}`}>
       <div className="railjet-lab-world" aria-label={`Private ${candidate.label} train approval laboratory`}>
         <Canvas orthographic shadows="basic" dpr={[1, 1.65]} gl={{ antialias: true, powerPreference: "high-performance" }}>
           <Suspense fallback={null}>
-            <ReviewScene candidate={candidate} motion={motion} atmosphere={atmosphere} scale={scale} loadCount={loadCount} capturePhaseSeconds={initialState.capturePhaseSeconds} freezeMotion={initialState.freezeMotion} onFps={setFps} />
+            <ReviewScene candidate={candidate} motion={motion} atmosphere={atmosphere} scale={scale} loadCount={loadCount} leadingEnd={leadingEnd} capturePhaseSeconds={initialState.capturePhaseSeconds} freezeMotion={initialState.freezeMotion} onFps={setFps} />
           </Suspense>
         </Canvas>
       </div>
@@ -240,6 +248,7 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
           <div className="railjet-lab-control-head"><div><small>Not in production</small><strong>{candidate.revision.replaceAll("-", " ")}</strong></div><button type="button" onClick={() => window.location.assign("/")}>Exit</button></div>
           <p>{candidate.reviewSummary}</p>
           <SegmentedControl label="Motion" value={motion} options={[{ value: "stationary", label: "Parked" }, { value: "stopping", label: "Stop" }, { value: "pass", label: "Pass" }]} onChange={setMotion} />
+          {candidate.id === "nightjet-new-generation" && <SegmentedControl label="Leading end" value={leadingEnd} options={[{ value: "taurus", label: "Taurus" }, { value: "cab-car", label: "Cab car" }]} onChange={setLeadingEnd} />}
           <SegmentedControl label="Weather" value={atmosphere} options={[{ value: "day", label: "Day" }, { value: "night", label: "Night" }, { value: "rain", label: "Rain" }]} onChange={setAtmosphere} />
           <div className="railjet-lab-inline-controls">
             <button type="button" className={scale === "inspect" ? "active" : ""} onClick={() => setScale((current) => current === "normal" ? "inspect" : "normal")}>Inspection scale</button>

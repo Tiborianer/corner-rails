@@ -4,6 +4,7 @@ export type TrainReviewMotion = "stationary" | "stopping" | "pass";
 export type TrainReviewAtmosphere = "day" | "night" | "rain";
 export type TrainReviewScale = "normal" | "inspect";
 export type TrainReviewLoad = 1 | 3;
+export type TrainReviewLeadingEnd = "taurus" | "cab-car";
 
 export interface TrainReviewCandidate {
   id: string;
@@ -43,20 +44,20 @@ export const TRAIN_REVIEW_CANDIDATES = {
   },
   "nightjet-new-generation": {
     id: "nightjet-new-generation",
-    badge: "N1",
+    badge: "N2",
     label: "ÖBB Nightjet · Taurus 1116 + new-generation set",
     shortLabel: "Taurus 1116 Nightjet",
     assetPath: "/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb",
-    assetRevision: "1",
+    assetRevision: "2",
     vehicleCount: 8,
     nominalLengthMeters: 204.675,
     reviewPlatformLengthMeters: 280,
     traction: "electric",
-    revision: "blender-review-1",
+    revision: "blender-review-2",
     primarySource: "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-present-interior-design-next-generation-nightjet",
     productionTrainId: "nightjet",
     approvalStatus: "private-review",
-    reviewSummary: "Taurus 1116 plus the verified seven-car set: two sleepers, three couchettes, multifunction car and control/seat car. Production remains unchanged until approval.",
+    reviewSummary: "N2 redraws the Taurus red/silver sweep from the supplied references. Try both leading ends; production remains unchanged until approval.",
   },
 } as const satisfies Record<string, TrainReviewCandidate>;
 
@@ -68,19 +69,19 @@ export function trainReviewAssetUrl(candidate: TrainReviewCandidate) {
   return `${candidate.assetPath}?v=${candidate.assetRevision}`;
 }
 
-export function trainReviewMotionPosition(mode: TrainReviewMotion, elapsedSeconds: number) {
+export function trainReviewMotionPosition(mode: TrainReviewMotion, elapsedSeconds: number, direction: 1 | -1 = 1) {
   if (mode === "stationary") return 0;
   if (mode === "pass") {
     const progress = (elapsedSeconds % 12) / 12;
     const eased = progress * progress * (3 - 2 * progress);
-    return -27 + eased * 54;
+    return direction * (-27 + eased * 54);
   }
   const cycle = elapsedSeconds % 18;
   if (cycle < 5) {
     const progress = cycle / 5;
-    return -27 + 27 * (1 - Math.pow(1 - progress, 3));
+    return direction * (-27 + 27 * (1 - Math.pow(1 - progress, 3)));
   }
   if (cycle < 11) return 0;
   const progress = (cycle - 11) / 7;
-  return 27 * progress * progress;
+  return direction * 27 * progress * progress;
 }

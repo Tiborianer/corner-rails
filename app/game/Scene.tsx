@@ -284,7 +284,7 @@ function SteamPuffs({ active }: { active: boolean }) {
 
 function TrainConsist({ active, trackCenter, speed }: { active: ActiveTrain; trackCenter: number; speed: 1 | 2 | 3 }) {
   const group = useRef<Group>(null);
-  const motion = useRef({ trainId: "", variantId: "", phase: "", elapsed: 0 });
+  const motion = useRef({ trainId: "", variantId: "", direction: 1, phase: "", elapsed: 0 });
   const train = TRAINS.find((candidate) => candidate.id === active.trainId);
   const visual = train ? resolveTrainVisualVariant(train, active.visualVariantId) : resolveTrainVisualVariant({ id: "br650", modelKey: "br650" });
   const gltf = useGLTF(trainVisualAssetUrl(visual));
@@ -293,14 +293,18 @@ function TrainConsist({ active, trackCenter, speed }: { active: ActiveTrain; tra
   const size = useMemo(() => bounds.getSize(new Vector3()), [bounds]);
   const displayLength = size.x * visual.scale[0];
   const displayWidth = size.z * visual.scale[2];
-  const entryX = -32 - displayLength / 2;
-  const exitX = 32 + displayLength / 2;
+  const direction = active.travelDirection ?? 1;
+  const leftEdge = -32 - displayLength / 2;
+  const rightEdge = 32 + displayLength / 2;
+  const entryX = direction === 1 ? leftEdge : rightEdge;
+  const exitX = direction === 1 ? rightEdge : leftEdge;
   useFrame((_, delta) => {
     if (!group.current || !train) return;
     const rendered = motion.current;
-    if (rendered.trainId !== active.trainId || rendered.variantId !== visual.id || rendered.phase !== active.phase) {
+    if (rendered.trainId !== active.trainId || rendered.variantId !== visual.id || rendered.direction !== direction || rendered.phase !== active.phase) {
       rendered.trainId = active.trainId;
       rendered.variantId = visual.id;
+      rendered.direction = direction;
       rendered.phase = active.phase;
       rendered.elapsed = active.phaseElapsed;
     } else {

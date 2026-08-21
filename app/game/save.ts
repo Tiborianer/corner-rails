@@ -49,6 +49,9 @@ function isValidState(value: unknown): value is GameState {
 
 function normalizeActiveTrain(activeTrain: ActiveTrain | null | undefined): ActiveTrain | null {
   if (!activeTrain) return null;
+  if (activeTrain.visualVariantId === "nightjet-new-generation" && activeTrain.travelDirection !== -1) {
+    return { ...activeTrain, travelDirection: 1 };
+  }
   if (activeTrain.trainId === "railjet" && !activeTrain.visualVariantId) {
     return { ...activeTrain, visualVariantId: "railjet-classic" };
   }

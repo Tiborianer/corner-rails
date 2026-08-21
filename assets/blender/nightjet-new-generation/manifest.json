@@ -3,7 +3,7 @@
   "generator": "Blender 5.2 LTS Python API",
   "candidateId": "nightjet-new-generation-taurus-1116",
   "assetRevision": "N2",
-  "approvalStatus": "private-review",
+  "approvalStatus": "approved-production",
   "formation": "\u00d6BB Nightjet new generation with Taurus 1116",
   "lengthMeters": 204.675,
   "vehicleCount": 8,
@@ -39,7 +39,8 @@
     }
   },
   "masterBlend": "assets/blender/nightjet-new-generation/nightjet-new-generation-master.blend",
-  "formationGlb": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb",
+  "formationGlb": "public/models/trains/blender/nightjet/nightjet-new-generation-blender.glb",
+  "reviewFormationGlb": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb",
   "moduleGlbs": {
     "taurus_1116": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-taurus-1116.glb",
     "sleeping_a": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-sleeping-a.glb",
@@ -83,5 +84,5 @@
     "https://produktion.oebb.at/dam/jcr%3A47dbe927-74ea-47fd-abc2-253c45498ac1/1116.pdf",
     "https://www.nightjet.com/de/komfortkategorien/nightjet-neue-generation"
   ],
-  "productionRegistryModified": false
+  "productionRegistryModified": true
 }

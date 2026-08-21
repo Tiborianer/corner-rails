@@ -53,6 +53,25 @@ export const RAILJET_VISUAL_VARIANTS = [
   },
 ] as const satisfies readonly TrainVisualVariant[];
 
+export const NIGHTJET_VISUAL_VARIANTS = [
+  {
+    id: "nightjet-new-generation",
+    assetPath: "models/trains/blender/nightjet/nightjet-new-generation-blender.glb",
+    profile: "metric-v1",
+    scale: [
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+    ],
+    rotation: [0, 0, 0],
+    contactOffsetY: RAILWAY_METRIC_PROFILE.railTopY,
+    lengthMeters: 204.675,
+    minimumLengthLevel: 5,
+    selectionWeight: 1,
+    revision: "blender-n2-2026-08-21",
+  },
+] as const satisfies readonly TrainVisualVariant[];
+
 export function legacyTrainVisual(modelKey: string): TrainVisualVariant {
   return {
     id: `${modelKey}-legacy-v1`,
@@ -68,7 +87,9 @@ export function legacyTrainVisual(modelKey: string): TrainVisualVariant {
 }
 
 export function trainVisualVariants(train: Pick<TrainDefinition, "id" | "modelKey">): readonly TrainVisualVariant[] {
-  return train.id === "railjet" ? RAILJET_VISUAL_VARIANTS : [legacyTrainVisual(train.modelKey)];
+  if (train.id === "railjet") return RAILJET_VISUAL_VARIANTS;
+  if (train.id === "nightjet") return NIGHTJET_VISUAL_VARIANTS;
+  return [legacyTrainVisual(train.modelKey)];
 }
 
 export function eligibleTrainVisualVariants(

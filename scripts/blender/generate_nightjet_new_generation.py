@@ -1,4 +1,4 @@
-"""Generate the private Blender review candidate for the new-generation Nightjet.
+"""Generate the approved Blender production asset for the new-generation Nightjet.
 
 The user's references and official Siemens/ÖBB material define this consist:
 
@@ -85,6 +85,7 @@ common.link_object = material_safe_link_object
 
 SOURCE_DIR = PROJECT_ROOT / "assets" / "blender" / "nightjet-new-generation"
 OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / "train-lab" / "nightjet-new-generation"
+PRODUCTION_DIR = PROJECT_ROOT / "public" / "models" / "trains" / "blender" / "nightjet"
 MASTER_PATH = SOURCE_DIR / "nightjet-new-generation-master.blend"
 
 TAURUS_LENGTH = 19.28
@@ -478,7 +479,7 @@ def build_formation(
     root["vehicle_count"] = 8
     root["length_m"] = round(FORMATION_LENGTH, 3)
     root["coach_set"] = "2 seating + 3 couchette + 2 sleeping"
-    root["approval_status"] = "private review only"
+    root["approval_status"] = "approved production"
     root["production_train_id"] = "nightjet"
     root["asset_revision"] = "N2"
     for index, source in enumerate(OFFICIAL_SOURCES):
@@ -515,6 +516,7 @@ def build_formation(
 def main() -> None:
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    PRODUCTION_DIR.mkdir(parents=True, exist_ok=True)
     common.reset_scene()
     materials = make_materials()
     cube = common.unit_cube_mesh()
@@ -556,6 +558,8 @@ def main() -> None:
     formation_root = build_formation(prototypes, assets, cube, materials)
     formation_path = OUTPUT_DIR / "nightjet-new-generation-blender.glb"
     common.export_glb(formation_root, formation_path)
+    production_formation_path = PRODUCTION_DIR / "nightjet-new-generation-blender.glb"
+    common.export_glb(formation_root, production_formation_path)
     common.add_review_environment(assets, formation_root, cube, materials)
     prototypes_collection.hide_viewport = True
     prototypes_collection.hide_render = True
@@ -567,7 +571,7 @@ def main() -> None:
         "generator": "Blender 5.2 LTS Python API",
         "candidateId": "nightjet-new-generation-taurus-1116",
         "assetRevision": "N2",
-        "approvalStatus": "private-review",
+        "approvalStatus": "approved-production",
         "formation": "ÖBB Nightjet new generation with Taurus 1116",
         "lengthMeters": round(FORMATION_LENGTH, 3),
         "vehicleCount": 8,
@@ -578,7 +582,8 @@ def main() -> None:
             "viaggioNextLevelCoach": {"length": COACH_LENGTH, "width": COACH_WIDTH, "height": COACH_HEIGHT},
         },
         "masterBlend": str(MASTER_PATH.relative_to(PROJECT_ROOT)),
-        "formationGlb": str(formation_path.relative_to(PROJECT_ROOT)),
+        "formationGlb": str(production_formation_path.relative_to(PROJECT_ROOT)),
+        "reviewFormationGlb": str(formation_path.relative_to(PROJECT_ROOT)),
         "moduleGlbs": module_paths,
         "assetContract": {
             "units": "meters",
@@ -597,7 +602,7 @@ def main() -> None:
         "referencePolicy": "Research only. Local images are not copied, embedded, textured, or shipped.",
         "revisionNotes": "Redrawn Taurus side livery with layered red and silver geometry sweeps, mirrored cab blocks, and nose belts.",
         "sources": list(OFFICIAL_SOURCES),
-        "productionRegistryModified": False,
+        "productionRegistryModified": True,
     }
     (SOURCE_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("CORNER_RAILS_NIGHTJET_NEW_GENERATION_GENERATED")

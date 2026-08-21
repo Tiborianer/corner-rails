@@ -21,6 +21,8 @@ import { eligibleTrainVisualVariants, selectTrainVisualVariant } from "./trainVi
 export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 export const DEVELOPMENT_CAP = 3;
 export const EVENT_DURATION = 300;
+export const NIGHTJET_TAURUS_LEADING_CHANCE = 0.75;
+export const NIGHTJET_CAB_CAR_LEADING_CHANCE = 0.25;
 
 const clamp = (value: number, minimum: number, maximum: number) =>
   Math.min(maximum, Math.max(minimum, value));
@@ -145,7 +147,11 @@ function chooseTrainVisualVariantId(
 export function chooseTrainFormationOrientation(visualVariantId: string, seed: number): [1 | -1, number] {
   if (visualVariantId !== "nightjet-new-generation") return [1, seed];
   const [roll, nextSeed] = nextRandom(seed);
-  return [roll < 0.5 ? 1 : -1, nextSeed];
+  return [nightjetFormationOrientationForRoll(roll), nextSeed];
+}
+
+export function nightjetFormationOrientationForRoll(roll: number): 1 | -1 {
+  return Math.min(0.999999999, Math.max(0, roll)) < NIGHTJET_TAURUS_LEADING_CHANCE ? 1 : -1;
 }
 
 function updatePlatformLane(state: GameState, platformIndex: number, update: Partial<GameState["platformLanes"][number]>): GameState {
@@ -548,8 +554,30 @@ export function prestigeStation(state: GameState): GameState {
 
 export function debugState(
   state: GameState,
-  mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen",
+  mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" | "nightjet-taurus" | "nightjet-cab-car",
 ): GameState {
+  if (mode === "nightjet-taurus" || mode === "nightjet-cab-car") {
+    const ready = debugState(state, "tier5");
+    return {
+      ...ready,
+      simSeconds: Math.floor(ready.simSeconds / 900) * 900 + 610,
+      platformLanes: ready.platformLanes.map((lane) => lane.platformIndex === 0 ? {
+        ...lane,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: "nightjet",
+          visualVariantId: "nightjet-new-generation",
+          formationOrientation: mode === "nightjet-taurus" ? 1 : -1,
+          phase: "approach",
+          phaseElapsed: 0,
+          phaseDuration: 5,
+          payout: 20_000,
+          firstService: false,
+        },
+      } : lane),
+      toast: `Debug: Nightjet approaching with ${mode === "nightjet-taurus" ? "Taurus" : "cab car"} leading.`,
+    };
+  }
   if (mode === "railjet-classic" || mode === "railjet-nextgen") {
     const ready = debugState(state, "tier5");
     return {

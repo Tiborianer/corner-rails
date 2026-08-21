@@ -95,7 +95,7 @@ type Action =
   | { type: "claim-mission" }
   | { type: "event"; eventId: "ice-s" | "br01" }
   | { type: "prestige" }
-  | { type: "debug"; mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" }
+  | { type: "debug"; mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" | "nightjet-taurus" | "nightjet-cab-car" }
   | { type: "import"; state: GameState }
   | { type: "toast"; message: string | null };
 
@@ -589,6 +589,8 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
           {(["tier5", "night", "rain", "dirty"] as const).map((mode) => <button key={mode} onClick={() => dispatch({ type: "debug", mode })}>{mode}</button>)}
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-classic" })}>RJ classic</button>
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-nextgen" })}>RJ new</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "nightjet-taurus" })}>NJ Taurus</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "nightjet-cab-car" })}>NJ cab car</button>
           <button onClick={() => dispatch({ type: "event", eventId: "ice-s" })}>ICE-S</button>
           <button onClick={() => dispatch({ type: "event", eventId: "br01" })}>BR 01</button>
         </div>

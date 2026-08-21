@@ -10,6 +10,8 @@ import {
   cleanStation,
   cleaningCost,
   chooseTrainFormationOrientation,
+  NIGHTJET_CAB_CAR_LEADING_CHANCE,
+  NIGHTJET_TAURUS_LEADING_CHANCE,
   daylightFactor,
   debugState,
   isNight,
@@ -20,6 +22,7 @@ import {
   trainMeetsRequirements,
   triggerEvent,
   undoLastUpgrade,
+  nightjetFormationOrientationForRoll,
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
 import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
@@ -40,6 +43,7 @@ import {
   railwayMetersToWorld,
 } from "../app/game/metricRailway";
 import {
+  NIGHTJET_VISUAL_VARIANTS,
   RAILJET_VISUAL_VARIANTS,
   resolveTrainVisualVariant,
   selectTrainVisualVariant,
@@ -467,18 +471,33 @@ describe("per-train Blender approval laboratory", () => {
     expect(manifest.referencePolicy).toContain("not copied");
   });
 
-  it("registers the Nightjet candidate for review without replacing production", () => {
+  it("promotes the approved Nightjet N2 asset into the production registry", async () => {
     expect(TRAIN_REVIEW_CANDIDATES["nightjet-new-generation"]).toMatchObject({
-      approvalStatus: "private-review",
+      approvalStatus: "approved-production",
       productionTrainId: "nightjet",
-      assetRevision: "2",
+      assetRevision: "production-n2",
       vehicleCount: 8,
       nominalLengthMeters: 204.675,
       traction: "electric",
     });
     const productionVisual = trainVisualVariants({ id: "nightjet", modelKey: "nightjet" })[0];
-    expect(productionVisual.profile).toBe("legacy-v1");
-    expect(productionVisual.assetPath).toContain("models/trains/nightjet.glb");
+    expect(productionVisual).toEqual(NIGHTJET_VISUAL_VARIANTS[0]);
+    expect(productionVisual).toMatchObject({
+      id: "nightjet-new-generation",
+      profile: "metric-v1",
+      assetPath: "models/trains/blender/nightjet/nightjet-new-generation-blender.glb",
+      minimumLengthLevel: 5,
+      lengthMeters: 204.675,
+    });
+    expect(productionVisual.scale).toEqual([
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+    ]);
+
+    const productionBytes = await readFile(path.resolve("public/models/trains/blender/nightjet/nightjet-new-generation-blender.glb"));
+    const reviewBytes = await readFile(path.resolve("public/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb"));
+    expect(productionBytes).toEqual(reviewBytes);
   });
 
   it("ships a metre-scaled Taurus 1116 and seven-car Nightjet review formation", async () => {
@@ -501,7 +520,7 @@ describe("per-train Blender approval laboratory", () => {
       wheel_tread_center_m: 0.7175,
       rail_contact_plane_z: 0,
       pantograph_contact_height_m: 5.5,
-      approval_status: "private review only",
+      approval_status: "approved production",
       production_train_id: "nightjet",
       coach_set: "2 seating + 3 couchette + 2 sleeping",
       asset_revision: "N2",
@@ -549,8 +568,10 @@ describe("per-train Blender approval laboratory", () => {
     expect(manifest).toMatchObject({
       candidateId: "nightjet-new-generation-taurus-1116",
       assetRevision: "N2",
-      approvalStatus: "private-review",
-      productionRegistryModified: false,
+      approvalStatus: "approved-production",
+      productionRegistryModified: true,
+      formationGlb: "public/models/trains/blender/nightjet/nightjet-new-generation-blender.glb",
+      reviewFormationGlb: "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb",
       vehicleCount: 8,
       consist: [
         "taurus-1116",
@@ -597,11 +618,37 @@ describe("per-train Blender approval laboratory", () => {
     expect(manifest.revisionNotes).toContain("Redrawn Taurus side livery");
   });
 
-  it("chooses and persists both future Nightjet leading ends deterministically", () => {
+  it("uses the approved 75/25 Nightjet leading-end distribution deterministically", () => {
+    expect(NIGHTJET_TAURUS_LEADING_CHANCE).toBe(0.75);
+    expect(NIGHTJET_CAB_CAR_LEADING_CHANCE).toBe(0.25);
+    expect(NIGHTJET_TAURUS_LEADING_CHANCE + NIGHTJET_CAB_CAR_LEADING_CHANCE).toBe(1);
+    expect(nightjetFormationOrientationForRoll(0)).toBe(1);
+    expect(nightjetFormationOrientationForRoll(0.749999)).toBe(1);
+    expect(nightjetFormationOrientationForRoll(0.75)).toBe(-1);
+    expect(nightjetFormationOrientationForRoll(0.999999)).toBe(-1);
     expect(chooseTrainFormationOrientation("nightjet-new-generation", 0)[0]).toBe(1);
-    expect(chooseTrainFormationOrientation("nightjet-new-generation", 999)[0]).toBe(-1);
-    expect(chooseTrainFormationOrientation("nightjet-new-generation", 999)).toEqual(chooseTrainFormationOrientation("nightjet-new-generation", 999));
+    expect(chooseTrainFormationOrientation("nightjet-new-generation", 1327)[0]).toBe(-1);
+    expect(chooseTrainFormationOrientation("nightjet-new-generation", 1327)).toEqual(chooseTrainFormationOrientation("nightjet-new-generation", 1327));
     expect(chooseTrainFormationOrientation("nightjet-legacy-v1", 999)).toEqual([1, 999]);
+  });
+
+  it("provides deterministic production debug arrivals for both Nightjet orientations", () => {
+    const taurus = debugState(fundedState(), "nightjet-taurus");
+    const cabCar = debugState(fundedState(), "nightjet-cab-car");
+    expect(taurus.platformLanes[0].activeTrain).toMatchObject({
+      trainId: "nightjet",
+      visualVariantId: "nightjet-new-generation",
+      formationOrientation: 1,
+      payout: 20_000,
+    });
+    expect(cabCar.platformLanes[0].activeTrain).toMatchObject({
+      trainId: "nightjet",
+      visualVariantId: "nightjet-new-generation",
+      formationOrientation: -1,
+      payout: 20_000,
+    });
+    expect(isNight(taurus)).toBe(true);
+    expect(isNight(cabCar)).toBe(true);
   });
 });
 
@@ -628,7 +675,7 @@ describe("production metric railway and Railjet registry", () => {
     expect(nearPlatformEdge - trainSide).toBeCloseTo(railwayMetersToWorld(0.2), 6);
   });
 
-  it("promotes exactly two metric Railjet variants while every other train remains legacy", () => {
+  it("keeps every still-unapproved train on its temporary legacy profile", () => {
     expect(RAILJET_VISUAL_VARIANTS).toHaveLength(2);
     expect(RAILJET_VISUAL_VARIANTS.map((variant) => ({
       id: variant.id,
@@ -639,7 +686,7 @@ describe("production metric railway and Railjet registry", () => {
       { id: "railjet-classic", profile: "metric-v1", minimumLengthLevel: 4, selectionWeight: 1 },
       { id: "railjet-nextgen", profile: "metric-v1", minimumLengthLevel: 5, selectionWeight: 1 },
     ]);
-    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet")) {
+    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet" && candidate.id !== "nightjet")) {
       expect(trainVisualVariants(train)).toHaveLength(1);
       expect(resolveTrainVisualVariant(train).profile).toBe("legacy-v1");
     }

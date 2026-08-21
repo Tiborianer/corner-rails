@@ -20,7 +20,7 @@ export interface TrainReviewCandidate {
   revision: string;
   primarySource: string;
   productionTrainId: string;
-  approvalStatus: "private-review";
+  approvalStatus: "private-review" | "approved-production";
   reviewSummary: string;
 }
 
@@ -47,8 +47,8 @@ export const TRAIN_REVIEW_CANDIDATES = {
     badge: "N2",
     label: "ÖBB Nightjet · Taurus 1116 + new-generation set",
     shortLabel: "Taurus 1116 Nightjet",
-    assetPath: "/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb",
-    assetRevision: "2",
+    assetPath: "/models/trains/blender/nightjet/nightjet-new-generation-blender.glb",
+    assetRevision: "production-n2",
     vehicleCount: 8,
     nominalLengthMeters: 204.675,
     reviewPlatformLengthMeters: 280,
@@ -56,8 +56,8 @@ export const TRAIN_REVIEW_CANDIDATES = {
     revision: "blender-review-2",
     primarySource: "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-present-interior-design-next-generation-nightjet",
     productionTrainId: "nightjet",
-    approvalStatus: "private-review",
-    reviewSummary: "N2 redraws the Taurus red/silver sweep from the supplied references. Try both leading ends; production remains unchanged until approval.",
+    approvalStatus: "approved-production",
+    reviewSummary: "Approved N2 production formation. Normal gameplay uses 75% Taurus-leading and 25% cab-car-leading arrivals.",
   },
 } as const satisfies Record<string, TrainReviewCandidate>;
 

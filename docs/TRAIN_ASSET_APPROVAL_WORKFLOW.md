@@ -15,6 +15,8 @@ Railjet establishes the production contract; it does not automatically approve o
 
 Use one `codex/<train-id>-blender` branch or pull request per train set. Keep the Blender master, scripts, manifest, optimized GLB, citations, screenshots and registry promotion together so approval, rollback and history remain isolated.
 
+Approved production sets: Railjet classic/new generation and Nightjet N2. Nightjet was promoted on 2026-08-21 with 75% Taurus-leading and 25% cab-car-leading orientation selection.
+
 ## Temporary compatibility rule
 
 Unapproved trains keep their current GLB and `legacy-v1` transform. Compatibility work may fix obvious floating, lane offset or platform intersection in the shared metric scene, but must not remodel the asset, present it as physically accurate, or silently promote it.

@@ -241,11 +241,11 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
       </div>
       <header className="railjet-lab-title">
         <span className="railjet-lab-blind">{candidate.badge}</span>
-        <div><small>Corner Rails · Private train approval laboratory</small><h1>{candidate.label}</h1><p>{candidate.vehicleCount} vehicles · {candidate.nominalLengthMeters} m · review candidate</p></div>
+        <div><small>Corner Rails · Private train approval laboratory</small><h1>{candidate.label}</h1><p>{candidate.vehicleCount} vehicles · {candidate.nominalLengthMeters} m · {candidate.approvalStatus === "approved-production" ? "approved production asset" : "review candidate"}</p></div>
       </header>
       {!initialState.captureMode && (
         <aside className="railjet-lab-controls" aria-label="Train review controls">
-          <div className="railjet-lab-control-head"><div><small>Not in production</small><strong>{candidate.revision.replaceAll("-", " ")}</strong></div><button type="button" onClick={() => window.location.assign("/")}>Exit</button></div>
+          <div className="railjet-lab-control-head"><div><small>{candidate.approvalStatus === "approved-production" ? "Approved in production" : "Not in production"}</small><strong>{candidate.revision.replaceAll("-", " ")}</strong></div><button type="button" onClick={() => window.location.assign("/")}>Exit</button></div>
           <p>{candidate.reviewSummary}</p>
           <SegmentedControl label="Motion" value={motion} options={[{ value: "stationary", label: "Parked" }, { value: "stopping", label: "Stop" }, { value: "pass", label: "Pass" }]} onChange={setMotion} />
           {candidate.id === "nightjet-new-generation" && <SegmentedControl label="Leading end" value={leadingEnd} options={[{ value: "taurus", label: "Taurus" }, { value: "cab-car", label: "Cab car" }]} onChange={setLeadingEnd} />}

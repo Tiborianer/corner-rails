@@ -49,8 +49,12 @@ function isValidState(value: unknown): value is GameState {
 
 function normalizeActiveTrain(activeTrain: ActiveTrain | null | undefined): ActiveTrain | null {
   if (!activeTrain) return null;
-  if (activeTrain.visualVariantId === "nightjet-new-generation" && activeTrain.travelDirection !== -1) {
-    return { ...activeTrain, travelDirection: 1 };
+  if (activeTrain.visualVariantId === "nightjet-new-generation") {
+    const interimDirection = (activeTrain as ActiveTrain & { travelDirection?: 1 | -1 }).travelDirection;
+    const formationOrientation = activeTrain.formationOrientation === -1 || interimDirection === -1 ? -1 : 1;
+    const normalized = { ...activeTrain } as ActiveTrain & { travelDirection?: 1 | -1 };
+    delete normalized.travelDirection;
+    return { ...normalized, formationOrientation };
   }
   if (activeTrain.trainId === "railjet" && !activeTrain.visualVariantId) {
     return { ...activeTrain, visualVariantId: "railjet-classic" };

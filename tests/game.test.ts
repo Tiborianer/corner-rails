@@ -9,7 +9,7 @@ import {
   canPurchase,
   cleanStation,
   cleaningCost,
-  chooseTrainTravelDirection,
+  chooseTrainFormationOrientation,
   daylightFactor,
   debugState,
   isNight,
@@ -48,6 +48,7 @@ import {
 import {
   TRAIN_REVIEW_CANDIDATES,
   TRAIN_REVIEW_METRIC_SCALE,
+  trainReviewFormationRotation,
   trainReviewMotionPosition,
 } from "../app/game/trainReviewData";
 
@@ -436,9 +437,8 @@ describe("per-train Blender approval laboratory", () => {
     expect(trainReviewMotionPosition("stopping", 11)).toBe(0);
     expect(trainReviewMotionPosition("stopping", 17.99)).toBeGreaterThan(26);
     expect(trainReviewMotionPosition("pass", 3 + 1 / 60)).toBeGreaterThan(trainReviewMotionPosition("pass", 3));
-    expect(trainReviewMotionPosition("stopping", 0, -1)).toBe(27);
-    expect(trainReviewMotionPosition("stopping", 17.99, -1)).toBeLessThan(-26);
-    expect(trainReviewMotionPosition("pass", 3 + 1 / 60, -1)).toBeLessThan(trainReviewMotionPosition("pass", 3, -1));
+    expect(trainReviewFormationRotation("taurus")).toBe(0);
+    expect(trainReviewFormationRotation("cab-car")).toBe(Math.PI);
   });
 
   it("records user reference filenames without copying or embedding the images", async () => {
@@ -598,10 +598,10 @@ describe("per-train Blender approval laboratory", () => {
   });
 
   it("chooses and persists both future Nightjet leading ends deterministically", () => {
-    expect(chooseTrainTravelDirection("nightjet-new-generation", 0)[0]).toBe(1);
-    expect(chooseTrainTravelDirection("nightjet-new-generation", 999)[0]).toBe(-1);
-    expect(chooseTrainTravelDirection("nightjet-new-generation", 999)).toEqual(chooseTrainTravelDirection("nightjet-new-generation", 999));
-    expect(chooseTrainTravelDirection("nightjet-legacy-v1", 999)).toEqual([1, 999]);
+    expect(chooseTrainFormationOrientation("nightjet-new-generation", 0)[0]).toBe(1);
+    expect(chooseTrainFormationOrientation("nightjet-new-generation", 999)[0]).toBe(-1);
+    expect(chooseTrainFormationOrientation("nightjet-new-generation", 999)).toEqual(chooseTrainFormationOrientation("nightjet-new-generation", 999));
+    expect(chooseTrainFormationOrientation("nightjet-legacy-v1", 999)).toEqual([1, 999]);
   });
 });
 
@@ -897,11 +897,11 @@ describe("manual save codes", () => {
     expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.visualVariantId).toBe("railjet-classic");
   });
 
-  it("preserves the Nightjet leading end and defaults older candidate saves safely", () => {
+  it("preserves the Nightjet formation facing and migrates the interim direction field", () => {
     const activeNightjet = {
       trainId: "nightjet",
       visualVariantId: "nightjet-new-generation",
-      travelDirection: -1 as const,
+      formationOrientation: -1 as const,
       phase: "approach" as const,
       phaseElapsed: 1,
       phaseDuration: 5,
@@ -914,12 +914,18 @@ describe("manual save codes", () => {
       lengthLevel: 5,
       platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: activeNightjet }],
     };
-    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain?.travelDirection).toBe(-1);
+    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain?.formationOrientation).toBe(-1);
+
+    const interimState = {
+      ...state,
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeNightjet, formationOrientation: undefined, travelDirection: -1 } }],
+    } as GameState;
+    expect(decodeSave(encodeSave(interimState)).platformLanes[0].activeTrain?.formationOrientation).toBe(-1);
 
     const oldState: GameState = {
       ...state,
-      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeNightjet, travelDirection: undefined } }],
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeNightjet, formationOrientation: undefined } }],
     };
-    expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.travelDirection).toBe(1);
+    expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.formationOrientation).toBe(1);
   });
 });

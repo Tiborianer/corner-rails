@@ -485,21 +485,18 @@ function trainAssetUrl(modelKey: string) {
 
 function TrainConsist({ active, platformIndex, speed }: { active: ActiveTrain; platformIndex: number; speed: 1 | 2 | 3 }) {
   const group = useRef<Group>(null);
-  const motion = useRef({ trainId: "", direction: 1, phase: "", elapsed: 0 });
+  const motion = useRef({ trainId: "", phase: "", elapsed: 0 });
   const train = TRAINS.find((candidate) => candidate.id === active.trainId);
   const gltf = useGLTF(trainAssetUrl(train?.modelKey ?? "br650"));
   const consist = useMemo(() => gltf.scene.clone(true), [gltf.scene]);
-  const direction = active.travelDirection ?? 1;
-  const leftEdge = train ? -34 - train.cars * 1.6 : -34;
-  const rightEdge = train ? 36 + train.cars * 1.6 : 36;
-  const entryX = direction === 1 ? leftEdge : rightEdge;
-  const exitX = direction === 1 ? rightEdge : leftEdge;
+  const formationOrientation = active.formationOrientation ?? 1;
+  const entryX = train ? -34 - train.cars * 1.6 : -34;
+  const exitX = train ? 36 + train.cars * 1.6 : 36;
   useFrame((_, delta) => {
     if (!group.current) return;
     const visual = motion.current;
-    if (visual.trainId !== active.trainId || visual.direction !== direction || visual.phase !== active.phase) {
+    if (visual.trainId !== active.trainId || visual.phase !== active.phase) {
       visual.trainId = active.trainId;
-      visual.direction = direction;
       visual.phase = active.phase;
       visual.elapsed = active.phaseElapsed;
     } else {
@@ -512,7 +509,7 @@ function TrainConsist({ active, platformIndex, speed }: { active: ActiveTrain; p
   if (!train) return null;
   return (
     <group ref={group} position={[entryX, 0.25, -0.72 + platformIndex * 1.25]} scale={[1.42, 0.86, 0.86]}>
-      <Clone object={consist} castShadow />
+      <group rotation={[0, formationOrientation === -1 ? Math.PI : 0, 0]}><Clone object={consist} castShadow /></group>
       <SteamPuffs active={train.style === "steam"} />
     </group>
   );

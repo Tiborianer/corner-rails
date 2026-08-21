@@ -20,6 +20,7 @@ import {
   TRAIN_REVIEW_CANDIDATES,
   TRAIN_REVIEW_METRIC_SCALE,
   trainReviewAssetUrl,
+  trainReviewFormationRotation,
   trainReviewMotionPosition,
   type TrainReviewAtmosphere,
   type TrainReviewCandidate,
@@ -144,11 +145,10 @@ function MovingCandidate({
   useFrame(({ clock }) => {
     if (!group.current) return;
     const elapsed = freezeMotion ? capturePhaseSeconds : clock.elapsedTime + capturePhaseSeconds;
-    const direction = leadingEnd === "taurus" ? 1 : -1;
-    group.current.position.x = trainReviewMotionPosition(motion, elapsed + laneIndex * 2.1, direction);
+    group.current.position.x = trainReviewMotionPosition(motion, elapsed + laneIndex * 2.1);
   });
   return (
-    <group ref={group} position={[0, 0, laneZ]}>
+    <group ref={group} position={[0, 0, laneZ]} rotation={[0, trainReviewFormationRotation(leadingEnd), 0]}>
       <CandidateFormation candidate={candidate} />
     </group>
   );

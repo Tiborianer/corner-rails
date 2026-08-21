@@ -53,8 +53,8 @@ export interface TrainDefinition {
 export interface ActiveTrain {
   trainId: string;
   visualVariantId?: string;
-  /** Persisted direction of travel. +1 enters from the left; -1 enters from the right. */
-  travelDirection?: 1 | -1;
+  /** Persisted formation facing. +1 keeps the exported order; -1 turns the whole consist 180 degrees. */
+  formationOrientation?: 1 | -1;
   phase: "approach" | "dwell" | "depart" | "pass";
   phaseElapsed: number;
   phaseDuration: number;

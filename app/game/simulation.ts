@@ -140,9 +140,9 @@ function chooseTrainVisualVariantId(
 }
 
 /** The Nightjet candidate is a true push-pull set. Once its visual is promoted,
- * this deterministic choice lets either the Taurus or control car lead while
- * keeping the physical consist order unchanged. */
-export function chooseTrainTravelDirection(visualVariantId: string, seed: number): [1 | -1, number] {
+ * this deterministic choice turns the complete consist so either the Taurus or
+ * control car leads along the same left-to-right operating path. */
+export function chooseTrainFormationOrientation(visualVariantId: string, seed: number): [1 | -1, number] {
   if (visualVariantId !== "nightjet-new-generation") return [1, seed];
   const [roll, nextSeed] = nextRandom(seed);
   return [roll < 0.5 ? 1 : -1, nextSeed];
@@ -185,11 +185,11 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
     ? [10, rng]
     : randomInteger(rng, train.payout[0], train.payout[1]);
   const [visualVariantId, visualSeed] = chooseTrainVisualVariantId(train, state.lengthLevel, payoutSeed);
-  const [travelDirection, directionSeed] = chooseTrainTravelDirection(visualVariantId, visualSeed);
+  const [formationOrientation, orientationSeed] = chooseTrainFormationOrientation(visualVariantId, visualSeed);
   const activeTrain: ActiveTrain = {
     trainId: train.id,
     visualVariantId,
-    ...(visualVariantId === "nightjet-new-generation" ? { travelDirection } : {}),
+    ...(visualVariantId === "nightjet-new-generation" ? { formationOrientation } : {}),
     phase: train.kind === "event" ? "pass" : "approach",
     phaseElapsed: 0,
     phaseDuration: train.kind === "event" ? (train.id === "br01" ? 14 : 10) : 5,
@@ -198,7 +198,7 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
   };
   return {
     ...updatePlatformLane(state, platformIndex, { activeTrain, spawnCountdown: 0 }),
-    rng: directionSeed,
+    rng: orientationSeed,
     lastUpgrade: state.lastUpgrade ? { ...state.lastUpgrade, undoAvailable: false } : null,
     toast: train.kind === "event"
       ? `Special event: ${train.name} is running through platform ${platformIndex + 1}!`

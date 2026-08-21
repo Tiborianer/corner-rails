@@ -69,19 +69,23 @@ export function trainReviewAssetUrl(candidate: TrainReviewCandidate) {
   return `${candidate.assetPath}?v=${candidate.assetRevision}`;
 }
 
-export function trainReviewMotionPosition(mode: TrainReviewMotion, elapsedSeconds: number, direction: 1 | -1 = 1) {
+export function trainReviewMotionPosition(mode: TrainReviewMotion, elapsedSeconds: number) {
   if (mode === "stationary") return 0;
   if (mode === "pass") {
     const progress = (elapsedSeconds % 12) / 12;
     const eased = progress * progress * (3 - 2 * progress);
-    return direction * (-27 + eased * 54);
+    return -27 + eased * 54;
   }
   const cycle = elapsedSeconds % 18;
   if (cycle < 5) {
     const progress = cycle / 5;
-    return direction * (-27 + 27 * (1 - Math.pow(1 - progress, 3)));
+    return -27 + 27 * (1 - Math.pow(1 - progress, 3));
   }
   if (cycle < 11) return 0;
   const progress = (cycle - 11) / 7;
-  return direction * 27 * progress * progress;
+  return 27 * progress * progress;
+}
+
+export function trainReviewFormationRotation(leadingEnd: TrainReviewLeadingEnd) {
+  return leadingEnd === "cab-car" ? Math.PI : 0;
 }

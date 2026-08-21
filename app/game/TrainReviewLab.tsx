@@ -224,7 +224,7 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
 
   return (
     <main className={`railjet-lab-shell ${initialState.captureMode ? "capture-mode" : ""}`}>
-      <div className="railjet-lab-world" aria-label="Private DB Regional-Express train approval laboratory">
+      <div className="railjet-lab-world" aria-label={`Private ${candidate.label} train approval laboratory`}>
         <Canvas orthographic shadows="basic" dpr={[1, 1.65]} gl={{ antialias: true, powerPreference: "high-performance" }}>
           <Suspense fallback={null}>
             <ReviewScene candidate={candidate} motion={motion} atmosphere={atmosphere} scale={scale} loadCount={loadCount} capturePhaseSeconds={initialState.capturePhaseSeconds} freezeMotion={initialState.freezeMotion} onFps={setFps} />
@@ -232,13 +232,13 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
         </Canvas>
       </div>
       <header className="railjet-lab-title">
-        <span className="railjet-lab-blind">R1</span>
+        <span className="railjet-lab-blind">{candidate.badge}</span>
         <div><small>Corner Rails · Private train approval laboratory</small><h1>{candidate.label}</h1><p>{candidate.vehicleCount} vehicles · {candidate.nominalLengthMeters} m · review candidate</p></div>
       </header>
       {!initialState.captureMode && (
         <aside className="railjet-lab-controls" aria-label="Train review controls">
-          <div className="railjet-lab-control-head"><div><small>Not in production</small><strong>Blender review revision 1</strong></div><button type="button" onClick={() => window.location.assign("/")}>Exit</button></div>
-          <p>Built from the supplied BR 245, double-deck coach and driving-trailer references. Approval is required before production changes.</p>
+          <div className="railjet-lab-control-head"><div><small>Not in production</small><strong>{candidate.revision.replaceAll("-", " ")}</strong></div><button type="button" onClick={() => window.location.assign("/")}>Exit</button></div>
+          <p>{candidate.reviewSummary}</p>
           <SegmentedControl label="Motion" value={motion} options={[{ value: "stationary", label: "Parked" }, { value: "stopping", label: "Stop" }, { value: "pass", label: "Pass" }]} onChange={setMotion} />
           <SegmentedControl label="Weather" value={atmosphere} options={[{ value: "day", label: "Day" }, { value: "night", label: "Night" }, { value: "rain", label: "Rain" }]} onChange={setAtmosphere} />
           <div className="railjet-lab-inline-controls">
@@ -250,9 +250,9 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
       <div className="railjet-lab-metrics" aria-live="polite">
         <span><small>LIVE</small><strong>{fps} FPS</strong></span><span><small>GAUGE</small><strong>1.435 m</strong></span><span><small>STATUS</small><strong>Review</strong></span>
       </div>
-      <footer className="railjet-lab-caption"><strong>R1 · {candidate.shortLabel}</strong><span>Editable Blender master + modular GLBs</span><a href={candidate.primarySource} target="_blank" rel="noreferrer">Source ↗</a></footer>
+      <footer className="railjet-lab-caption"><strong>{candidate.badge} · {candidate.shortLabel}</strong><span>Editable Blender master + modular GLBs</span><a href={candidate.primarySource} target="_blank" rel="noreferrer">Source ↗</a></footer>
     </main>
   );
 }
 
-useGLTF.preload(trainReviewAssetUrl(TRAIN_REVIEW_CANDIDATES["db-regional-express"]));
+Object.values(TRAIN_REVIEW_CANDIDATES).forEach((candidate) => useGLTF.preload(trainReviewAssetUrl(candidate)));

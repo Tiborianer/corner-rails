@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "generator": "Blender 5.2 LTS Python API",
+  "candidateId": "nightjet-new-generation-taurus-1116",
+  "approvalStatus": "private-review",
+  "formation": "\u00d6BB Nightjet new generation with Taurus 1116",
+  "lengthMeters": 204.675,
+  "vehicleCount": 8,
+  "consist": [
+    "taurus-1116",
+    "sleeping-a",
+    "sleeping-b",
+    "couchette",
+    "couchette",
+    "couchette",
+    "multifunction",
+    "control-seat-car"
+  ],
+  "sevenCarCoachSet": [
+    "control-seat-car",
+    "multifunction",
+    "couchette",
+    "couchette",
+    "couchette",
+    "sleeping-a",
+    "sleeping-b"
+  ],
+  "vehicleDimensionsMeters": {
+    "taurus1116": {
+      "length": 19.28,
+      "width": 3.0,
+      "height": 4.32
+    },
+    "viaggioNextLevelCoach": {
+      "length": 26.4,
+      "width": 2.825,
+      "height": 4.18
+    }
+  },
+  "masterBlend": "assets/blender/nightjet-new-generation/nightjet-new-generation-master.blend",
+  "formationGlb": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb",
+  "moduleGlbs": {
+    "taurus_1116": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-taurus-1116.glb",
+    "sleeping_a": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-sleeping-a.glb",
+    "sleeping_b": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-sleeping-b.glb",
+    "couchette": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-couchette.glb",
+    "multifunction": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-multifunction.glb",
+    "control_seat_car": "public/models/train-lab/nightjet-new-generation/nightjet-new-generation-control-seat-car.glb"
+  },
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "railContactPlaneZ": 0.0,
+    "railContactAnchor": "rail_contact_origin",
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "traction": "electric",
+    "pantographContactHeightMeters": 5.5,
+    "calibrationTrackExported": false
+  },
+  "userReferenceFilenames": [
+    "nightjet_cabcar_front-side.jpg",
+    "nightjet_cabcar_front-side-view 2.jpg",
+    "nightjet_full formation_without_locomotive.jpg",
+    "nightjet_car_1.jpg",
+    "nightjet_car_2.jpg",
+    "nightjet_cabcar_side_view.jpg",
+    "nightjet_taurus_1116_corner_view.png",
+    "nightjet_taurus_1116_sideview.jpg",
+    "nightjet_taurus_1116_front-side_view.jpg"
+  ],
+  "referencePolicy": "Research only. Local images are not copied, embedded, textured, or shipped.",
+  "sources": [
+    "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-present-interior-design-next-generation-nightjet",
+    "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-sign-framework-agreement-passenger-coaches-austria",
+    "https://produktion.oebb.at/dam/jcr%3A47dbe927-74ea-47fd-abc2-253c45498ac1/1116.pdf",
+    "https://www.nightjet.com/de/komfortkategorien/nightjet-neue-generation"
+  ],
+  "productionRegistryModified": false
+}

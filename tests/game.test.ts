@@ -462,6 +462,130 @@ describe("per-train Blender approval laboratory", () => {
     });
     expect(manifest.referencePolicy).toContain("not copied");
   });
+
+  it("registers the Nightjet candidate for review without replacing production", () => {
+    expect(TRAIN_REVIEW_CANDIDATES["nightjet-new-generation"]).toMatchObject({
+      approvalStatus: "private-review",
+      productionTrainId: "nightjet",
+      assetRevision: "1",
+      vehicleCount: 8,
+      nominalLengthMeters: 204.675,
+      traction: "electric",
+    });
+    const productionVisual = trainVisualVariants({ id: "nightjet", modelKey: "nightjet" })[0];
+    expect(productionVisual.profile).toBe("legacy-v1");
+    expect(productionVisual.assetPath).toContain("models/trains/nightjet.glb");
+  });
+
+  it("ships a metre-scaled Taurus 1116 and seven-car Nightjet review formation", async () => {
+    const candidate = TRAIN_REVIEW_CANDIDATES["nightjet-new-generation"];
+    const modelPath = path.resolve("public", candidate.assetPath.slice(1));
+    const io = new NodeIO();
+    const document = await io.read(modelPath);
+    const root = document.getRoot();
+    const nodeNames = root.listNodes().map((node) => node.getName());
+    const formationRoot = root.listNodes().find((node) => node.getName() === "nightjet_new_generation_blender_root");
+    const bounds = getBounds(root.listScenes()[0]);
+    const exportedLength = bounds.max[0] - bounds.min[0];
+
+    expect(formationRoot?.getExtras()).toMatchObject({
+      units: "meters",
+      forward_axis: "+X",
+      lateral_axis: "+Y",
+      up_axis: "+Z",
+      standard_gauge_m: 1.435,
+      wheel_tread_center_m: 0.7175,
+      rail_contact_plane_z: 0,
+      pantograph_contact_height_m: 5.5,
+      approval_status: "private review only",
+      production_train_id: "nightjet",
+      coach_set: "2 seating + 3 couchette + 2 sleeping",
+    });
+    expect(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).toEqual([
+      "vehicle_00_taurus_1116",
+      "vehicle_01_sleeping_a",
+      "vehicle_02_sleeping_b",
+      "vehicle_03_couchette",
+      "vehicle_04_couchette",
+      "vehicle_05_couchette",
+      "vehicle_06_multifunction",
+      "vehicle_07_control_seat_car",
+    ]);
+    expect(nodeNames.some((name) => name.includes("nightjet_taurus_panto_raised_collector"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("nightjet_taurus_vent"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("nightjet_control_cab_windshield"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("nightjet_control_front_grille"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("sleeping_a_window"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("couchette_window"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("multifunction_window"))).toBe(true);
+    expect(nodeNames.some((name) => name.startsWith("review_"))).toBe(false);
+    expect(root.listNodes().find((node) => node.getName() === "rail_contact_origin")?.getWorldTranslation()).toEqual([0, 0, 0]);
+    expect(exportedLength).toBeGreaterThan(204.7);
+    expect(exportedLength).toBeLessThan(205.1);
+    expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(0.1);
+    expect(root.listMaterials().length).toBeLessThanOrEqual(15);
+    expect((await stat(modelPath)).size).toBeLessThan(500_000);
+
+    const wheels = root.listNodes().filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
+    expect(wheels).toHaveLength(64);
+    for (const wheel of wheels) {
+      const [, vertical, lateral] = wheel.getWorldTranslation();
+      const radius = wheel.getName().includes("nightjet_taurus") ? 0.575 : 0.46;
+      expect(Math.abs(lateral)).toBeCloseTo(0.7175, 4);
+      expect(vertical - radius).toBeCloseTo(0, 4);
+    }
+  });
+
+  it("records the complete Nightjet formation and local reference filenames without shipping images", async () => {
+    const manifest = JSON.parse(await readFile(path.resolve("assets/blender/nightjet-new-generation/manifest.json"), "utf8"));
+    expect(manifest).toMatchObject({
+      candidateId: "nightjet-new-generation-taurus-1116",
+      approvalStatus: "private-review",
+      productionRegistryModified: false,
+      vehicleCount: 8,
+      consist: [
+        "taurus-1116",
+        "sleeping-a",
+        "sleeping-b",
+        "couchette",
+        "couchette",
+        "couchette",
+        "multifunction",
+        "control-seat-car",
+      ],
+      sevenCarCoachSet: [
+        "control-seat-car",
+        "multifunction",
+        "couchette",
+        "couchette",
+        "couchette",
+        "sleeping-a",
+        "sleeping-b",
+      ],
+      userReferenceFilenames: [
+        "nightjet_cabcar_front-side.jpg",
+        "nightjet_cabcar_front-side-view 2.jpg",
+        "nightjet_full formation_without_locomotive.jpg",
+        "nightjet_car_1.jpg",
+        "nightjet_car_2.jpg",
+        "nightjet_cabcar_side_view.jpg",
+        "nightjet_taurus_1116_corner_view.png",
+        "nightjet_taurus_1116_sideview.jpg",
+        "nightjet_taurus_1116_front-side_view.jpg",
+      ],
+      assetContract: {
+        units: "meters",
+        standardGaugeMeters: 1.435,
+        railContactPlaneZ: 0,
+        railContactAnchor: "rail_contact_origin",
+        wheelTreadCentersMeters: [-0.7175, 0.7175],
+        traction: "electric",
+        pantographContactHeightMeters: 5.5,
+        calibrationTrackExported: false,
+      },
+    });
+    expect(manifest.referencePolicy).toContain("not copied");
+  });
 });
 
 describe("production metric railway and Railjet registry", () => {

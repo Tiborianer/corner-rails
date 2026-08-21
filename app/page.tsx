@@ -15,9 +15,9 @@ function numericQueryValue(value: string | string[] | undefined, fallback: numbe
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const parameters = await searchParams;
   const trainLab = Array.isArray(parameters.trainLab) ? parameters.trainLab[0] : parameters.trainLab;
-  if (trainLab === "db-regional-express") {
+  if (trainLab === "db-regional-express" || trainLab === "nightjet-new-generation") {
     const initialState: TrainReviewLabInitialState = {
-      candidateId: "db-regional-express",
+      candidateId: trainLab,
       motion: queryValue(parameters.motion, ["stationary", "stopping", "pass"], "stationary"),
       atmosphere: queryValue(parameters.atmosphere, ["day", "night", "rain"], "day"),
       scale: queryValue(parameters.scale, ["normal", "inspect"], "normal"),

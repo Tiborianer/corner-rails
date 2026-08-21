@@ -34,6 +34,14 @@ Thirty-eight automated tests now pass. Candidate-specific coverage verifies four
 
 The private `?trainLab=db-regional-express` route was exercised at desktop and 390×844 mobile sizes in stationary, stopping, pass-through, day, night, rain and three-lane-capable states. The controls update the URL/state correctly, the model loads without WebGL errors, and the visible FPS counter stayed above 100 in the in-app desktop software-WebGL session. The only console output was Three.js's existing `Clock` deprecation warning. The mobile screenshot is layout evidence, not a physical-device GPU result. Blender review startup exited once when chained directly after the Node optimizer; running the same saved master as a separate command rendered all five views successfully, so generation/export is unaffected.
 
+## 2026-08-21 Nightjet Blender review N1
+
+The second per-train approval branch adds an editable Blender 5.2 master, six modular GLBs and one eight-vehicle formation: Taurus 1116, two sleeping cars, three couchette cars, multifunction car and control/seat car. The full optimized GLB is 235,256 bytes. The user references are recorded by filename but are neither copied nor embedded; recognition details use original geometry and material colour blocking without protected logos or photo textures.
+
+Forty-one focused automated tests pass. Candidate-specific coverage verifies the exact eight-root formation, 204.7–205.1 m exported bounds including couplers, 64 standard-gauge wheel objects, wheel contact at Z=0, 5.5 m pantograph contact, a named rail-contact origin, Taurus roof/vent signatures, the distinct control-car windshield/grille, sleeping/couchette/multifunction window signatures, the 500 KB budget, all nine reference filenames and `productionRegistryModified: false`. The normal Tier 5 Nightjet remains `legacy-v1`.
+
+The private `?trainLab=nightjet-new-generation` route was exercised at 1440×900 and 390×844 in stationary, stopping, fixed-phase pass-through, day, night, rain, inspection and three-simultaneous-formation states. The visible desktop counter reported 94–118 FPS; the three-formation rain state reported 98 FPS. The asset loaded without WebGL or loading errors. Console review found only Three.js's existing `Clock` deprecation warning. Mobile evidence verifies responsive layout, not physical-device GPU performance.
+
 ## Automated acceptance coverage
 
 - Nine deterministic simulation tests cover exact structural prices, the shared cap, system purchases, Tier 5 unlimited development, cleaning cost and cap exclusion, rating response, train and rain dirt, roster counts, Nightjet night eligibility/fixed payout, and save-code round-trip/damage rejection.
@@ -81,6 +89,16 @@ The private `?trainLab=db-regional-express` route was exercised at desktop and 3
 - [DB Regional-Express browser night](../qa/train-review/db-regional-express/db-regional-express-browser-night.png)
 - [DB Regional-Express browser rain](../qa/train-review/db-regional-express/db-regional-express-browser-rain.png)
 - [DB Regional-Express browser mobile layout](../qa/train-review/db-regional-express/db-regional-express-browser-mobile.png)
+- [Nightjet Blender overview](../qa/train-review/nightjet-new-generation/nightjet-new-generation-blender-overview.jpg)
+- [Nightjet Taurus 1116 detail](../qa/train-review/nightjet-new-generation/nightjet-new-generation-blender-taurus-1116-detail.jpg)
+- [Nightjet control-car detail](../qa/train-review/nightjet-new-generation/nightjet-new-generation-blender-control-car-detail.jpg)
+- [Nightjet sleeping/couchette side profiles](../qa/train-review/nightjet-new-generation/nightjet-new-generation-blender-sleeping-couchette-side.jpg)
+- [Nightjet wheel/rail calibration](../qa/train-review/nightjet-new-generation/nightjet-new-generation-blender-wheel-rail-detail.jpg)
+- [Nightjet browser day](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-day.png)
+- [Nightjet browser night inspection](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-night.png)
+- [Three Nightjet formations in rain](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-rain.png)
+- [Nightjet pass-through state](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-pass.png)
+- [Nightjet browser mobile layout](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-mobile.png)
 - [Railjet night candidate](../qa/railjet-lab/classic-generated-night.jpg)
 - [Three simultaneous procedural formations](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 

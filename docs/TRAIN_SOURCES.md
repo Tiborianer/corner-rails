@@ -40,6 +40,14 @@ The R1 review asset interprets these as a four-vehicle push-pull set: DB Class 2
 
 This is a visual review candidate, not yet a verified production roster replacement. In particular, it is not a Siemens Desiro HC. The eventual roster mapping and final class designations for the intermediate/control cars remain approval decisions.
 
+## Private Blender candidate: Taurus 1116 + Nightjet new generation
+
+The user supplied nine appearance references on **2026-08-21**, identified by filename in the candidate manifest and not copied into the repository. They cover both ends of the train, side profiles for the principal passenger-car layouts, a complete seven-car coach montage, and three Taurus 1116 views.
+
+The N1 review formation uses one ÖBB Class 1116 Taurus plus the coherent seven-car Siemens Nightjet new-generation set: control/seat car, multifunction car, three couchette cars and two sleeping cars. Siemens' [new-generation Nightjet presentation](https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-present-interior-design-next-generation-nightjet) explicitly records the two seating, three couchette and two sleeping cars. Siemens' earlier [Viaggio framework agreement](https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-sign-framework-agreement-passenger-coaches-austria) establishes compatibility with ÖBB's Taurus fleet. ÖBB's official [Class 1116 technical sheet](https://produktion.oebb.at/dam/jcr%3A47dbe927-74ea-47fd-abc2-253c45498ac1/1116.pdf) supplies the 19.28 m locomotive dimension, Bo'Bo' arrangement, 230 km/h top speed and 1.435 m gauge.
+
+The candidate does not mix the new-generation control car with old Nightjet stock. Its 204.675 m value is the project's modeled length from one 19.28 m locomotive, seven 26.4 m coach bodies and modeled inter-vehicle gaps; it is not presented as an operator-published total. This remains a private review candidate. The existing production Nightjet asset and gameplay values are unchanged pending approval.
+
 ## Implemented complete-consist visual-recognition pass
 
 The original procedural assets intentionally omit protected logos, but each GLB now includes the entire representative formation and encodes the train-family cues visible in the primary records:

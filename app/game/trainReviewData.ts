@@ -7,6 +7,7 @@ export type TrainReviewLoad = 1 | 3;
 
 export interface TrainReviewCandidate {
   id: string;
+  badge: string;
   label: string;
   shortLabel: string;
   assetPath: string;
@@ -19,11 +20,13 @@ export interface TrainReviewCandidate {
   primarySource: string;
   productionTrainId: string;
   approvalStatus: "private-review";
+  reviewSummary: string;
 }
 
 export const TRAIN_REVIEW_CANDIDATES = {
   "db-regional-express": {
     id: "db-regional-express",
+    badge: "R1",
     label: "DB Regional-Express · BR 245 + Dosto",
     shortLabel: "BR 245 Dosto",
     assetPath: "/models/train-lab/db-regional-express/db-regional-express-blender.glb",
@@ -36,6 +39,24 @@ export const TRAIN_REVIEW_CANDIDATES = {
     primarySource: "https://www.alstom.com/solutions/rolling-stock/locomotives/traxx-passenger-locomotives-comfortable-borderless-operations-passengers",
     productionTrainId: "unassigned",
     approvalStatus: "private-review",
+    reviewSummary: "Built from the supplied BR 245, double-deck coach and driving-trailer references. Approval is required before production changes.",
+  },
+  "nightjet-new-generation": {
+    id: "nightjet-new-generation",
+    badge: "N1",
+    label: "ÖBB Nightjet · Taurus 1116 + new-generation set",
+    shortLabel: "Taurus 1116 Nightjet",
+    assetPath: "/models/train-lab/nightjet-new-generation/nightjet-new-generation-blender.glb",
+    assetRevision: "1",
+    vehicleCount: 8,
+    nominalLengthMeters: 204.675,
+    reviewPlatformLengthMeters: 280,
+    traction: "electric",
+    revision: "blender-review-1",
+    primarySource: "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-present-interior-design-next-generation-nightjet",
+    productionTrainId: "nightjet",
+    approvalStatus: "private-review",
+    reviewSummary: "Taurus 1116 plus the verified seven-car set: two sleepers, three couchettes, multifunction car and control/seat car. Production remains unchanged until approval.",
   },
 } as const satisfies Record<string, TrainReviewCandidate>;
 

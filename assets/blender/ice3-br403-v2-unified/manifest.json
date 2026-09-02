@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 5,
+  "generator": "Blender 5.2 LTS Python API",
+  "candidateId": "ice3-br403-v2-unified",
+  "approvalStatus": "approved-production",
+  "reviewStage": "unified-formation",
+  "productionRegistryModified": true,
+  "comparisonBaseline": "public/models/train-lab/ice3-br403-v2-continuity/ice3-br403-v2-continuity-checkpoint.glb",
+  "targetFormation": "modernized DB ICE 3 Class 403 eight-car set",
+  "vehicleCount": 8,
+  "lengthMeters": 200.32,
+  "consist": [
+    "first_end_403_0",
+    "first_transformer_403_1",
+    "second_converter_403_2",
+    "bordrestaurant_403_3",
+    "service_403_8",
+    "second_converter_403_7",
+    "second_transformer_403_6",
+    "second_end_403_5"
+  ],
+  "roleDetails": {
+    "first_end_403_0": "403.0 first-class end car",
+    "first_transformer_403_1": "403.1 first-class transformer car",
+    "second_converter_403_2": "403.2 second-class converter car",
+    "bordrestaurant_403_3": "403.3 Bordrestaurant car",
+    "service_403_8": "403.8 service car",
+    "second_converter_403_7": "403.7 second-class converter car",
+    "second_transformer_403_6": "403.6 second-class transformer car",
+    "second_end_403_5": "403.5 second-class end car"
+  },
+  "continuityContract": {
+    "approvedCheckpointRevision": 4,
+    "sharedProfileId": "class403-continuity-v1",
+    "profileVertexCount": 19,
+    "bodyStripeCenterZMeters": 1.84,
+    "bodyStripeHeightMeters": 0.18,
+    "glazingBandCenterZMeters": 2.48,
+    "glazingBandHeightMeters": 0.74,
+    "glassSurfaceYMeters": 1.493,
+    "junctionToleranceMeters": 0.001,
+    "liveryToleranceMeters": 0.002
+  },
+  "lighting": {
+    "lensMaterial": "ICE3_V2_Headlamp",
+    "lensEmissive": true,
+    "emissionStrength": 8.0,
+    "runtimeOwner": "React Three Fiber",
+    "leadingCabSpotLightCount": 1,
+    "spotLightColor": "#ffe3a3",
+    "spotLightPositionsMeters": [
+      [
+        99.88,
+        1.675,
+        -0.27
+      ],
+      [
+        99.88,
+        1.675,
+        0.27
+      ]
+    ]
+  },
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "railContactPlaneZ": 0,
+    "railContactAnchor": "rail_contact_origin",
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "pantographContactHeightMeters": 5.5,
+    "calibrationTrackExported": false
+  },
+  "masterBlend": "assets/blender/ice3-br403-v2-unified/ice3-br403-v2-unified-master.blend",
+  "formationGlb": "public/models/trains/blender/ice3/ice3-br403-unified-blender.glb",
+  "reviewFormationGlb": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-blender.glb",
+  "moduleGlbs": {
+    "first_end_403_0": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-first-end-403-0.glb",
+    "first_transformer_403_1": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-first-transformer-403-1.glb",
+    "second_converter_403_2": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-second-converter-403-2.glb",
+    "bordrestaurant_403_3": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-bordrestaurant-403-3.glb",
+    "service_403_8": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-service-403-8.glb",
+    "second_converter_403_7": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-second-converter-403-7.glb",
+    "second_transformer_403_6": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-second-transformer-403-6.glb",
+    "second_end_403_5": "public/models/train-lab/ice3-br403-v2-unified/ice3-br403-v2-unified-second-end-403-5.glb"
+  },
+  "bordrestaurant": {
+    "vehicleIndex": 3,
+    "class": "403.3",
+    "redesignSeatCount": 20,
+    "asymmetricDiningAndGalleySides": true
+  },
+  "userReferenceFilenames": [
+    "ice_3_front_sideview.jpg.avif",
+    "ice_3_front_forwardview.jpg.avif",
+    "ice_car_sideview.jpg",
+    "ICE_3_second_class_car_sideview.png.webp",
+    "ice_3_front-side_view.jpeg"
+  ],
+  "referencePolicy": "Research only. Local images are referenced by filename, not copied, packed, textured, embedded, or shipped.",
+  "sources": [
+    "https://www.deutschebahn.com/de/ICE-3-7033052",
+    "https://www.deutschebahn.com/resource/blob/12723788/819f9bc39b4e262b31c18cfd132b4654/DB-403_04_2023-data.pdf",
+    "https://www.deutschebahn.com/de/presse/suche_Medienpakete/5-Schoener-speisen--6854504"
+  ],
+  "nextApprovalGate": "Approved and promoted to the production ICE 3 registry on 2026-09-02."
+}

@@ -95,7 +95,7 @@ type Action =
   | { type: "claim-mission" }
   | { type: "event"; eventId: "ice-s" | "br01" }
   | { type: "prestige" }
-  | { type: "debug"; mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" | "nightjet-taurus" | "nightjet-cab-car" }
+  | { type: "debug"; mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified" }
   | { type: "import"; state: GameState }
   | { type: "toast"; message: string | null };
 
@@ -221,6 +221,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
   const previousTrains = useRef<Record<number, string | null>>({});
   const previousPhases = useRef<Record<number, string | null>>({});
   const previousCoins = useRef(0);
+  const previousLightningStrike = useRef(0);
 
   const rating = stationRating(state);
   const ratingDetails = stationRatingBreakdown(state).slice(0, 3);
@@ -247,6 +248,11 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
   }, []);
 
   useEffect(() => {
+    const audioBus = audio.current;
+    return () => audioBus.cancelThunder();
+  }, []);
+
+  useEffect(() => {
     if (!state.toast) return;
     const timer = window.setTimeout(() => dispatch({ type: "toast", message: null }), 4_000);
     return () => window.clearTimeout(timer);
@@ -270,6 +276,18 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
     if (state.coins > previousCoins.current && previousCoins.current > 0) audio.current.reward();
     previousCoins.current = state.coins;
   }, [state.platformLanes, state.coins]);
+
+  useEffect(() => {
+    if (state.weather !== "thunderstorm") {
+      audio.current.cancelThunder();
+      previousLightningStrike.current = state.lightningStrikeId;
+      return;
+    }
+    if (state.lightningStrikeId > previousLightningStrike.current) {
+      audio.current.thunder(state.thunderDelaySeconds);
+      previousLightningStrike.current = state.lightningStrikeId;
+    }
+  }, [state.lightningStrikeId, state.thunderDelaySeconds, state.weather]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -335,7 +353,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
   const tutorialStep = !state.region ? 0 : !state.platformPlaced ? 1 : !state.firstTrainComplete ? 2 : 3;
 
   return (
-    <main className={`game-shell ${isNight(state) ? "night" : "day"} ${state.raining ? "rainy" : ""}`}>
+    <main className={`game-shell ${isNight(state) ? "night" : "day"} weather-${state.weather}`}>
       <section className="world" aria-label="Corner Rails station diorama">
         <StationScene legacyVisuals={legacyVisuals} state={state} onPlacePlatform={() => dispatch({ type: "place-platform" })} />
         <div className="world-vignette" />
@@ -357,7 +375,11 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
             </div>
           </Metric>
           <Metric icon="🧹" label="Clean" value={`${Math.round(state.cleanliness)}%`} tone={cleanTone(state.cleanliness)} />
-          <Metric icon={state.raining ? "🌧️" : isNight(state) ? "🌙" : "☀️"} label={`${SEASONS[state.seasonIndex]} · ${state.raining ? "Rain" : isNight(state) ? "Night" : "Clear"}`} value={clockLabel(state.simSeconds)} />
+          <Metric
+            icon={state.weather === "thunderstorm" ? "⛈️" : state.weather === "rain" ? "🌧️" : isNight(state) ? "🌙" : "☀️"}
+            label={`${SEASONS[state.seasonIndex]} · ${state.weather === "thunderstorm" ? "Storm" : state.weather === "rain" ? "Rain" : isNight(state) ? "Night" : "Clear"}`}
+            value={clockLabel(state.simSeconds)}
+          />
         </div>
       )}
 
@@ -586,11 +608,12 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
       {debugEnabled && state.region && (
         <div className="debug-tools">
           <span>DEBUG</span>
-          {(["tier5", "night", "rain", "dirty"] as const).map((mode) => <button key={mode} onClick={() => dispatch({ type: "debug", mode })}>{mode}</button>)}
+          {(["tier5", "night", "rain", "thunderstorm", "dirty"] as const).map((mode) => <button key={mode} onClick={() => dispatch({ type: "debug", mode })}>{mode}</button>)}
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-classic" })}>RJ classic</button>
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-nextgen" })}>RJ new</button>
           <button onClick={() => dispatch({ type: "debug", mode: "nightjet-taurus" })}>NJ Taurus</button>
           <button onClick={() => dispatch({ type: "debug", mode: "nightjet-cab-car" })}>NJ cab car</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "ice3-unified" })}>ICE 3</button>
           <button onClick={() => dispatch({ type: "event", eventId: "ice-s" })}>ICE-S</button>
           <button onClick={() => dispatch({ type: "event", eventId: "br01" })}>BR 01</button>
         </div>

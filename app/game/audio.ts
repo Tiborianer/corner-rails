@@ -1,6 +1,7 @@
 export class AudioBus {
   private context: AudioContext | null = null;
   private muted = true;
+  private pendingThunder = new Set<number>();
 
   get isMuted() {
     return this.muted;
@@ -8,6 +9,7 @@ export class AudioBus {
 
   async setMuted(muted: boolean) {
     this.muted = muted;
+    if (muted) this.cancelThunder();
     if (!muted) {
       this.context ??= new AudioContext();
       await this.context.resume();
@@ -55,5 +57,47 @@ export class AudioBus {
     this.tone(920, 0.08, "sine", 0.025);
     window.setTimeout(() => this.tone(1_180, 0.12, "sine", 0.022), 75);
   }
-}
 
+  thunder(delaySeconds: number) {
+    if (this.muted || !this.context) return;
+    const timer = window.setTimeout(() => {
+      this.pendingThunder.delete(timer);
+      this.playThunder();
+    }, Math.max(0, delaySeconds) * 1_000);
+    this.pendingThunder.add(timer);
+  }
+
+  cancelThunder() {
+    this.pendingThunder.forEach((timer) => window.clearTimeout(timer));
+    this.pendingThunder.clear();
+  }
+
+  private playThunder() {
+    if (this.muted || !this.context) return;
+    const context = this.context;
+    const duration = 2.2;
+    const sampleCount = Math.floor(context.sampleRate * duration);
+    const buffer = context.createBuffer(1, sampleCount, context.sampleRate);
+    const channel = buffer.getChannelData(0);
+    let noiseSeed = 0x51f15e;
+    for (let index = 0; index < sampleCount; index += 1) {
+      noiseSeed = (Math.imul(noiseSeed, 1_664_525) + 1_013_904_223) >>> 0;
+      const noise = (noiseSeed / 4_294_967_296) * 2 - 1;
+      const time = index / context.sampleRate;
+      channel[index] = noise * Math.exp(-time * 1.45) * (0.7 + 0.3 * Math.sin(time * 19));
+    }
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    const now = context.currentTime;
+    source.buffer = buffer;
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(340, now);
+    filter.frequency.exponentialRampToValueAtTime(90, now + duration);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.11, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    source.connect(filter).connect(gain).connect(context.destination);
+    source.start(now);
+  }
+}

@@ -15,7 +15,8 @@ function numericQueryValue(value: string | string[] | undefined, fallback: numbe
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const parameters = await searchParams;
   const trainLab = Array.isArray(parameters.trainLab) ? parameters.trainLab[0] : parameters.trainLab;
-  if (trainLab === "db-regional-express" || trainLab === "nightjet-new-generation") {
+  if (trainLab === "db-regional-express" || trainLab === "nightjet-new-generation" || trainLab === "ice3-br403" || trainLab === "ice3-br403-v2" || trainLab === "ice3-br403-v2-continuity" || trainLab === "ice3-br403-v2-unified") {
+    const captureMode = queryValue(parameters.capture, ["0", "1"], "0") === "1";
     const initialState: TrainReviewLabInitialState = {
       candidateId: trainLab,
       motion: queryValue(parameters.motion, ["stationary", "stopping", "pass"], "stationary"),
@@ -23,9 +24,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
       scale: queryValue(parameters.scale, ["normal", "inspect"], "normal"),
       loadCount: queryValue(parameters.load, ["1", "3"], "1") === "3" ? 3 : 1,
       leadingEnd: queryValue(parameters.leading, ["taurus", "cab-car"], "taurus"),
-      captureMode: queryValue(parameters.capture, ["0", "1"], "0") === "1",
+      captureMode,
       capturePhaseSeconds: numericQueryValue(parameters.phase, 0),
-      freezeMotion: queryValue(parameters.freeze, ["0", "1"], "0") === "1",
+      freezeMotion: captureMode && queryValue(parameters.freeze, ["0", "1"], "0") === "1",
     };
     const stateKey = [initialState.candidateId, initialState.motion, initialState.atmosphere, initialState.scale, initialState.loadCount, initialState.leadingEnd, Number(initialState.captureMode), initialState.capturePhaseSeconds, Number(initialState.freezeMotion)].join(":");
     return <TrainReviewLab key={stateKey} initialState={initialState} />;
@@ -36,6 +37,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
     return <CornerRails legacyVisuals={legacyVisuals} />;
   }
   const requestedVariant = Array.isArray(parameters.variant) ? parameters.variant[0] : parameters.variant;
+  const captureMode = queryValue(parameters.capture, ["0", "1"], "0") === "1";
   const initialState: RailjetLabInitialState = {
     generation: reviewMode
       ? requestedVariant === "railjet-nextgen" ? "nextgen" : "classic"
@@ -47,9 +49,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Rec
     atmosphere: queryValue(parameters.atmosphere, ["day", "night", "rain"], "day"),
     scale: queryValue(parameters.scale, ["normal", "inspect"], "normal"),
     loadCount: queryValue(parameters.load, ["1", "3"], "1") === "3" ? 3 : 1,
-    captureMode: queryValue(parameters.capture, ["0", "1"], "0") === "1",
+    captureMode,
     capturePhaseSeconds: numericQueryValue(parameters.phase, 0),
-    freezeMotion: queryValue(parameters.freeze, ["0", "1"], "0") === "1",
+    freezeMotion: captureMode && queryValue(parameters.freeze, ["0", "1"], "0") === "1",
   };
   const labStateKey = [initialState.generation, initialState.method, initialState.motion, initialState.atmosphere, initialState.scale, initialState.loadCount, Number(initialState.captureMode), initialState.capturePhaseSeconds, Number(initialState.freezeMotion)].join(":");
   return <RailjetLab key={labStateKey} initialState={initialState} reviewMode={reviewMode} />;

@@ -5,8 +5,8 @@
 import { Clone, useGLTF } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import type { Group, Points } from "three";
-import { Box3, Vector3 } from "three";
+import type { DirectionalLight as ThreeDirectionalLight, Group, Object3D, Points, SpotLight as ThreeSpotLight } from "three";
+import { ACESFilmicToneMapping, Box3, Vector3 } from "three";
 import {
   MetricCatenary,
   MetricContactShadow,
@@ -14,8 +14,10 @@ import {
   MetricTrack,
   RAILWAY_GROUND_Y,
   RAILWAY_METRIC_PROFILE,
+  metricPlatformCenter,
   railwayMetersToWorld,
 } from "./metricRailway";
+import { PLATFORM_FIXTURE_RATIOS } from "./visual";
 import {
   TRAIN_REVIEW_CANDIDATES,
   TRAIN_REVIEW_METRIC_SCALE,
@@ -124,6 +126,62 @@ function CandidateFormation({ candidate }: { candidate: TrainReviewCandidate }) 
   );
 }
 
+function CandidateHeadlights({ candidate, atmosphere }: { candidate: TrainReviewCandidate; atmosphere: TrainReviewAtmosphere }) {
+  const beam = useRef<ThreeSpotLight>(null);
+  const beamTarget = useRef<Object3D>(null);
+  const profile = candidate.headlights;
+  useEffect(() => {
+    if (beam.current && beamTarget.current) beam.current.target = beamTarget.current;
+  }, []);
+  if (!profile) return null;
+  const frontX = railwayMetersToWorld(candidate.nominalLengthMeters / 2 - profile.frontInsetMeters);
+  const lightY = RAILWAY_METRIC_PROFILE.railTopY + railwayMetersToWorld(profile.heightMeters);
+  const targetX = frontX + railwayMetersToWorld(profile.beamLengthMeters);
+  const targetY = RAILWAY_METRIC_PROFILE.railTopY + railwayMetersToWorld(0.28);
+  const intensity = atmosphere === "night" ? 92 : atmosphere === "rain" ? 68 : 34;
+  const distance = railwayMetersToWorld(profile.beamLengthMeters * 1.25);
+  return (
+    <>
+      <object3D ref={beamTarget} position={[targetX, targetY, 0]} />
+      <spotLight ref={beam} position={[frontX, lightY, 0]} color={profile.color} intensity={intensity} distance={distance} angle={0.245} penumbra={0.72} decay={1.45} />
+    </>
+  );
+}
+
+function ReviewPlatformLightPool({ trackCenter, lengthMeters }: { trackCenter: number; lengthMeters: number }) {
+  const fill = useRef<ThreeDirectionalLight>(null);
+  const fillTarget = useRef<Object3D>(null);
+  const platformLength = railwayMetersToWorld(lengthMeters);
+  const platformWidth = railwayMetersToWorld(RAILWAY_METRIC_PROFILE.platformWidthMeters);
+  const surfaceY = RAILWAY_METRIC_PROFILE.railTopY + railwayMetersToWorld(RAILWAY_METRIC_PROFILE.platformHeightMeters);
+  const platformCenter = metricPlatformCenter(trackCenter);
+  const trainSideLampZ = platformCenter - platformWidth * 0.25;
+  useEffect(() => {
+    if (fill.current && fillTarget.current) fill.current.target = fillTarget.current;
+  }, []);
+  return (
+    <group>
+      <object3D ref={fillTarget} position={[0, RAILWAY_METRIC_PROFILE.railTopY + 0.19, trackCenter]} />
+      <directionalLight
+        ref={fill}
+        position={[0, surfaceY + 0.48, trainSideLampZ]}
+        intensity={0.58}
+        color="#ffd99a"
+      />
+      {PLATFORM_FIXTURE_RATIOS.map((ratio) => (
+        <pointLight
+          key={ratio}
+          position={[ratio * platformLength, surfaceY + 0.215, trainSideLampZ]}
+          intensity={0.18}
+          distance={1.25}
+          decay={2}
+          color="#ffd99a"
+        />
+      ))}
+    </group>
+  );
+}
+
 function MovingCandidate({
   candidate,
   motion,
@@ -132,6 +190,7 @@ function MovingCandidate({
   capturePhaseSeconds,
   freezeMotion,
   leadingEnd,
+  atmosphere,
 }: {
   candidate: TrainReviewCandidate;
   motion: TrainReviewMotion;
@@ -140,6 +199,7 @@ function MovingCandidate({
   capturePhaseSeconds: number;
   freezeMotion: boolean;
   leadingEnd: TrainReviewLeadingEnd;
+  atmosphere: TrainReviewAtmosphere;
 }) {
   const group = useRef<Group>(null);
   useFrame(({ clock }) => {
@@ -150,6 +210,7 @@ function MovingCandidate({
   return (
     <group ref={group} position={[0, 0, laneZ]} rotation={[0, trainReviewFormationRotation(leadingEnd), 0]}>
       <CandidateFormation candidate={candidate} />
+      <CandidateHeadlights candidate={candidate} atmosphere={atmosphere} />
     </group>
   );
 }
@@ -191,10 +252,10 @@ function ReviewScene({
       <MetricCatenary laneZs={laneZs} length={60} />
       {laneIndexes.map((laneIndex, index) => (
         <Suspense key={`${candidate.id}-${laneIndex}`} fallback={null}>
-          <MovingCandidate candidate={candidate} motion={motion} laneIndex={laneIndex} laneZ={laneZs[index]} capturePhaseSeconds={capturePhaseSeconds} freezeMotion={freezeMotion} leadingEnd={leadingEnd} />
+          <MovingCandidate candidate={candidate} motion={motion} laneIndex={laneIndex} laneZ={laneZs[index]} capturePhaseSeconds={capturePhaseSeconds} freezeMotion={freezeMotion} leadingEnd={leadingEnd} atmosphere={atmosphere} />
         </Suspense>
       ))}
-      {night && [-4.2, -1.4, 1.4, 4.2].map((x) => <pointLight key={x} position={[x, 0.72, Math.max(...laneZs) + 0.3]} intensity={1.6} distance={5} color="#ffd77f" />)}
+      {night && <ReviewPlatformLightPool trackCenter={Math.max(...laneZs)} lengthMeters={candidate.reviewPlatformLengthMeters} />}
       {raining && <ReviewRain />}
       <FpsProbe onSample={onFps} />
     </>
@@ -218,6 +279,9 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
   const [loadCount, setLoadCount] = useState(initialState.loadCount);
   const [leadingEnd, setLeadingEnd] = useState(initialState.leadingEnd);
   const [fps, setFps] = useState(60);
+  const comparisonCandidate = candidate.comparisonCandidateId && candidate.comparisonCandidateId in TRAIN_REVIEW_CANDIDATES
+    ? candidate.comparisonCandidateId as TrainReviewCandidateId
+    : null;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -233,7 +297,7 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
   return (
     <main className={`railjet-lab-shell ${initialState.captureMode ? "capture-mode" : ""}`}>
       <div className="railjet-lab-world" aria-label={`Private ${candidate.label} train approval laboratory`}>
-        <Canvas orthographic shadows="basic" dpr={[1, 1.65]} gl={{ antialias: true, powerPreference: "high-performance" }}>
+        <Canvas orthographic shadows="basic" dpr={[1, 1.65]} gl={{ antialias: true, powerPreference: "high-performance" }} onCreated={({ gl }) => { gl.toneMapping = ACESFilmicToneMapping; gl.toneMappingExposure = 1; }}>
           <Suspense fallback={null}>
             <ReviewScene candidate={candidate} motion={motion} atmosphere={atmosphere} scale={scale} loadCount={loadCount} leadingEnd={leadingEnd} capturePhaseSeconds={initialState.capturePhaseSeconds} freezeMotion={initialState.freezeMotion} onFps={setFps} />
           </Suspense>
@@ -241,11 +305,11 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
       </div>
       <header className="railjet-lab-title">
         <span className="railjet-lab-blind">{candidate.badge}</span>
-        <div><small>Corner Rails · Private train approval laboratory</small><h1>{candidate.label}</h1><p>{candidate.vehicleCount} vehicles · {candidate.nominalLengthMeters} m · {candidate.approvalStatus === "approved-production" ? "approved production asset" : "review candidate"}</p></div>
+        <div><small>Corner Rails · Private train approval laboratory</small><h1>{candidate.label}</h1><p>{candidate.vehicleCount} {candidate.vehicleCount === 1 ? "vehicle" : "vehicles"} · {candidate.nominalLengthMeters} m · {candidate.reviewStage === "cab" ? "cab approval checkpoint" : candidate.reviewStage === "continuity" ? "two-car continuity checkpoint" : candidate.approvalStatus === "approved-production" ? "approved production asset" : "review candidate"}</p></div>
       </header>
       {!initialState.captureMode && (
         <aside className="railjet-lab-controls" aria-label="Train review controls">
-          <div className="railjet-lab-control-head"><div><small>{candidate.approvalStatus === "approved-production" ? "Approved in production" : "Not in production"}</small><strong>{candidate.revision.replaceAll("-", " ")}</strong></div><button type="button" onClick={() => window.location.assign("/")}>Exit</button></div>
+          <div className="railjet-lab-control-head"><div><small>{candidate.reviewStage === "cab" ? "Awaiting cab approval" : candidate.reviewStage === "continuity" ? "Awaiting continuity approval" : candidate.approvalStatus === "approved-production" ? "Approved in production" : "Not in production"}</small><strong>{candidate.revision.replaceAll("-", " ")}</strong></div><div className="railjet-lab-control-actions">{comparisonCandidate && <button type="button" onClick={() => window.location.assign(`/?trainLab=${comparisonCandidate}&motion=stationary&atmosphere=day&scale=inspect&load=1`)}>{candidate.comparisonLabel ?? "Compare candidate"}</button>}<button type="button" onClick={() => window.location.assign("/")}>Exit</button></div></div>
           <p>{candidate.reviewSummary}</p>
           <SegmentedControl label="Motion" value={motion} options={[{ value: "stationary", label: "Parked" }, { value: "stopping", label: "Stop" }, { value: "pass", label: "Pass" }]} onChange={setMotion} />
           {candidate.id === "nightjet-new-generation" && <SegmentedControl label="Leading end" value={leadingEnd} options={[{ value: "taurus", label: "Taurus" }, { value: "cab-car", label: "Cab car" }]} onChange={setLeadingEnd} />}
@@ -257,9 +321,9 @@ export default function TrainReviewLab({ initialState }: { initialState: TrainRe
         </aside>
       )}
       <div className="railjet-lab-metrics" aria-live="polite">
-        <span><small>LIVE</small><strong>{fps} FPS</strong></span><span><small>GAUGE</small><strong>1.435 m</strong></span><span><small>STATUS</small><strong>Review</strong></span>
+        <span><small>LIVE</small><strong>{fps} FPS</strong></span><span><small>GAUGE</small><strong>1.435 m</strong></span><span><small>STATUS</small><strong>{candidate.reviewStage === "cab" ? "Cab gate" : candidate.reviewStage === "continuity" ? "Continuity gate" : "Review"}</strong></span>
       </div>
-      <footer className="railjet-lab-caption"><strong>{candidate.badge} · {candidate.shortLabel}</strong><span>Editable Blender master + modular GLBs</span><a href={candidate.primarySource} target="_blank" rel="noreferrer">Source ↗</a></footer>
+      <footer className="railjet-lab-caption"><strong>{candidate.badge} · {candidate.shortLabel}</strong><span>{candidate.reviewStage === "cab" ? "Editable Blender cab checkpoint · formation deferred" : candidate.reviewStage === "continuity" ? "Editable Blender two-car continuity checkpoint · remaining formation deferred" : "Editable Blender master + modular GLBs"}</span><a href={candidate.primarySource} target="_blank" rel="noreferrer">Source ↗</a></footer>
     </main>
   );
 }

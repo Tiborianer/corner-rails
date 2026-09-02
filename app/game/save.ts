@@ -59,6 +59,9 @@ function normalizeActiveTrain(activeTrain: ActiveTrain | null | undefined): Acti
   if (activeTrain.trainId === "railjet" && !activeTrain.visualVariantId) {
     return { ...activeTrain, visualVariantId: "railjet-classic" };
   }
+  if (activeTrain.trainId === "ice3" && !activeTrain.visualVariantId) {
+    return { ...activeTrain, visualVariantId: "ice3-br403-unified" };
+  }
   return activeTrain;
 }
 
@@ -79,10 +82,21 @@ export function decodeSave(code: string): GameState {
   if (!isValidState(parsed)) {
     throw new Error("The save code contains incompatible game data.");
   }
-  const defaults = createInitialState(parsed.prestige ?? 0);
-  const legacy = parsed as GameState & { activeTrain?: ActiveTrain | null; spawnCountdown?: number };
+  const legacy = parsed as GameState & {
+    activeTrain?: ActiveTrain | null;
+    spawnCountdown?: number;
+    raining?: boolean;
+    rainRemaining?: number;
+  };
+  const defaults = createInitialState(legacy.prestige ?? 0);
+  const weather = legacy.weather === "rain" || legacy.weather === "thunderstorm" || legacy.weather === "clear"
+    ? legacy.weather
+    : legacy.raining ? "rain" : "clear";
+  const weatherRemaining = typeof legacy.weatherRemaining === "number"
+    ? Math.max(0, legacy.weatherRemaining)
+    : legacy.raining ? Math.max(0, legacy.rainRemaining ?? 0) : 0;
   const serializableParsed = Object.fromEntries(
-    Object.entries(parsed).filter(([key]) => key !== "activeTrain" && key !== "spawnCountdown"),
+    Object.entries(parsed).filter(([key]) => !["activeTrain", "spawnCountdown", "raining", "rainRemaining"].includes(key)),
   ) as GameState;
   const suppliedLanes = Array.isArray(parsed.platformLanes) ? parsed.platformLanes : [];
   const platformLanes: PlatformLane[] = Array.from({ length: Math.max(1, parsed.platforms) }, (_, platformIndex) => {
@@ -108,6 +122,11 @@ export function decodeSave(code: string): GameState {
     ...serializableParsed,
     systems: { ...defaults.systems, ...parsed.systems },
     platformLanes,
+    weather,
+    weatherRemaining,
+    nextLightningIn: typeof legacy.nextLightningIn === "number" ? Math.max(0, legacy.nextLightningIn) : 0,
+    lightningStrikeId: typeof legacy.lightningStrikeId === "number" ? Math.max(0, Math.floor(legacy.lightningStrikeId)) : 0,
+    thunderDelaySeconds: typeof legacy.thunderDelaySeconds === "number" ? Math.max(0, legacy.thunderDelaySeconds) : 0,
     toast: "Save imported — welcome back.",
     lastUpgrade: null,
   };

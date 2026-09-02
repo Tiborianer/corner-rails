@@ -7,7 +7,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Suspense, useEffect, useMemo, useRef } from "react";
 import type { AmbientLight, DirectionalLight, Fog, Group, HemisphereLight, InstancedMesh, Points } from "three";
 import { CatmullRomCurve3, Color, MathUtils, Object3D, Vector3 } from "three";
-import { daylightFactor, isNight } from "./simulation";
+import { daylightFactor, isNight, isWetWeather } from "./simulation";
 import { TRAINS } from "./data";
 import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "./visual";
 import type { ActiveTrain, GameState } from "./types";
@@ -536,8 +536,9 @@ function Atmosphere({ state }: { state: GameState }) {
     visualDaylight.current = MathUtils.damp(visualDaylight.current, target, 2.4, delta);
     const daylight = visualDaylight.current;
     const transitionGlow = 1 - Math.abs(daylight * 2 - 1);
-    const daytimeSky = state.raining ? rainSky : daySky;
-    sky.copy(nightSky).lerp(daytimeSky, daylight).lerp(duskSky, transitionGlow * (state.raining ? 0.12 : 0.34));
+    const wetWeather = isWetWeather(state);
+    const daytimeSky = wetWeather ? rainSky : daySky;
+    sky.copy(nightSky).lerp(daytimeSky, daylight).lerp(duskSky, transitionGlow * (wetWeather ? 0.12 : 0.34));
     gl.setClearColor(sky);
     scene.background = sky;
     if (fog.current) fog.current.color.copy(sky);
@@ -639,7 +640,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
 
       <mesh position={[0, -0.2, 2.4]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[90, 56]} />
-        <meshStandardMaterial color={seasonGround[state.seasonIndex]} roughness={state.raining ? 0.32 : 0.95} metalness={state.raining ? 0.12 : 0} />
+        <meshStandardMaterial color={seasonGround[state.seasonIndex]} roughness={isWetWeather(state) ? 0.32 : 0.95} metalness={isWetWeather(state) ? 0.12 : 0} />
       </mesh>
       <LandscapeScenery seasonIndex={state.seasonIndex} />
 
@@ -673,7 +674,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
       {state.systems.roadAccess && <RoadAccess speed={state.speed} />}
       {state.systems.maintenance && <MaintenanceYard />}
       <EventCelebration eventId={eventId} platformCount={trackCount} />
-      {state.raining && <Rain />}
+      {isWetWeather(state) && <Rain />}
     </>
   );
 }

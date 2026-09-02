@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getBounds, NodeIO } from "@gltf-transform/core";
+import { KHRMaterialsEmissiveStrength } from "@gltf-transform/extensions";
 import path from "node:path";
 import { readFile, stat } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { LENGTH_COSTS, PLATFORM_COSTS, TRAINS, createInitialState } from "../app/game/data";
 import { decodeSave, encodeSave } from "../app/game/save";
@@ -12,9 +14,12 @@ import {
   chooseTrainFormationOrientation,
   NIGHTJET_CAB_CAR_LEADING_CHANCE,
   NIGHTJET_TAURUS_LEADING_CHANCE,
+  WEATHER_RAIN_CHANCE,
+  WEATHER_THUNDERSTORM_CHANCE,
   daylightFactor,
   debugState,
   isNight,
+  isWetWeather,
   purchaseUpgrade,
   stationRating,
   tickGame,
@@ -22,10 +27,30 @@ import {
   trainMeetsRequirements,
   triggerEvent,
   undoLastUpgrade,
+  weatherArrivalDirtMultiplier,
+  weatherDirtPerMinute,
+  weatherDwellMultiplier,
+  weatherFromRoll,
+  weatherRatingPenalty,
   nightjetFormationOrientationForRoll,
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
-import { TRAFFIC_CAR_KINDS, catenaryPolePositions, trainMotionPosition } from "../app/game/visual";
+import {
+  TRAFFIC_CAR_KINDS,
+  TRAFFIC_MINIMUM_GAP,
+  TRAFFIC_VEHICLE_DEFINITIONS,
+  catenaryPolePositions,
+  createTrafficFleet,
+  maintenanceSidingControlPoints,
+  platformFixturePositions,
+  platformPointLightPositions,
+  platformSignalPositions,
+  seededLitterLayout,
+  stepTrafficFleet,
+  trafficVehicleYaw,
+  trafficLaneClearances,
+  trainMotionPosition,
+} from "../app/game/visual";
 import {
   RAILJET_METHODS,
   RAILJET_METRIC_PROFILE,
@@ -43,6 +68,7 @@ import {
   railwayMetersToWorld,
 } from "../app/game/metricRailway";
 import {
+  ICE3_VISUAL_VARIANTS,
   NIGHTJET_VISUAL_VARIANTS,
   RAILJET_VISUAL_VARIANTS,
   resolveTrainVisualVariant,
@@ -132,8 +158,56 @@ describe("render helpers", () => {
   });
 
   it("provides at least ten distinct road-traffic silhouettes", () => {
+    expect(TRAFFIC_VEHICLE_DEFINITIONS).toHaveLength(12);
+    expect(new Set(TRAFFIC_VEHICLE_DEFINITIONS.map((vehicle) => vehicle.id)).size).toBe(12);
+    expect(new Set(TRAFFIC_VEHICLE_DEFINITIONS.map((vehicle) => `${vehicle.length}:${vehicle.width}:${vehicle.height}`)).size).toBeGreaterThanOrEqual(10);
     expect(TRAFFIC_CAR_KINDS.length).toBeGreaterThanOrEqual(10);
-    expect(new Set(TRAFFIC_CAR_KINDS).size).toBe(TRAFFIC_CAR_KINDS.length);
+  });
+
+  it("faces procedural road vehicles in their direction of travel", () => {
+    expect(trafficVehicleYaw(1)).toBe(Math.PI);
+    expect(trafficVehicleYaw(-1)).toBe(0);
+  });
+
+  it("keeps deterministic two-lane traffic separated while a vehicle visits the drop-off bay", () => {
+    for (const speed of [1, 2, 3] as const) {
+      let fleet = createTrafficFleet();
+      let observedStop = false;
+      for (let step = 0; step < 4_800; step += 1) {
+        fleet = stepTrafficFleet(fleet, 0.05, speed);
+        observedStop ||= fleet.some((vehicle) => vehicle.phase === "dwelling");
+        expect(Math.min(...trafficLaneClearances(fleet))).toBeGreaterThanOrEqual(TRAFFIC_MINIMUM_GAP - 0.001);
+      }
+      expect(observedStop).toBe(true);
+    }
+  });
+
+  it("lights every platform and creates stable varied litter within platform bounds", () => {
+    const platformZs = [-1, -0.5, 0, 0.5, 1];
+    expect(platformFixturePositions(platformZs, 20)).toHaveLength(20);
+    expect(platformPointLightPositions(platformZs, 20)).toHaveLength(10);
+    expect(platformPointLightPositions(platformZs, 20, true)).toHaveLength(5);
+    expect(platformPointLightPositions([0], 20, false, 0.4)).toEqual([
+      { x: -2.4, z: -0.1 },
+      { x: 2.4, z: 0.1 },
+    ]);
+    expect(platformSignalPositions(platformZs, 20, 0.14)).toEqual(platformZs.map((z) => ({
+      x: 10.28,
+      z: z - 0.14,
+    })));
+    const dirty = seededLitterLayout(0, platformZs, 20, 0.355);
+    expect(dirty).toHaveLength(60);
+    expect(new Set(dirty.map((piece) => piece.kind)).size).toBeGreaterThanOrEqual(5);
+    expect(dirty).toEqual(seededLitterLayout(0, platformZs, 20, 0.355));
+    expect(dirty.every((piece) => Math.abs(piece.x) <= 9.6)).toBe(true);
+    expect(seededLitterLayout(100, platformZs, 20, 0.355)).toEqual([]);
+  });
+
+  it("routes the maintenance siding from the right corridor into the depot", () => {
+    const points = maintenanceSidingControlPoints({ trackLength: 60, platformLength: 20, rearTrackZ: -1, depotZ: -3, depotCenterX: 0.2 });
+    expect(points[0]).toEqual({ x: 30, z: -1 });
+    expect(points[1].x).toBeGreaterThan(points[2].x);
+    expect(points.at(-1)).toEqual({ x: -0.25, z: -3 });
   });
 
   it("ships three structurally distinct Tier 1 complete-consist GLBs", async () => {
@@ -471,6 +545,605 @@ describe("per-train Blender approval laboratory", () => {
     expect(manifest.referencePolicy).toContain("not copied");
   });
 
+  it("keeps the original eight-car ICE 3 BR403 candidate as a private baseline", () => {
+    expect(TRAIN_REVIEW_CANDIDATES["ice3-br403"]).toMatchObject({
+      approvalStatus: "private-review",
+      productionTrainId: "ice3",
+      assetRevision: "1",
+      vehicleCount: 8,
+      nominalLengthMeters: 200.32,
+      traction: "electric",
+    });
+    const productionVisual = trainVisualVariants({ id: "ice3", modelKey: "ice3" })[0];
+    expect(productionVisual).toEqual(ICE3_VISUAL_VARIANTS[0]);
+  });
+
+  it("ships a calibrated BR403 formation with the dedicated 403.3 Bordrestaurant", async () => {
+    const candidate = TRAIN_REVIEW_CANDIDATES["ice3-br403"];
+    const modelPath = path.resolve("public", candidate.assetPath.slice(1));
+    const document = await new NodeIO().read(modelPath);
+    const root = document.getRoot();
+    const nodeNames = root.listNodes().map((node) => node.getName());
+    const formationRoot = root.listNodes().find((node) => node.getName() === "ice3_br403_blender_root");
+    const bounds = getBounds(root.listScenes()[0]);
+    const exportedLength = bounds.max[0] - bounds.min[0];
+
+    expect(formationRoot?.getExtras()).toMatchObject({
+      units: "meters",
+      forward_axis: "+X",
+      lateral_axis: "+Y",
+      up_axis: "+Z",
+      standard_gauge_m: 1.435,
+      wheel_tread_center_m: 0.7175,
+      rail_contact_plane_z: 0,
+      pantograph_contact_height_m: 5.5,
+      approval_status: "private review only",
+      bordrestaurant_vehicle: "vehicle_03_bordrestaurant_403_3",
+    });
+    expect(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).toEqual([
+      "vehicle_00_first_end_403_0",
+      "vehicle_01_first_transformer_403_1",
+      "vehicle_02_second_converter_403_2",
+      "vehicle_03_bordrestaurant_403_3",
+      "vehicle_04_service_403_8",
+      "vehicle_05_second_converter_403_7",
+      "vehicle_06_second_transformer_403_6",
+      "vehicle_07_second_end_403_5",
+    ]);
+    expect(nodeNames.some((name) => name.includes("front_windscreen_visor"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("nose_red_sweep"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("bordrestaurant_403_3_galley_blank_panel"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("bordrestaurant_403_3_restaurant_identity_panel"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("first_transformer_403_1_pantograph_collector"))).toBe(true);
+    expect(nodeNames.some((name) => name.startsWith("review_"))).toBe(false);
+    expect(root.listNodes().find((node) => node.getName() === "rail_contact_origin")?.getWorldTranslation()).toEqual([0, 0, 0]);
+    expect(exportedLength).toBeGreaterThan(200.2);
+    expect(exportedLength).toBeLessThan(200.5);
+    expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(0.01);
+    expect(root.listMaterials().length).toBeLessThanOrEqual(14);
+    expect((await stat(modelPath)).size).toBeLessThan(500_000);
+
+    const wheels = root.listNodes().filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
+    expect(wheels).toHaveLength(64);
+    for (const wheel of wheels) {
+      const [, vertical, lateral] = wheel.getWorldTranslation();
+      expect(Math.abs(lateral)).toBeCloseTo(0.7175, 4);
+      expect(vertical - 0.46).toBeCloseTo(0, 4);
+    }
+  });
+
+  it("records the ICE 3 references, exact consist and non-production approval state", async () => {
+    const manifest = JSON.parse(await readFile(path.resolve("assets/blender/ice3-br403/manifest.json"), "utf8"));
+    expect(manifest).toMatchObject({
+      candidateId: "ice3-br403-redesign",
+      approvalStatus: "private-review",
+      productionRegistryModified: false,
+      vehicleCount: 8,
+      lengthMeters: 200.32,
+      consist: [
+        "first_end_403_0",
+        "first_transformer_403_1",
+        "second_converter_403_2",
+        "bordrestaurant_403_3",
+        "service_403_8",
+        "second_converter_403_7",
+        "second_transformer_403_6",
+        "second_end_403_5",
+      ],
+      bordrestaurant: { vehicleIndex: 3, class: "403.3", redesignSeatCount: 20 },
+      userReferenceFilenames: [
+        "ice_3_front_sideview.jpg.avif",
+        "ice_3_front_forwardview.jpg.avif",
+        "ice_car_sideview.jpg",
+        "ICE_3_second_class_car_sideview.png.webp",
+        "ice_3_front-side_view.jpeg",
+      ],
+      assetContract: {
+        units: "meters",
+        standardGaugeMeters: 1.435,
+        railContactPlaneZ: 0,
+        railContactAnchor: "rail_contact_origin",
+        wheelTreadCentersMeters: [-0.7175, 0.7175],
+        traction: "distributed-electric",
+        pantographContactHeightMeters: 5.5,
+        calibrationTrackExported: false,
+      },
+    });
+    expect(manifest.referencePolicy).toContain("not copied");
+  });
+
+  it("keeps the previous complete ICE 3 V2 formation as a private baseline", () => {
+    expect(TRAIN_REVIEW_CANDIDATES["ice3-br403-v2"]).toMatchObject({
+      approvalStatus: "private-review",
+      reviewStage: "formation",
+      productionTrainId: "ice3",
+      assetRevision: "formation-1",
+      vehicleCount: 8,
+      nominalLengthMeters: 200.32,
+      traction: "electric",
+    });
+    expect(TRAIN_REVIEW_CANDIDATES["ice3-br403"]).toMatchObject({
+      approvalStatus: "private-review",
+      reviewStage: "formation",
+      assetRevision: "1",
+      vehicleCount: 8,
+    });
+    const productionVisual = trainVisualVariants({ id: "ice3", modelKey: "ice3" })[0];
+    expect(productionVisual).toEqual(ICE3_VISUAL_VARIANTS[0]);
+  });
+
+  it("ships the reference-calibrated ICE 3 V2 cab with smooth glass, corrected door bands and one original atlas", async () => {
+    const modelPath = path.resolve("public/models/train-lab/ice3-br403-v2/ice3-br403-v2-cab-checkpoint.glb");
+    const document = await new NodeIO().read(modelPath);
+    const root = document.getRoot();
+    const nodeNames = root.listNodes().map((node) => node.getName());
+    const checkpoint = root.listNodes().find((node) => node.getName() === "ice3_br403_v2_cab_checkpoint_root");
+    const bounds = getBounds(root.listScenes()[0]);
+    const exportedLength = bounds.max[0] - bounds.min[0];
+
+    expect(checkpoint?.getExtras()).toMatchObject({
+      candidate: "DB ICE 3 Class 403 V2 cab checkpoint",
+      vehicle_role: "403.0 first-class end car",
+      review_stage: "cab",
+      approval_status: "private review only",
+      production_registry_modified: false,
+      future_formation_vehicle_count: 8,
+      reference_tolerance_percent: 2,
+      units: "meters",
+      standard_gauge_m: 1.435,
+      wheel_tread_center_m: 0.7175,
+      rail_contact_plane_z: 0,
+      pantograph_contact_height_m: 5.5,
+    });
+    expect(nodeNames).toContain("ice3_v2_reference_calibrated_cab_shell");
+    expect(nodeNames).toContain("ice3_v2_convex_nose_cap");
+    expect(nodeNames).toContain("ice3_v2_panorama_windscreen");
+    expect(nodeNames).toContain("ice3_v2_panorama_windscreen_seal");
+    expect(nodeNames).toContain("ice3_v2_panorama_windscreen_glass");
+    expect(nodeNames).toContain("ice3_v2_windscreen_lower_detail");
+    expect(nodeNames.some((name) => name.includes("windscreen_center_divider"))).toBe(false);
+    expect(nodeNames).toContain("ice3_v2_passenger_door_leaf_1");
+    expect(nodeNames).toContain("ice3_v2_passenger_door_window_1");
+    expect(nodeNames).toContain("ice3_v2_smooth_nose_stripe_1");
+    expect(nodeNames).toContain("ice3_v2_front_stripe_bridge");
+    expect(nodeNames).toContain("ice3_v2_original_decal_atlas_1");
+    expect(nodeNames.some((name) => name.includes("front_windscreen_visor"))).toBe(false);
+    expect(nodeNames.filter((name) => name.includes("side_cab_window_glass"))).toHaveLength(8);
+    expect(nodeNames.filter((name) => name.includes("side_cab_window_band"))).toHaveLength(2);
+    expect(nodeNames.filter((name) => name.includes("headlight_housing"))).toHaveLength(2);
+    expect(nodeNames.filter((name) => name.includes("main_headlamp"))).toHaveLength(2);
+    expect(nodeNames.filter((name) => name.includes("headlight_grille_slat"))).toHaveLength(6);
+    expect(nodeNames.filter((name) => /passenger_window_\d\d_-?1$/.test(name))).toHaveLength(20);
+    expect(nodeNames.some((name) => name.startsWith("review_"))).toBe(false);
+    expect(nodeNames.some((name) => name.includes("reference_guide"))).toBe(false);
+    expect(root.listNodes().find((node) => node.getName() === "rail_contact_origin")?.getWorldTranslation()).toEqual([0, 0, 0]);
+    expect(exportedLength).toBeGreaterThan(25.8);
+    expect(exportedLength).toBeLessThan(26.3);
+    expect(root.listTextures()).toHaveLength(1);
+    expect(root.listTextures()[0].getMimeType()).toBe("image/png");
+    expect(root.listTextures()[0].getImage()?.byteLength).toBeGreaterThan(1_000);
+    expect(root.listMaterials().length).toBeLessThanOrEqual(16);
+    expect((await stat(modelPath)).size).toBeLessThan(1_000_000);
+
+    const cockpitWindowBand = root.listNodes().find((node) => node.getName() === "ice3_v2_side_cab_window_band_1");
+    const panoramicWindscreen = root.listNodes().find((node) => node.getName() === "ice3_v2_panorama_windscreen_glass");
+    const panoramicWindscreenSeal = root.listNodes().find((node) => node.getName() === "ice3_v2_panorama_windscreen_seal");
+    const passengerWindow = root.listNodes().find((node) => node.getName() === "ice3_v2_passenger_window_00_1");
+    const convexCap = root.listNodes().find((node) => node.getName() === "ice3_v2_convex_nose_cap");
+    expect(cockpitWindowBand?.getMesh()?.listPrimitives()[0].getAttribute("POSITION")?.getCount()).toBeGreaterThanOrEqual(10);
+    expect(panoramicWindscreen?.getMesh()?.listPrimitives()[0].getAttribute("POSITION")?.getCount()).toBeGreaterThan(800);
+    expect(panoramicWindscreenSeal?.getMesh()?.listPrimitives()[0].getAttribute("POSITION")?.getCount()).toBeGreaterThan(600);
+    expect(passengerWindow?.getMesh()?.listPrimitives()[0].getAttribute("POSITION")?.getCount()).toBeGreaterThan(16);
+    expect(convexCap?.getMesh()?.listPrimitives()[0].getAttribute("POSITION")?.getCount()).toBeGreaterThan(80);
+
+    const wheels = root.listNodes().filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
+    expect(wheels).toHaveLength(8);
+    for (const wheel of wheels) {
+      const [, vertical, lateral] = wheel.getWorldTranslation();
+      expect(Math.abs(lateral)).toBeCloseTo(0.7175, 4);
+      expect(vertical - 0.46).toBeCloseTo(0, 4);
+    }
+  });
+
+  it("ships all eight matching Class 403 V2 vehicles as one metric private-review formation", async () => {
+    const candidate = TRAIN_REVIEW_CANDIDATES["ice3-br403-v2"];
+    const modelPath = path.resolve("public", candidate.assetPath.slice(1));
+    const document = await new NodeIO().read(modelPath);
+    const root = document.getRoot();
+    const nodes = root.listNodes();
+    const nodeNames = nodes.map((node) => node.getName());
+    const formationRoot = nodes.find((node) => node.getName() === "ice3_br403_v2_blender_root");
+    const bounds = getBounds(root.listScenes()[0]);
+    const exportedLength = bounds.max[0] - bounds.min[0];
+    const expectedVehicles = [
+      "vehicle_00_first_end_403_0",
+      "vehicle_01_first_transformer_403_1",
+      "vehicle_02_second_converter_403_2",
+      "vehicle_03_bordrestaurant_403_3",
+      "vehicle_04_service_403_8",
+      "vehicle_05_second_converter_403_7",
+      "vehicle_06_second_transformer_403_6",
+      "vehicle_07_second_end_403_5",
+    ];
+
+    expect(formationRoot?.getExtras()).toMatchObject({
+      formation: "DB ICE 3 Class 403 V2 eight-car review candidate",
+      vehicle_count: 8,
+      length_m: 200.32,
+      review_stage: "formation",
+      approval_status: "private review only",
+      approved_cab_checkpoint: 7,
+      production_registry_modified: false,
+      units: "meters",
+      standard_gauge_m: 1.435,
+      wheel_tread_center_m: 0.7175,
+      rail_contact_plane_z: 0,
+      pantograph_contact_height_m: 5.5,
+    });
+    expect(expectedVehicles.every((name) => nodeNames.includes(name))).toBe(true);
+    expect(exportedLength).toBeGreaterThan(200.3);
+    expect(exportedLength).toBeLessThan(200.7);
+    expect(nodeNames.filter((name) => /_wheel_-?1_[01](?:\.\d+)?$/.test(name))).toHaveLength(64);
+    expect(nodeNames.filter((name) => name.includes("pantograph_collector"))).toHaveLength(2);
+    expect(nodeNames.filter((name) => name.includes("bordrestaurant_403_3_window_glass"))).toHaveLength(16);
+    expect(nodeNames.filter((name) => name.includes("service_403_8_accessible_service_panel"))).toHaveLength(2);
+    expect(root.listNodes().find((node) => node.getName() === "rail_contact_origin")?.getWorldTranslation()).toEqual([0, 0, 0]);
+    expect(root.listTextures()).toHaveLength(1);
+    expect(root.listMaterials().length).toBeLessThanOrEqual(20);
+    expect((await stat(modelPath)).size).toBeLessThan(1_000_000);
+    expect(nodeNames.some((name) => name.startsWith("review_"))).toBe(false);
+    expect(nodeNames.some((name) => name.includes("reference_guide"))).toBe(false);
+
+    const raisedCollector = nodes
+      .filter((node) => node.getName().includes("pantograph_collector"))
+      .map((node) => node.getWorldTranslation()[1])
+      .sort((a, b) => b - a)[0];
+    expect(raisedCollector).toBeCloseTo(5.5, 3);
+
+    const secondEnd = nodes.find((node) => node.getName() === "vehicle_07_second_end_403_5");
+    const secondEndDescendants: string[] = [];
+    const visit = (node: NonNullable<typeof secondEnd>) => {
+      secondEndDescendants.push(node.getName());
+      node.listChildren().forEach((child) => visit(child));
+    };
+    if (secondEnd) visit(secondEnd);
+    expect(secondEndDescendants.some((name) => name.includes("first_class_marker"))).toBe(false);
+  });
+
+  it("records the V2 calibration guides and keeps all supplied references research-only", async () => {
+    const manifest = JSON.parse(await readFile(path.resolve("assets/blender/ice3-br403-v2/manifest.json"), "utf8"));
+    const atlasPath = path.resolve(manifest.hybridDetail.atlas);
+    const atlasMetadata = await sharp(atlasPath).metadata();
+    expect(manifest).toMatchObject({
+      schemaVersion: 3,
+      candidateId: "ice3-br403-v2-formation",
+      approvalStatus: "private-review",
+      reviewStage: "formation",
+      productionRegistryModified: false,
+      cabApproval: {
+        checkpoint: 7,
+        status: "approved-for-formation-build",
+        cabGeometryChangedByFormationBuild: false,
+      },
+      vehicleCount: 8,
+      lengthMeters: 200.32,
+      consist: [
+        "first_end_403_0",
+        "first_transformer_403_1",
+        "second_converter_403_2",
+        "bordrestaurant_403_3",
+        "service_403_8",
+        "second_converter_403_7",
+        "second_transformer_403_6",
+        "second_end_403_5",
+      ],
+      bordrestaurant: {
+        vehicleIndex: 3,
+        class: "403.3",
+        redesignSeatCount: 20,
+      },
+      calibration: {
+        knownDimensionsMeters: { endCarLength: 25.835, middleCarLength: 24.775, vehicleWidth: 2.95, vehicleHeight: 3.89 },
+        silhouetteTolerancePercent: 2,
+        featureGuidesMeters: {
+          panoramicWindscreenXRangeMeters: [9.55, 11.55],
+          passengerWindowCenterZMeters: 2.48,
+          passengerWindowHeightMeters: 0.52,
+          passengerDoorBottomZMeters: 0.9,
+          passengerDoorTopZMeters: 3.16,
+          sideStripeCenterZMeters: 1.94,
+        },
+      },
+      hybridDetail: {
+        dimensionsPixels: [2048, 512],
+        authorship: "original code-authored decal atlas",
+        containsPhotography: false,
+        containsProtectedLogos: false,
+      },
+      assetContract: {
+        units: "meters",
+        standardGaugeMeters: 1.435,
+        railContactPlaneZ: 0,
+        railContactAnchor: "rail_contact_origin",
+        wheelTreadCentersMeters: [-0.7175, 0.7175],
+        calibrationTrackExported: false,
+      },
+      userReferenceFilenames: [
+        "ice_3_front_sideview.jpg.avif",
+        "ice_3_front_forwardview.jpg.avif",
+        "ice_car_sideview.jpg",
+        "ICE_3_second_class_car_sideview.png.webp",
+        "ice_3_front-side_view.jpeg",
+      ],
+    });
+    expect(Object.keys(manifest.moduleGlbs)).toHaveLength(8);
+    expect(manifest.referencePolicy).toContain("not copied");
+    expect(manifest.nextApprovalGate).toContain("before changing the production ICE 3 registry");
+    expect(atlasMetadata).toMatchObject({ width: 2048, height: 512, format: "png" });
+  });
+
+  it("keeps the isolated two-car ICE 3 continuity gate beside the approved production formation", () => {
+    expect(TRAIN_REVIEW_CANDIDATES["ice3-br403-v2-continuity"]).toMatchObject({
+      approvalStatus: "private-review",
+      reviewStage: "continuity",
+      productionTrainId: "ice3",
+      assetRevision: "continuity-4",
+      vehicleCount: 2,
+      nominalLengthMeters: 50.61,
+      comparisonCandidateId: "ice3-br403-v2-unified",
+      comparisonLabel: "Complete unified formation",
+    });
+    expect(TRAIN_REVIEW_CANDIDATES["ice3-br403-v2"]).toMatchObject({
+      vehicleCount: 8,
+      nominalLengthMeters: 200.32,
+      assetRevision: "formation-1",
+      comparisonCandidateId: "ice3-br403-v2-continuity",
+      comparisonLabel: "New continuity checkpoint",
+    });
+    const productionVisual = trainVisualVariants({ id: "ice3", modelKey: "ice3" })[0];
+    expect(productionVisual).toEqual(ICE3_VISUAL_VARIANTS[0]);
+  });
+
+  it("ships a unified two-car Class 403 checkpoint with shared bands, stripe datum and metric contact", async () => {
+    const candidate = TRAIN_REVIEW_CANDIDATES["ice3-br403-v2-continuity"];
+    const modelPath = path.resolve("public", candidate.assetPath.slice(1));
+    const document = await new NodeIO().read(modelPath);
+    const root = document.getRoot();
+    const nodes = root.listNodes();
+    const names = nodes.map((node) => node.getName());
+    const checkpoint = nodes.find((node) => node.getName() === "ice3_br403_v2_continuity_root");
+    const bounds = getBounds(root.listScenes()[0]);
+    const exportedLength = bounds.max[0] - bounds.min[0];
+
+    expect(checkpoint?.getExtras()).toMatchObject({
+      candidate: "DB ICE 3 Class 403 V2 two-car continuity checkpoint",
+      vehicle_count: 2,
+      length_m: 50.61,
+      review_stage: "continuity",
+      approval_status: "private review only",
+      shared_profile_id: "class403-continuity-v1",
+      body_profile_tolerance_m: 0.001,
+      livery_tolerance_m: 0.002,
+      production_registry_modified: false,
+      units: "meters",
+      standard_gauge_m: 1.435,
+      wheel_tread_center_m: 0.7175,
+      rail_contact_plane_z: 0,
+      pantograph_contact_height_m: 5.5,
+    });
+    expect(names.filter((name) => /^vehicle_\d\d_/.test(name))).toEqual([
+      "vehicle_00_first_end_403_0",
+      "vehicle_01_first_transformer_403_1",
+    ]);
+    expect(names).toContain("ice3_v2_reference_calibrated_cab_shell.001");
+    expect(names).toContain("ice3_continuity_shared_transformer_shell.001");
+    expect(names.some((name) => name.includes("convex_nose_cap"))).toBe(false);
+    expect(names.filter((name) => name.includes("continuous_black_glazing_band"))).toHaveLength(4);
+    expect(names.filter((name) => name.includes("inset_window"))).toHaveLength(42);
+    expect(names.filter((name) => name.includes("shared_red_body_stripe"))).toHaveLength(4);
+    expect(names.filter((name) => name.includes("integrated_nose_stripe"))).toHaveLength(2);
+    expect(names.filter((name) => name.includes("reference_side_cab_band"))).toHaveLength(2);
+    const cabPanes = nodes.filter((node) => node.getName().includes("reference_side_cab_pane"));
+    expect(cabPanes).toHaveLength(10);
+    expect(cabPanes.every((node) => node.getMesh()?.listPrimitives().every(
+      (primitive) => primitive.getMaterial()?.getName() === "ICE3_V2_Glass_Interior",
+    ))).toBe(true);
+    expect(names.some((name) => name.includes("ice3_v2_side_cab_window"))).toBe(false);
+    expect(names.some((name) => name.startsWith("review_"))).toBe(false);
+    expect(names.some((name) => name.includes("reference_guide"))).toBe(false);
+    expect(nodes.find((node) => node.getName() === "rail_contact_origin")?.getWorldTranslation()).toEqual([0, 0, 0]);
+    expect(exportedLength).toBeGreaterThan(50.6);
+    expect(exportedLength).toBeLessThan(51.2);
+    expect(root.listTextures()).toHaveLength(0);
+    expect(root.listMaterials().length).toBeLessThanOrEqual(18);
+    expect((await stat(modelPath)).size).toBeLessThan(450_000);
+
+    const wheels = nodes.filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
+    expect(wheels).toHaveLength(16);
+    for (const wheel of wheels) {
+      const [, vertical, lateral] = wheel.getWorldTranslation();
+      expect(Math.abs(lateral)).toBeCloseTo(0.7175, 4);
+      expect(vertical - 0.46).toBeCloseTo(0, 4);
+    }
+    const collector = nodes.find((node) => node.getName().includes("pantograph_collector"));
+    expect(collector?.getWorldTranslation()[1]).toBeCloseTo(5.5, 3);
+  });
+
+  it("records the continuity contract and keeps both protected ICE 3 assets byte-identical", async () => {
+    const manifest = JSON.parse(await readFile(path.resolve("assets/blender/ice3-br403-v2-continuity/manifest.json"), "utf8"));
+    expect(manifest).toMatchObject({
+      schemaVersion: 4,
+      candidateId: "ice3-br403-v2-continuity",
+      approvalStatus: "private-review",
+      reviewStage: "continuity",
+      productionRegistryModified: false,
+      currentCheckpoint: {
+        vehicleCount: 2,
+        lengthMeters: 50.61,
+        vehicles: ["403.0 first-class end car", "403.1 first-class transformer car"],
+        remainingFormationVehiclesDeferred: 6,
+      },
+      sharedBodyProfile: {
+        id: "class403-continuity-v1",
+        vertexCount: 19,
+        widthMeters: 2.95,
+        junctionToleranceMeters: 0.001,
+      },
+      glazingBand: { centerZMeters: 2.48, heightMeters: 0.74 },
+      bodyStripe: { centerZMeters: 1.84, heightMeters: 0.18, junctionToleranceMeters: 0.002 },
+      assetContract: {
+        units: "meters",
+        standardGaugeMeters: 1.435,
+        railContactPlaneZ: 0,
+        railContactAnchor: "rail_contact_origin",
+        wheelTreadCentersMeters: [-0.7175, 0.7175],
+        pantographContactHeightMeters: 5.5,
+        calibrationTrackExported: false,
+      },
+    });
+    expect(manifest.approvedCabFeatures.separateNoseCapExported).toBe(false);
+    expect(manifest.approvedCabFeatures.sideCabGlazingRevision).toContain("1.08 m rearmost pane");
+    expect(manifest.approvedCabFeatures.rearmostCabPaneWidthMeters).toBe(1.08);
+    expect(manifest.approvedCabFeatures.sideCabGlassMaterial).toBe("ICE3_V2_Glass_Interior");
+    expect(manifest.referencePolicy).toContain("not copied");
+    expect(manifest.nextApprovalGate).toContain("before generating the remaining six vehicles");
+
+    const digest = async (file: string) => createHash("sha256").update(await readFile(path.resolve(file))).digest("hex");
+    expect(await digest("public/models/trains/ice3.glb")).toBe("ec41a600008b01fb665b60162bf2e8252360040ff860f4adc89a355f7db8f0be");
+    expect(await digest("public/models/train-lab/ice3-br403-v2/ice3-br403-v2-blender.glb")).toBe("736be62423aa78a97404ff4b0dfeae555a05a988822fcd6ab753bc90e4e03e0f");
+  });
+
+  it("registers the approved unified Class 403 as the production eight-car asset", () => {
+    expect(TRAIN_REVIEW_CANDIDATES["ice3-br403-v2-unified"]).toMatchObject({
+      approvalStatus: "approved-production",
+      reviewStage: "formation",
+      productionTrainId: "ice3",
+      assetRevision: "production-unified-1",
+      vehicleCount: 8,
+      nominalLengthMeters: 200.32,
+      comparisonCandidateId: "ice3-br403-v2-continuity",
+      comparisonLabel: "Approved two-car checkpoint",
+      headlights: {
+        frontInsetMeters: 0.28,
+        heightMeters: 1.675,
+        lateralMeters: 0.27,
+        beamLengthMeters: 38,
+        color: "#ffe3a3",
+      },
+    });
+  });
+
+  it("ships all eight unified Class 403 roles with continuous body datums and emissive headlamps", async () => {
+    const candidate = TRAIN_REVIEW_CANDIDATES["ice3-br403-v2-unified"];
+    const modelPath = path.resolve("public", candidate.assetPath.slice(1));
+    const io = new NodeIO().registerExtensions([KHRMaterialsEmissiveStrength]);
+    const document = await io.read(modelPath);
+    const root = document.getRoot();
+    const nodes = root.listNodes();
+    const names = nodes.map((node) => node.getName());
+    const formation = nodes.find((node) => node.getName() === "ice3_br403_v2_unified_root");
+    const bounds = getBounds(root.listScenes()[0]);
+    const exportedLength = bounds.max[0] - bounds.min[0];
+
+    expect(formation?.getExtras()).toMatchObject({
+      formation: "DB ICE 3 Class 403 unified eight-car production formation",
+      vehicle_count: 8,
+      length_m: 200.32,
+      approval_status: "approved production",
+      review_stage: "unified-formation",
+      shared_profile_id: "class403-continuity-v1",
+      headlight_lenses_emissive: true,
+      runtime_headlights: "one combined moving React Three Fiber spot light at leading cab",
+      production_registry_modified: true,
+      production_train_id: "ice3",
+      units: "meters",
+      standard_gauge_m: 1.435,
+      wheel_tread_center_m: 0.7175,
+      rail_contact_plane_z: 0,
+      pantograph_contact_height_m: 5.5,
+    });
+    expect(names.filter((name) => /^vehicle_\d\d_/.test(name))).toEqual([
+      "vehicle_00_first_end_403_0",
+      "vehicle_01_first_transformer_403_1",
+      "vehicle_02_second_converter_403_2",
+      "vehicle_03_bordrestaurant_403_3",
+      "vehicle_04_service_403_8",
+      "vehicle_05_second_converter_403_7",
+      "vehicle_06_second_transformer_403_6",
+      "vehicle_07_second_end_403_5",
+    ]);
+    expect(names.filter((name) => name.includes("continuous_black_glazing_band"))).toHaveLength(16);
+    expect(names.filter((name) => name.includes("shared_red_body_stripe"))).toHaveLength(16);
+    expect(names.some((name) => name.includes("bordrestaurant_403_3_window"))).toBe(true);
+    expect(names.some((name) => name.includes("service_403_8_accessible_panel"))).toBe(true);
+    expect(names.some((name) => name.startsWith("review_"))).toBe(false);
+    expect(nodes.find((node) => node.getName() === "rail_contact_origin")?.getWorldTranslation()).toEqual([0, 0, 0]);
+    expect(exportedLength).toBeGreaterThan(200.3);
+    expect(exportedLength).toBeLessThan(200.6);
+    expect(root.listTextures()).toHaveLength(0);
+    expect(root.listMaterials().length).toBeLessThanOrEqual(18);
+    expect((await stat(modelPath)).size).toBeLessThan(1_000_000);
+
+    const wheels = nodes.filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
+    expect(wheels).toHaveLength(64);
+    for (const wheel of wheels) {
+      const [, vertical, lateral] = wheel.getWorldTranslation();
+      expect(Math.abs(lateral)).toBeCloseTo(0.7175, 4);
+      expect(vertical - 0.46).toBeCloseTo(0, 4);
+    }
+    const raisedCollector = nodes.find((node) => node.getName().includes("first_transformer_403_1_pantograph_collector"));
+    expect(raisedCollector?.getWorldTranslation()[1]).toBeCloseTo(5.5, 3);
+
+    const lampMaterial = root.listMaterials().find((material) => material.getName() === "ICE3_V2_Headlamp");
+    expect(lampMaterial?.getEmissiveFactor()[0]).toBeCloseTo(1, 3);
+    expect(lampMaterial?.getExtension<KHRMaterialsEmissiveStrength>("KHR_materials_emissive_strength")?.getEmissiveStrength()).toBe(8);
+  });
+
+  it("records the production formation contract while preserving every prior ICE 3 approval gate", async () => {
+    const manifest = JSON.parse(await readFile(path.resolve("assets/blender/ice3-br403-v2-unified/manifest.json"), "utf8"));
+    expect(manifest).toMatchObject({
+      schemaVersion: 5,
+      candidateId: "ice3-br403-v2-unified",
+      approvalStatus: "approved-production",
+      reviewStage: "unified-formation",
+      productionRegistryModified: true,
+      vehicleCount: 8,
+      lengthMeters: 200.32,
+      continuityContract: {
+        approvedCheckpointRevision: 4,
+        sharedProfileId: "class403-continuity-v1",
+        profileVertexCount: 19,
+        bodyStripeCenterZMeters: 1.84,
+        bodyStripeHeightMeters: 0.18,
+        glazingBandCenterZMeters: 2.48,
+        glazingBandHeightMeters: 0.74,
+      },
+      lighting: {
+        lensMaterial: "ICE3_V2_Headlamp",
+        lensEmissive: true,
+        emissionStrength: 8,
+        runtimeOwner: "React Three Fiber",
+        leadingCabSpotLightCount: 1,
+      },
+      bordrestaurant: {
+        vehicleIndex: 3,
+        class: "403.3",
+        redesignSeatCount: 20,
+        asymmetricDiningAndGalleySides: true,
+      },
+    });
+    expect(manifest.consist).toHaveLength(8);
+    expect(Object.keys(manifest.moduleGlbs)).toHaveLength(8);
+    expect(manifest.referencePolicy).toContain("not copied");
+    expect(manifest.formationGlb).toBe("public/models/trains/blender/ice3/ice3-br403-unified-blender.glb");
+    expect(manifest.nextApprovalGate).toContain("Approved and promoted");
+
+    const digest = async (file: string) => createHash("sha256").update(await readFile(path.resolve(file))).digest("hex");
+    expect(await digest("public/models/trains/ice3.glb")).toBe("ec41a600008b01fb665b60162bf2e8252360040ff860f4adc89a355f7db8f0be");
+    expect(await digest("public/models/train-lab/ice3-br403-v2/ice3-br403-v2-blender.glb")).toBe("736be62423aa78a97404ff4b0dfeae555a05a988822fcd6ab753bc90e4e03e0f");
+    expect(await digest("public/models/train-lab/ice3-br403-v2-continuity/ice3-br403-v2-continuity-checkpoint.glb")).toBe("ce99e3ce1399b90945a33c7541ce1a6580c4c13662d214048d0aee62ca4ec009");
+  });
+
   it("promotes the approved Nightjet N2 asset into the production registry", async () => {
     expect(TRAIN_REVIEW_CANDIDATES["nightjet-new-generation"]).toMatchObject({
       approvalStatus: "approved-production",
@@ -686,7 +1359,7 @@ describe("production metric railway and Railjet registry", () => {
       { id: "railjet-classic", profile: "metric-v1", minimumLengthLevel: 4, selectionWeight: 1 },
       { id: "railjet-nextgen", profile: "metric-v1", minimumLengthLevel: 5, selectionWeight: 1 },
     ]);
-    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet" && candidate.id !== "nightjet")) {
+    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet" && candidate.id !== "nightjet" && candidate.id !== "ice3")) {
       expect(trainVisualVariants(train)).toHaveLength(1);
       expect(resolveTrainVisualVariant(train).profile).toBe("legacy-v1");
     }
@@ -697,6 +1370,33 @@ describe("production metric railway and Railjet registry", () => {
     expect(selectTrainVisualVariant(railjet, 4, 0.99).id).toBe("railjet-classic");
     expect(selectTrainVisualVariant(railjet, 5, 0.1).id).toBe("railjet-classic");
     expect(selectTrainVisualVariant(railjet, 5, 0.9).id).toBe("railjet-nextgen");
+  });
+
+  it("promotes the approved unified ICE 3 with its metric scale and single headlight profile", () => {
+    expect(ICE3_VISUAL_VARIANTS).toHaveLength(1);
+    expect(ICE3_VISUAL_VARIANTS[0]).toMatchObject({
+      id: "ice3-br403-unified",
+      profile: "metric-v1",
+      assetPath: "models/trains/blender/ice3/ice3-br403-unified-blender.glb",
+      lengthMeters: 200.32,
+      minimumLengthLevel: 4,
+      selectionWeight: 1,
+      headlights: {
+        frontInsetMeters: 0.28,
+        heightMeters: 1.675,
+        beamLengthMeters: 38,
+        color: "#ffe3a3",
+      },
+    });
+    expect(ICE3_VISUAL_VARIANTS[0].scale).toEqual([
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+    ]);
+    expect(debugState(fundedState(), "ice3-unified").platformLanes[0].activeTrain).toMatchObject({
+      trainId: "ice3",
+      visualVariantId: "ice3-br403-unified",
+    });
   });
 
   it("creates reviewable production states for both Blender generations", () => {
@@ -712,6 +1412,62 @@ describe("production metric railway and Railjet registry", () => {
 });
 
 describe("cleanliness and rating", () => {
+  it("uses exclusive 10% thunderstorm, 25% rain, and 65% clear season rolls", () => {
+    expect(WEATHER_THUNDERSTORM_CHANCE).toBe(0.1);
+    expect(WEATHER_RAIN_CHANCE).toBe(0.25);
+    expect(weatherFromRoll(0)).toBe("thunderstorm");
+    expect(weatherFromRoll(0.099999)).toBe("thunderstorm");
+    expect(weatherFromRoll(0.1)).toBe("rain");
+    expect(weatherFromRoll(0.349999)).toBe("rain");
+    expect(weatherFromRoll(0.35)).toBe("clear");
+    expect(weatherFromRoll(0.999)).toBe("clear");
+  });
+
+  it("applies the specified weather rating, dwell, and dirt modifiers", () => {
+    expect(weatherRatingPenalty("clear")).toBe(0);
+    expect(weatherRatingPenalty("rain")).toBe(10);
+    expect(weatherRatingPenalty("thunderstorm")).toBe(25);
+    expect(weatherArrivalDirtMultiplier("rain")).toBe(1.5);
+    expect(weatherArrivalDirtMultiplier("thunderstorm")).toBe(2);
+    expect(weatherDirtPerMinute("rain")).toBe(0.5);
+    expect(weatherDirtPerMinute("thunderstorm")).toBe(1.5);
+    expect(weatherDwellMultiplier("rain")).toBe(1.1);
+    expect(weatherDwellMultiplier("thunderstorm")).toBe(1.15);
+    const clear = fundedState();
+    expect(stationRating(clear) - stationRating({ ...clear, weather: "rain" })).toBe(10);
+    expect(stationRating(clear) - stationRating({ ...clear, weather: "thunderstorm" })).toBe(25);
+  });
+
+  it("keeps every season-start weather duration between two and five simulated minutes", () => {
+    for (let seed = 1; seed <= 64; seed += 1) {
+      const rolled = tickGame({ ...fundedState(), rng: seed, simSeconds: 1_799.9, nextSeasonAt: 1_800 }, 0.1);
+      if (rolled.weather !== "clear") {
+        expect(rolled.weatherRemaining).toBeGreaterThanOrEqual(120);
+        expect(rolled.weatherRemaining).toBeLessThanOrEqual(300);
+      } else {
+        expect(rolled.weatherRemaining).toBe(0);
+      }
+    }
+  });
+
+  it("schedules deterministic lightning and adds extra continuous storm dirt", () => {
+    const storm: GameState = {
+      ...fundedState(),
+      weather: "thunderstorm",
+      weatherRemaining: 180,
+      nextLightningIn: 0.1,
+      cleanliness: 100,
+    };
+    const struck = tickGame(storm, 0.1);
+    expect(isWetWeather(struck)).toBe(true);
+    expect(struck.lightningStrikeId).toBe(1);
+    expect(struck.nextLightningIn).toBeGreaterThanOrEqual(18);
+    expect(struck.nextLightningIn).toBeLessThanOrEqual(45);
+    expect(struck.thunderDelaySeconds).toBeGreaterThanOrEqual(0.8);
+    expect(struck.thunderDelaySeconds).toBeLessThanOrEqual(2.4);
+    expect(struck.cleanliness).toBeCloseTo(99.9975, 4);
+  });
+
   it("prices a full clean by dirt and tier without consuming development", () => {
     const state = { ...fundedState(), tier: 3 as const, cleanliness: 50, upgradesUsed: 1 };
     expect(cleaningCost(state)).toBe(200);
@@ -730,8 +1486,8 @@ describe("cleanliness and rating", () => {
   it("rain adds continuous dirt and multiplies arrival dirt", () => {
     const state: GameState = {
       ...fundedState(),
-      raining: true,
-      rainRemaining: 100,
+      weather: "rain",
+      weatherRemaining: 100,
       platformLanes: [{
         platformIndex: 0,
         spawnCountdown: 0,
@@ -919,6 +1675,41 @@ describe("manual save codes", () => {
     expect(() => decodeSave(`${code}x`)).toThrow(/damaged|incomplete/u);
   });
 
+  it("round-trips thunderstorms and migrates legacy CR1 rain fields", () => {
+    const storm: GameState = {
+      ...fundedState(),
+      weather: "thunderstorm",
+      weatherRemaining: 144,
+      nextLightningIn: 24,
+      lightningStrikeId: 3,
+      thunderDelaySeconds: 1.4,
+    };
+    expect(decodeSave(encodeSave(storm))).toMatchObject({
+      weather: "thunderstorm",
+      weatherRemaining: 144,
+      nextLightningIn: 24,
+      lightningStrikeId: 3,
+      thunderDelaySeconds: 1.4,
+    });
+    const legacyRain = {
+      ...fundedState(),
+      weather: undefined,
+      weatherRemaining: undefined,
+      nextLightningIn: undefined,
+      lightningStrikeId: undefined,
+      thunderDelaySeconds: undefined,
+      raining: true,
+      rainRemaining: 77,
+    } as unknown as GameState;
+    expect(decodeSave(encodeSave(legacyRain))).toMatchObject({
+      weather: "rain",
+      weatherRemaining: 77,
+      nextLightningIn: 0,
+      lightningStrikeId: 0,
+      thunderDelaySeconds: 0,
+    });
+  });
+
   it("preserves a selected Railjet formation and safely defaults old active Railjets", () => {
     const activeRailjet = {
       trainId: "railjet",
@@ -942,6 +1733,31 @@ describe("manual save codes", () => {
       platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeRailjet, visualVariantId: undefined } }],
     };
     expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.visualVariantId).toBe("railjet-classic");
+  });
+
+  it("preserves the unified ICE 3 variant and migrates old active ICE 3 saves", () => {
+    const activeIce3 = {
+      trainId: "ice3",
+      visualVariantId: "ice3-br403-unified",
+      phase: "dwell" as const,
+      phaseElapsed: 3,
+      phaseDuration: 14,
+      payout: 3_200,
+      firstService: false,
+    };
+    const state: GameState = {
+      ...fundedState(),
+      tier: 4,
+      lengthLevel: 4,
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: activeIce3 }],
+    };
+    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain?.visualVariantId).toBe("ice3-br403-unified");
+
+    const oldState: GameState = {
+      ...state,
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeIce3, visualVariantId: undefined } }],
+    };
+    expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.visualVariantId).toBe("ice3-br403-unified");
   });
 
   it("preserves the Nightjet formation facing and migrates the interim direction field", () => {

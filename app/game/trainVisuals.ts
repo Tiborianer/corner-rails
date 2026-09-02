@@ -14,6 +14,12 @@ export interface TrainVisualVariant {
   minimumLengthLevel: number;
   selectionWeight: number;
   revision: string;
+  headlights?: {
+    frontInsetMeters: number;
+    heightMeters: number;
+    beamLengthMeters: number;
+    color: string;
+  };
 }
 
 const LEGACY_ASSET_VERSION = "5";
@@ -72,6 +78,31 @@ export const NIGHTJET_VISUAL_VARIANTS = [
   },
 ] as const satisfies readonly TrainVisualVariant[];
 
+export const ICE3_VISUAL_VARIANTS = [
+  {
+    id: "ice3-br403-unified",
+    assetPath: "models/trains/blender/ice3/ice3-br403-unified-blender.glb",
+    profile: "metric-v1",
+    scale: [
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+    ],
+    rotation: [0, 0, 0],
+    contactOffsetY: RAILWAY_METRIC_PROFILE.railTopY,
+    lengthMeters: 200.32,
+    minimumLengthLevel: 4,
+    selectionWeight: 1,
+    revision: "blender-unified-production-2026-09-02",
+    headlights: {
+      frontInsetMeters: 0.28,
+      heightMeters: 1.675,
+      beamLengthMeters: 38,
+      color: "#ffe3a3",
+    },
+  },
+] as const satisfies readonly TrainVisualVariant[];
+
 export function legacyTrainVisual(modelKey: string): TrainVisualVariant {
   return {
     id: `${modelKey}-legacy-v1`,
@@ -89,6 +120,7 @@ export function legacyTrainVisual(modelKey: string): TrainVisualVariant {
 export function trainVisualVariants(train: Pick<TrainDefinition, "id" | "modelKey">): readonly TrainVisualVariant[] {
   if (train.id === "railjet") return RAILJET_VISUAL_VARIANTS;
   if (train.id === "nightjet") return NIGHTJET_VISUAL_VARIANTS;
+  if (train.id === "ice3") return ICE3_VISUAL_VARIANTS;
   return [legacyTrainVisual(train.modelKey)];
 }
 

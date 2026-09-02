@@ -9,6 +9,7 @@ export type SystemId =
   | "advancedSignaling";
 
 export type TrainKind = "scheduled" | "event";
+export type WeatherKind = "clear" | "rain" | "thunderstorm";
 export type TrainStyle =
   | "dmu"
   | "regional"
@@ -108,8 +109,11 @@ export interface GameState {
   firstTrainComplete: boolean;
   arrivals: number;
   prestige: number;
-  raining: boolean;
-  rainRemaining: number;
+  weather: WeatherKind;
+  weatherRemaining: number;
+  nextLightningIn: number;
+  lightningStrikeId: number;
+  thunderDelaySeconds: number;
   seasonIndex: number;
   nextSeasonAt: number;
   eventWindow: "ice-s" | "br01" | null;

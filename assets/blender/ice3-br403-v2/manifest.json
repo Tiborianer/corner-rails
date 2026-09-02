@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 3,
+  "generator": "Blender 5.2 LTS Python API",
+  "candidateId": "ice3-br403-v2-formation",
+  "approvalStatus": "private-review",
+  "reviewStage": "formation",
+  "productionRegistryModified": false,
+  "targetFormation": "modernized DB ICE 3 Class 403 eight-car set",
+  "cabApproval": {
+    "checkpoint": 7,
+    "status": "approved-for-formation-build",
+    "approvedDate": "2026-08-23",
+    "cabGeometryChangedByFormationBuild": false
+  },
+  "vehicleCount": 8,
+  "lengthMeters": 200.32,
+  "consist": [
+    "first_end_403_0",
+    "first_transformer_403_1",
+    "second_converter_403_2",
+    "bordrestaurant_403_3",
+    "service_403_8",
+    "second_converter_403_7",
+    "second_transformer_403_6",
+    "second_end_403_5"
+  ],
+  "vehicleDimensionsMeters": {
+    "endCar": {
+      "length": 25.835,
+      "width": 2.95,
+      "height": 3.89
+    },
+    "middleCar": {
+      "length": 24.775,
+      "width": 2.95,
+      "height": 3.89
+    }
+  },
+  "roleDetails": {
+    "403.0": "first-class powered end car with approved checkpoint-7 cab",
+    "403.1": "first-class transformer car with raised 15 kV pantograph",
+    "403.2": "powered converter car",
+    "403.3": "Bordrestaurant middle car with dining and galley window rhythms",
+    "403.8": "service middle car with accessible-service area",
+    "403.7": "powered converter car",
+    "403.6": "second-class transformer car with folded pantograph",
+    "403.5": "second-class powered end car using the approved cab geometry in reverse orientation"
+  },
+  "bordrestaurant": {
+    "vehicleIndex": 3,
+    "class": "403.3",
+    "redesignSeatCount": 20
+  },
+  "masterBlend": "assets/blender/ice3-br403-v2/ice3-br403-v2-master.blend",
+  "cabCheckpointGlb": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-cab-checkpoint.glb",
+  "formationGlb": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-blender.glb",
+  "moduleGlbs": {
+    "first_end_403_0": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-first-end-403-0.glb",
+    "first_transformer_403_1": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-first-transformer-403-1.glb",
+    "second_converter_403_2": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-second-converter-403-2.glb",
+    "bordrestaurant_403_3": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-bordrestaurant-403-3.glb",
+    "service_403_8": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-service-403-8.glb",
+    "second_converter_403_7": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-second-converter-403-7.glb",
+    "second_transformer_403_6": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-second-transformer-403-6.glb",
+    "second_end_403_5": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-second-end-403-5.glb"
+  },
+  "calibration": {
+    "knownDimensionsMeters": {
+      "endCarLength": 25.835,
+      "middleCarLength": 24.775,
+      "vehicleWidth": 2.95,
+      "vehicleHeight": 3.89
+    },
+    "featureGuidesMeters": {
+      "noseTransitionXMeters": 5.2,
+      "noseShellEndXMeters": 12.3675,
+      "noseTipXMeters": 12.9175,
+      "panoramicWindscreenXRangeMeters": [
+        9.55,
+        11.55
+      ],
+      "sideCabWindowXRangeMeters": [
+        6.58,
+        8.42
+      ],
+      "passengerWindowCenterZMeters": 2.48,
+      "passengerWindowHeightMeters": 0.52,
+      "passengerDoorCenterXMeters": 4.18,
+      "passengerDoorBottomZMeters": 0.9,
+      "passengerDoorTopZMeters": 3.16,
+      "sideStripeCenterZMeters": 1.94,
+      "frontHeadlampCenterZMeters": 1.73,
+      "frontBogieCenterXMeters": 6.75,
+      "rearBogieCenterXMeters": -8.55
+    },
+    "silhouetteTolerancePercent": 2.0,
+    "method": "approved checkpoint-7 cab plus matching full-width middle-car section"
+  },
+  "hybridDetail": {
+    "atlas": "assets/blender/ice3-br403-v2/ice3-br403-v2-decals.png",
+    "dimensionsPixels": [
+      2048,
+      512
+    ],
+    "authorship": "original code-authored decal atlas",
+    "containsPhotography": false,
+    "containsProtectedLogos": false
+  },
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "railContactPlaneZ": 0,
+    "railContactAnchor": "rail_contact_origin",
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "traction": "distributed-electric",
+    "pantographContactHeightMeters": 5.5,
+    "calibrationTrackExported": false
+  },
+  "recognitionFeatures": [
+    "approved checkpoint-7 Class 403 cab geometry at both formation ends",
+    "matching pearl-white body, rounded lower glazing, tall pressure-tight doors and low red stripe across all cars",
+    "role-specific transformer, converter, battery and roof equipment",
+    "distinct asymmetric 403.3 Bordrestaurant dining and galley window rhythm",
+    "raised and folded transformer-car pantographs with 5.5 m raised contact height"
+  ],
+  "userReferenceFilenames": [
+    "ice_3_front_sideview.jpg.avif",
+    "ice_3_front_forwardview.jpg.avif",
+    "ice_car_sideview.jpg",
+    "ICE_3_second_class_car_sideview.png.webp",
+    "ice_3_front-side_view.jpeg"
+  ],
+  "referencePolicy": "Research only. Local images are referenced by filename, not copied, packed, textured, embedded, or shipped.",
+  "sources": [
+    "https://www.deutschebahn.com/de/ICE-3-7033052",
+    "https://www.deutschebahn.com/resource/blob/12723788/819f9bc39b4e262b31c18cfd132b4654/DB-403_04_2023-data.pdf",
+    "https://www.deutschebahn.com/de/presse/suche_Medienpakete/5-Schoener-speisen--6854504"
+  ],
+  "nextApprovalGate": "Approve the complete eight-car V2 formation before changing the production ICE 3 registry."
+}

@@ -15,6 +15,7 @@ import type {
   SystemId,
   TrainDefinition,
   UpgradeAction,
+  WeatherKind,
 } from "./types";
 import { eligibleTrainVisualVariants, selectTrainVisualVariant } from "./trainVisuals";
 
@@ -23,6 +24,43 @@ export const DEVELOPMENT_CAP = 3;
 export const EVENT_DURATION = 300;
 export const NIGHTJET_TAURUS_LEADING_CHANCE = 0.75;
 export const NIGHTJET_CAB_CAR_LEADING_CHANCE = 0.25;
+export const WEATHER_RAIN_CHANCE = 0.25;
+export const WEATHER_THUNDERSTORM_CHANCE = 0.1;
+
+export function weatherFromRoll(roll: number): WeatherKind {
+  const normalized = clamp(roll, 0, 0.999999999);
+  if (normalized < WEATHER_THUNDERSTORM_CHANCE) return "thunderstorm";
+  if (normalized < WEATHER_THUNDERSTORM_CHANCE + WEATHER_RAIN_CHANCE) return "rain";
+  return "clear";
+}
+
+export function isWetWeather(state: Pick<GameState, "weather">): boolean {
+  return state.weather !== "clear";
+}
+
+export function weatherRatingPenalty(weather: WeatherKind): number {
+  if (weather === "thunderstorm") return 25;
+  if (weather === "rain") return 10;
+  return 0;
+}
+
+export function weatherArrivalDirtMultiplier(weather: WeatherKind): number {
+  if (weather === "thunderstorm") return 2;
+  if (weather === "rain") return 1.5;
+  return 1;
+}
+
+export function weatherDirtPerMinute(weather: WeatherKind): number {
+  if (weather === "thunderstorm") return 1.5;
+  if (weather === "rain") return 0.5;
+  return 0;
+}
+
+export function weatherDwellMultiplier(weather: WeatherKind): number {
+  if (weather === "thunderstorm") return 1.15;
+  if (weather === "rain") return 1.1;
+  return 1;
+}
 
 const clamp = (value: number, minimum: number, maximum: number) =>
   Math.min(maximum, Math.max(minimum, value));
@@ -68,7 +106,7 @@ export function stationRating(state: GameState): number {
     systemScore +
     state.prestige * 5;
   return Math.round(
-    clamp(permanent + state.cleanliness * 0.2 + temporary - (state.raining ? 4 : 0), 0, 100),
+    clamp(permanent + state.cleanliness * 0.2 + temporary - weatherRatingPenalty(state.weather), 0, 100),
   );
 }
 
@@ -90,7 +128,8 @@ export function stationRatingBreakdown(state: GameState): { label: string; value
       .filter(([, enabled]) => enabled)
       .map(([key]) => ({ label: SYSTEMS[key as SystemId].name, value: key === "advancedSignaling" ? 3 : 5 })),
     ...state.boosts.map((boost) => ({ label: boost.label, value: boost.amount })),
-    ...(state.raining ? [{ label: "Rain", value: -4 }] : []),
+    ...(state.weather === "rain" ? [{ label: "Rain", value: -10 }] : []),
+    ...(state.weather === "thunderstorm" ? [{ label: "Thunderstorm", value: -25 }] : []),
   ];
   return entries.filter((entry) => entry.value !== 0).sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
 }
@@ -225,7 +264,7 @@ function incrementMission(state: GameState, mission: MissionState["id"], amount 
 
 function completeTrain(state: GameState, platformIndex: number, active: ActiveTrain): GameState {
   const train = TRAINS.find((candidate) => candidate.id === active.trainId)!;
-  const dirt = (0.8 + 0.1 * train.cars) * (state.raining ? 1.5 : 1);
+  const dirt = (0.8 + 0.1 * train.cars) * weatherArrivalDirtMultiplier(state.weather);
   const rating = stationRating(state);
   const interval = clamp(48 / ratingMultiplier(rating), 10, 60);
   let next: GameState = {
@@ -260,7 +299,7 @@ function advanceActiveTrain(state: GameState, platformIndex: number, delta: numb
         ...active,
         phase: "dwell",
         phaseElapsed: 0,
-        phaseDuration: dwell * (state.raining ? 1.1 : 1),
+        phaseDuration: dwell * weatherDwellMultiplier(state.weather),
       } }),
       rng,
       toast: `Platform ${platformIndex + 1}: ${train.name} boarding · ${Math.ceil(dwell)}s dwell`,
@@ -319,17 +358,27 @@ function beginEvent(state: GameState, eventId: "ice-s" | "br01"): GameState {
 }
 
 function rollSeasonWeather(state: GameState): GameState {
-  const [rainRoll, seedAfterRain] = nextRandom(state.rng);
-  const [duration, seedAfterDuration] = randomInteger(seedAfterRain, 120, 300);
-  const raining = rainRoll < 0.15;
+  const [weatherRoll, seedAfterWeather] = nextRandom(state.rng);
+  const [duration, seedAfterDuration] = randomInteger(seedAfterWeather, 120, 300);
+  const weather = weatherFromRoll(weatherRoll);
+  const [lightningDelay, seedAfterLightning] = weather === "thunderstorm"
+    ? randomInteger(seedAfterDuration, 18, 45)
+    : [0, seedAfterDuration];
+  const seasonName = SEASONS[(state.seasonIndex + 1) % SEASONS.length];
   return {
     ...state,
-    rng: seedAfterDuration,
+    rng: seedAfterLightning,
     seasonIndex: (state.seasonIndex + 1) % SEASONS.length,
     nextSeasonAt: state.nextSeasonAt + 1_800,
-    raining,
-    rainRemaining: raining ? duration : 0,
-    toast: raining ? "Rain has begun — dwell and dirt are increasing." : `${SEASONS[(state.seasonIndex + 1) % 4]} has arrived.`,
+    weather,
+    weatherRemaining: weather === "clear" ? 0 : duration,
+    nextLightningIn: lightningDelay,
+    thunderDelaySeconds: 0,
+    toast: weather === "thunderstorm"
+      ? `${seasonName} has arrived with thunderstorms — rating and cleanliness are under pressure.`
+      : weather === "rain"
+        ? `${seasonName} has arrived with rain — dwell and dirt are increasing.`
+        : `${seasonName} has arrived.`,
   };
 }
 
@@ -351,14 +400,38 @@ export function tickGame(state: GameState, wallDelta: number): GameState {
     next = { ...next, eventWindow: null, eventPassesRemaining: 0, eventNextPassIn: 0 };
   }
 
-  if (next.raining) {
+  if (isWetWeather(next)) {
     next = {
       ...next,
-      rainRemaining: Math.max(0, next.rainRemaining - delta),
-      cleanliness: clamp(next.cleanliness - (0.5 / 60) * delta, 0, 100),
+      weatherRemaining: Math.max(0, next.weatherRemaining - delta),
+      cleanliness: clamp(next.cleanliness - (weatherDirtPerMinute(next.weather) / 60) * delta, 0, 100),
     };
-    if (next.rainRemaining <= 0) {
-      next = { ...next, raining: false, toast: "The rain has cleared." };
+    if (next.weatherRemaining <= 0) {
+      next = {
+        ...next,
+        weather: "clear",
+        weatherRemaining: 0,
+        nextLightningIn: 0,
+        thunderDelaySeconds: 0,
+        toast: "The weather has cleared.",
+      };
+    }
+  }
+
+  if (next.weather === "thunderstorm") {
+    const timeToStrike = next.nextLightningIn - delta;
+    if (timeToStrike <= 0) {
+      const [nextInterval, intervalSeed] = randomInteger(next.rng, 18, 45);
+      const [delayRoll, delaySeed] = nextRandom(intervalSeed);
+      next = {
+        ...next,
+        rng: delaySeed,
+        nextLightningIn: nextInterval,
+        lightningStrikeId: next.lightningStrikeId + 1,
+        thunderDelaySeconds: 0.8 + delayRoll * 1.6,
+      };
+    } else {
+      next = { ...next, nextLightningIn: timeToStrike };
     }
   }
 
@@ -554,8 +627,28 @@ export function prestigeStation(state: GameState): GameState {
 
 export function debugState(
   state: GameState,
-  mode: "tier5" | "rain" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" | "nightjet-taurus" | "nightjet-cab-car",
+  mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
 ): GameState {
+  if (mode === "ice3-unified") {
+    const ready = debugState(state, "tier5");
+    return {
+      ...ready,
+      platformLanes: ready.platformLanes.map((lane) => lane.platformIndex === 0 ? {
+        ...lane,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: "ice3",
+          visualVariantId: "ice3-br403-unified",
+          phase: "approach",
+          phaseElapsed: 0,
+          phaseDuration: 5,
+          payout: 3_200,
+          firstService: false,
+        },
+      } : lane),
+      toast: "Debug: approved ICE 3 Class 403 approaching.",
+    };
+  }
   if (mode === "nightjet-taurus" || mode === "nightjet-cab-car") {
     const ready = debugState(state, "tier5");
     return {
@@ -618,7 +711,15 @@ export function debugState(
       toast: "Debug: Tier 5 station ready.",
     };
   }
-  if (mode === "rain") return { ...state, raining: true, rainRemaining: 180, toast: "Debug: rain started." };
+  if (mode === "rain") return { ...state, weather: "rain", weatherRemaining: 180, nextLightningIn: 0, thunderDelaySeconds: 0, toast: "Debug: rain started." };
+  if (mode === "thunderstorm") return {
+    ...state,
+    weather: "thunderstorm",
+    weatherRemaining: 180,
+    nextLightningIn: 0.1,
+    thunderDelaySeconds: 1.2,
+    toast: "Debug: thunderstorm started.",
+  };
   if (mode === "night") return { ...state, simSeconds: Math.floor(state.simSeconds / 900) * 900 + 610, toast: "Debug: night lighting active." };
   return { ...state, cleanliness: 22, toast: "Debug: heavy station dirt applied." };
 }

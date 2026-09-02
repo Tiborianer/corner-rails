@@ -42,6 +42,42 @@ Forty-four automated tests pass. Nightjet-specific coverage verifies the exact e
 
 The private `?trainLab=nightjet-new-generation` route was exercised at 1440×900 and 390×844 in stationary, stopping, fixed-phase pass-through, day, night, rain, inspection and three-simultaneous-formation states. N2 was captured twice at the identical pass-through phase and track position: exported orientation with the Taurus leading and a 180-degree turn with the cab car leading. Both enter from the left and travel right. Normal-game debug arrivals then verified both approved orientations at night, the exact 20,000-coin payout, metric rail/platform contact, smooth approach/dwell/depart motion and the production asset URL at desktop and 390×844. The server returned the canonical 238,364-byte GLB successfully. There were no WebGL/loading errors; console review found only Three.js's existing `Clock` deprecation warning.
 
+## 2026-08-22 traffic, station and thunderstorm upgrade
+
+The production metric scene now uses twelve separately proportioned procedural road vehicles, two deterministic directional lanes and one reserved station drop-off bay. Extended simulation at 1×/2×/3× verifies vehicle-length-aware clearances while eligible vehicles enter the bay, dwell for 3–7 simulated seconds and merge into a safe gap. The road visits remain visual-only and are not added to save codes or the economy.
+
+All platform fixtures now illuminate independently, with bounded desktop/mobile point-light pools. Tier 5 uses a larger glass-and-concrete terminus, litter scales to twelve seeded pieces per platform with seven object families, and the maintenance siding visibly enters from the right corridor before curving into the open depot shed. The siding retains the metric gauge and uses separate ballast, sleepers, rails and buffer-stop geometry.
+
+Weather is now an exclusive 65% clear / 25% rain / 10% thunderstorm season roll. Rain applies −10 rating; thunderstorms apply −25, heavier continuous/arrival dirt, lightning pulses and delayed synthesized thunder. Existing `CR1` rain saves migrate to the new weather fields. Desktop and 390×844 browser checks covered Tier 5 day/night, five-platform lighting, heavy dirt, mixed traffic, the right-entry siding and thunderstorms. No WebGL or loading errors occurred; only Three.js's existing `Clock` deprecation warning appeared.
+
+Follow-up visual corrections align every road-vehicle front with its travel direction, raise thunderstorm precipitation to 920 faster particles (normal rain remains 260), and place pooled platform lights directly below visible fixture heads. The complete suite now contains 53 passing Vitest checks.
+
+## 2026-08-22 ICE 3 Blender review I3 and per-platform signals
+
+I3 adds an editable Blender 5.2 master, eight role-specific modular GLBs and one optimized 200.32 m Class 403 formation. The car order follows DB's official BR403 technical and passenger-role records, with a separately recognizable 403.3 Bordrestaurant, service car, powered converter/end cars and two transformer cars. The final recognition pass rounds the original over-sharp cab, seats the dark visor and side cab glazing against the nose, follows the shell with the descending red stripe, and darkens the restaurant glazing for daylight readability.
+
+Asset validation confirms eight formation roots, 64 standard-gauge wheel objects, wheel contact at Z=0, a named rail-contact origin, a 5.5 m raised pantograph contact, no exported review rails, 12 materials and an optimized 188,328-byte formation. The production ICE 3 remains `legacy-v1`; the I3 registry entry is private-review with `productionRegistryModified: false`.
+
+The private `?trainLab=ice3-br403` route was checked at 1440×900 and 390×844 in stationary, pass-through, day, night, rain, inspection and three-simultaneous-formation states. The visible counter sustained 60 FPS with three night formations and exceeded 100 FPS with one formation in the in-app software-WebGL session. No WebGL or loading errors occurred; only Three.js's existing `Clock` deprecation warning was logged. The normal Tier 5 debug station visibly renders five separate signals—one beyond each platform end—without occupying the vehicle envelope.
+
+The complete Vitest suite now contains 59 passing checks. ESLint, the Sites production build, rendered-HTML smoke test and GitHub Pages build also pass; both builds retain only the existing large glTF runtime chunk warning.
+
+## 2026-08-23 ICE 3 Class 403 V2 full formation
+
+I3 V2 replaces the V1 cab construction with a separate subdivision-smoothed, reference-calibrated 403.0 end car. After the user approved checkpoint 7, that unchanged cab became the visual master for the complete eight-car V2 formation. Seven matching vehicles now provide the exact 403.0, 403.1, 403.2, 403.3, 403.8, 403.7, 403.6 and 403.5 order. The middle cars preserve the approved body height, lower continuous stripe, shallow rounded glazing and tall single-leaf door language while adding role-specific roof and underframe equipment. V1 remains selectable as a baseline, and the production `ice3.glb`/registry entry remains unchanged pending explicit full-formation approval.
+
+The editable Blender master retains non-exported side/front reference guides. Cab checkpoint 7 remains separately available and unchanged. The completed formation adds 64 standard-gauge wheels at the Z=0 contact plane, a named `rail_contact_origin`, two transformer-car pantographs with the raised collector at 5.5 m, converter cabinets, service-car battery panels and an independently recognizable 403.3 Bordrestaurant with its asymmetric dining/galley window rhythm. The eight modular vehicle GLBs and 580,612-byte formation GLB contain 19 reusable materials and one embedded original PNG atlas. Validation confirms an approximately 200.46 m rendered bound including detail over the nominal 200.32 m vehicle contract, no exported calibration track or reference planes, and no supplied photograph or protected logo.
+
+The full formation has deterministic Blender review renders for the complete side and isometric silhouettes, both cab ends, the Bordrestaurant, transformer roof and service car. The private `?trainLab=ice3-br403-v2` browser route loads the eight-car/200.32 m record correctly; stationary inspection and a three-formation rainy pass-through both rendered without a loading screen or WebGL failure. The active mobile-size software-WebGL session reported 112–120 FPS. All 60 Vitest checks, ESLint, the Sites production build, rendered-HTML smoke test and GitHub Pages build pass. Both builds retain only the existing large glTF runtime chunk warning. Checkpoint 7 close-up renders remain available to verify that the approved windscreen, nose, stripe and lamps were not regressed.
+
+## 2026-08-29 ICE 3 Class 403 two-car continuity checkpoint
+
+I3 C rebuilds only the 403.0 end car and adjacent 403.1 transformer car. One 19-vertex metric cross-section now controls both passenger shells, while one continuous black glazing recess, inset window system and shared 1.84 m / 0.18 m stripe datum provide the missing visual continuity. The 403.0 is a single loft from gangway to nose tip and exports no detached nose-cap object. The accepted panoramic windscreen, wipers, central lamps and general nose proportions remain the cab recognition baseline.
+
+Asset inspection confirms two vehicle roots, 16 standard-gauge wheels at the Z=0 contact plane, a named `rail_contact_origin`, one raised 5.5 m pantograph collector, 42 inset passenger-window panes and four continuous black passenger-band surfaces. A focused reference pass replaces the old four oversized angular cab panes with two continuous dark cab-side ribbons containing five panes per side. The rearmost cab pane is now 1.08 m wide, closely matching the regular 1.16 m passenger-window module, and all ten cab-side panes reuse the verified `ICE3_V2_Glass_Interior` passenger-window material. The panes retain the shared height before descending and narrowing into the windscreen. The shared 0.18 m stripe datum remains at 1.84 m on both cars and throughout the nose sweep. The optimized two-car checkpoint is 237,752 bytes, below its 450 KB budget. Eight deterministic Blender views cover the side, isometric, nose/body transition, carriage junction, glazing band, stripe junction and transformer roof. The production ICE 3 SHA-256 remains `ec41a600…f0be`; the previous full V2 remains `736be624…3e0f`.
+
+The local private route passed stationary day/night/rain, stopping/pass controls, one/three simultaneous formations, desktop inspection and a 390×844 mobile viewport. Revision `continuity-4` is the current cache-safe laboratory asset revision after the final width/colour correction. Comparison navigation works in both directions between “Previous full formation” and “New continuity checkpoint.” Browser logging contains no WebGL or asset errors; only Three.js's existing `Clock` deprecation warning remains. All 63 Vitest checks, ESLint, the Sites production build, rendered-HTML smoke test and GitHub Pages build pass. The only build warning is the existing large glTF runtime chunk.
+
 ## Automated acceptance coverage
 
 - Nine deterministic simulation tests cover exact structural prices, the shared cap, system purchases, Tier 5 unlimited development, cleaning cost and cap exclusion, rating response, train and rain dirt, roster counts, Nightjet night eligibility/fixed payout, and save-code round-trip/damage rejection.
@@ -101,6 +137,45 @@ The private `?trainLab=nightjet-new-generation` route was exercised at 1440×900
 - [Nightjet browser mobile layout](../qa/train-review/nightjet-new-generation/nightjet-new-generation-browser-mobile.png)
 - [Nightjet N2 Taurus-leading pass](../qa/train-review/nightjet-new-generation/nightjet-new-generation-n2-taurus-leading.png)
 - [Nightjet N2 cab-car-leading pass](../qa/train-review/nightjet-new-generation/nightjet-new-generation-n2-cab-car-leading.png)
+- [ICE 3 Blender overview](../qa/train-review/ice3-br403/ice3-br403-blender-overview.jpg)
+- [ICE 3 rounded nose and cab glazing](../qa/train-review/ice3-br403/ice3-br403-blender-nose-detail.jpg)
+- [ICE 3 403.3 Bordrestaurant side](../qa/train-review/ice3-br403/ice3-br403-blender-bordrestaurant-side.jpg)
+- [ICE 3 transformer pantograph detail](../qa/train-review/ice3-br403/ice3-br403-blender-pantograph-detail.jpg)
+- [ICE 3 wheel/rail calibration](../qa/train-review/ice3-br403/ice3-br403-blender-wheel-rail-detail.jpg)
+- [ICE 3 V2 normal isometric checkpoint](../qa/train-review/ice3-br403-v2/ice3-br403-v2-normal-isometric.jpg)
+- [ICE 3 V2 exact side](../qa/train-review/ice3-br403-v2/ice3-br403-v2-exact-side.jpg)
+- [ICE 3 V2 nose three-quarter](../qa/train-review/ice3-br403-v2/ice3-br403-v2-nose-three-quarter.jpg)
+- [ICE 3 V2 windscreen close-up](../qa/train-review/ice3-br403-v2/ice3-br403-v2-windscreen-close.jpg)
+- [ICE 3 V2 door/window close-up](../qa/train-review/ice3-br403-v2/ice3-br403-v2-door-window-close.jpg)
+- [ICE 3 V2 Bordrestaurant](../qa/train-review/ice3-br403-v2/ice3-br403-v2-bordrestaurant-side.jpg)
+- [ICE 3 V2 transformer roof](../qa/train-review/ice3-br403-v2/ice3-br403-v2-transformer-roof.jpg)
+- [ICE 3 V2 service car](../qa/train-review/ice3-br403-v2/ice3-br403-v2-service-car-side.jpg)
+- [ICE 3 V2 rear cab](../qa/train-review/ice3-br403-v2/ice3-br403-v2-rear-end-three-quarter.jpg)
+- [ICE 3 V2 browser day](../qa/train-review/ice3-br403-v2/ice3-br403-v2-browser-day.png)
+- [ICE 3 V2 browser checkpoint 7](../qa/train-review/ice3-br403-v2/ice3-br403-v2-browser-checkpoint-7.png)
+- [ICE 3 V2 browser rain with three cars](../qa/train-review/ice3-br403-v2/ice3-br403-v2-browser-rain-three.png)
+- [ICE 3 V2 browser mobile](../qa/train-review/ice3-br403-v2/ice3-br403-v2-browser-mobile.png)
+- [ICE 3 V2 complete formation in browser](../qa/train-review/ice3-br403-v2/ice3-br403-v2-browser-formation-day.png)
+- [ICE 3 V2 three-formation rainy pass](../qa/train-review/ice3-br403-v2/ice3-br403-v2-browser-formation-rain-three.png)
+- [ICE 3 continuity normal isometric](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-normal-isometric.jpg)
+- [ICE 3 continuity exact side](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-exact-side.jpg)
+- [ICE 3 continuity nose/body close-up](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-nose-body-close.jpg)
+- [ICE 3 continuity carriage junction](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-carriage-junction-close.jpg)
+- [ICE 3 continuity glazing band](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-window-band-close.jpg)
+- [ICE 3 continuity stripe junction](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-stripe-continuity-close.jpg)
+- [ICE 3 continuity browser day](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-browser-day.png)
+- [ICE 3 continuity browser night](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-browser-night.png)
+- [ICE 3 continuity browser rain with three formations](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-browser-rain-three.png)
+- [ICE 3 continuity browser mobile](../qa/train-review/ice3-br403-v2-continuity/ice3-br403-v2-continuity-browser-mobile.png)
+- [ICE 3 unified full formation](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-normal-isometric.jpg)
+- [ICE 3 unified exact side](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-exact-side.jpg)
+- [ICE 3 unified first carriage junction](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-first-junction-close.jpg)
+- [ICE 3 unified Bordrestaurant](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-bordrestaurant-side.jpg)
+- [ICE 3 unified service car](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-service-car-side.jpg)
+- [ICE 3 unified transformer roof](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-transformer-roof.jpg)
+- [ICE 3 unified emissive lenses and headlight beams](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-night-headlights.jpg)
+
+The user approved I3 U for production on 2026-09-02. Normal gameplay now resolves the Tier 4 `ice3` service to the 200.32 m metric Class 403 GLB, preserves that visual ID in manual save codes, and migrates older active ICE 3 saves to it. The production renderer uses the approved single moving headlight beam and the laboratory-style warm directional platform fill with tightly bounded local point lights. The former `public/models/trains/ice3.glb` remains untouched for rollback.
 - [Production Nightjet with Taurus leading](../qa/production-nightjet-taurus-leading.png)
 - [Rare production Nightjet with cab car leading](../qa/production-nightjet-cab-car-leading.png)
 - [Production Nightjet mobile layout](../qa/production-nightjet-mobile.png)

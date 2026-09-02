@@ -3,6 +3,7 @@
 /* eslint-disable react/no-unknown-property */
 
 import { useMemo } from "react";
+import { PLATFORM_FIXTURE_RATIOS } from "./visual";
 
 export const RAILWAY_METRIC_PROFILE = {
   metersToWorld: 0.071,
@@ -106,11 +107,13 @@ export function MetricPlatform({
   lengthMeters = 280,
   side = 1,
   amenities = true,
+  lampIntensity = 0.15,
 }: {
   trackCenter: number;
   lengthMeters?: number;
   side?: 1 | -1;
   amenities?: boolean;
+  lampIntensity?: number;
 }) {
   const railTop = RAILWAY_METRIC_PROFILE.railTopY;
   const surfaceY = railTop + railwayMetersToWorld(RAILWAY_METRIC_PROFILE.platformHeightMeters);
@@ -121,7 +124,7 @@ export function MetricPlatform({
   );
   const centerZ = metricPlatformCenter(trackCenter, side);
   const slabHeight = surfaceY - RAILWAY_GROUND_Y;
-  const fixtureXs = [-0.36, -0.12, 0.12, 0.36].map((ratio) => ratio * length);
+  const fixtureXs = PLATFORM_FIXTURE_RATIOS.map((ratio) => ratio * length);
 
   return (
     <group>
@@ -147,6 +150,18 @@ export function MetricPlatform({
             <boxGeometry args={[Math.min(0.55, length / 5), 0.025, width * 0.82]} />
             <meshStandardMaterial color="#315a5b" />
           </mesh>
+          {[-1, 1].map((lampSide) => (
+            <group key={lampSide} position={[0, 0, lampSide * width * 0.25]}>
+              <mesh position={[0, surfaceY + 0.247, 0]} castShadow>
+                <boxGeometry args={[0.025, 0.02, 0.025]} />
+                <meshStandardMaterial color="#40504f" />
+              </mesh>
+              <mesh position={[0, surfaceY + 0.232, 0]}>
+                <boxGeometry args={[0.2, 0.012, 0.035]} />
+                <meshStandardMaterial color="#fff0c2" emissive="#ffca62" emissiveIntensity={lampIntensity} toneMapped={false} />
+              </mesh>
+            </group>
+          ))}
           {amenities && (
             <mesh position={[0, surfaceY + 0.245, side * width * 0.31]}>
               <boxGeometry args={[0.16, 0.018, 0.035]} />

@@ -5,6 +5,7 @@ export type TrainReviewAtmosphere = "day" | "night" | "rain";
 export type TrainReviewScale = "normal" | "inspect";
 export type TrainReviewLoad = 1 | 3;
 export type TrainReviewLeadingEnd = "taurus" | "cab-car";
+export type TrainReviewStage = "cab" | "continuity" | "formation";
 
 export interface TrainReviewCandidate {
   id: string;
@@ -21,7 +22,17 @@ export interface TrainReviewCandidate {
   primarySource: string;
   productionTrainId: string;
   approvalStatus: "private-review" | "approved-production";
+  reviewStage: TrainReviewStage;
   reviewSummary: string;
+  comparisonCandidateId?: string;
+  comparisonLabel?: string;
+  headlights?: {
+    frontInsetMeters: number;
+    heightMeters: number;
+    lateralMeters: number;
+    beamLengthMeters: number;
+    color: string;
+  };
 }
 
 export const TRAIN_REVIEW_CANDIDATES = {
@@ -40,6 +51,7 @@ export const TRAIN_REVIEW_CANDIDATES = {
     primarySource: "https://www.alstom.com/solutions/rolling-stock/locomotives/traxx-passenger-locomotives-comfortable-borderless-operations-passengers",
     productionTrainId: "unassigned",
     approvalStatus: "private-review",
+    reviewStage: "formation",
     reviewSummary: "Built from the supplied BR 245, double-deck coach and driving-trailer references. Approval is required before production changes.",
   },
   "nightjet-new-generation": {
@@ -57,7 +69,95 @@ export const TRAIN_REVIEW_CANDIDATES = {
     primarySource: "https://press.siemens.com/global/en/pressrelease/obb-and-siemens-mobility-present-interior-design-next-generation-nightjet",
     productionTrainId: "nightjet",
     approvalStatus: "approved-production",
+    reviewStage: "formation",
     reviewSummary: "Approved N2 production formation. Normal gameplay uses 75% Taurus-leading and 25% cab-car-leading arrivals.",
+  },
+  "ice3-br403": {
+    id: "ice3-br403",
+    badge: "I3",
+    label: "DB ICE 3 · Class 403 redesign",
+    shortLabel: "ICE 3 BR403",
+    assetPath: "/models/train-lab/ice3-br403/ice3-br403-blender.glb",
+    assetRevision: "1",
+    vehicleCount: 8,
+    nominalLengthMeters: 200.32,
+    reviewPlatformLengthMeters: 220,
+    traction: "electric",
+    revision: "blender-review-1",
+    primarySource: "https://www.deutschebahn.com/de/ICE-3-7033052",
+    productionTrainId: "ice3",
+    approvalStatus: "private-review",
+    reviewStage: "formation",
+    reviewSummary: "Exact eight-car Class 403 order with a distinct 403.3 Bordrestaurant. Approval is required before the existing production ICE 3 changes.",
+    comparisonCandidateId: "ice3-br403-v2",
+    comparisonLabel: "View V2 formation",
+  },
+  "ice3-br403-v2": {
+    id: "ice3-br403-v2",
+    badge: "I3 V2",
+    label: "DB ICE 3 · Class 403 V2 full formation",
+    shortLabel: "ICE 3 BR403 V2",
+    assetPath: "/models/train-lab/ice3-br403-v2/ice3-br403-v2-blender.glb",
+    assetRevision: "formation-1",
+    vehicleCount: 8,
+    nominalLengthMeters: 200.32,
+    reviewPlatformLengthMeters: 220,
+    traction: "electric",
+    revision: "formation-review-1",
+    primarySource: "https://www.deutschebahn.com/de/ICE-3-7033052",
+    productionTrainId: "ice3",
+    approvalStatus: "private-review",
+    reviewStage: "formation",
+    reviewSummary: "The approved checkpoint-7 cab now anchors the complete eight-car Class 403 set, with matching middle-car bodies and distinct transformer, converter, Bordrestaurant and service-car equipment. Full-formation approval is required before production changes.",
+    comparisonCandidateId: "ice3-br403-v2-continuity",
+    comparisonLabel: "New continuity checkpoint",
+  },
+  "ice3-br403-v2-continuity": {
+    id: "ice3-br403-v2-continuity",
+    badge: "I3 C",
+    label: "DB ICE 3 · Class 403 continuity checkpoint",
+    shortLabel: "ICE 3 two-car continuity",
+    assetPath: "/models/train-lab/ice3-br403-v2-continuity/ice3-br403-v2-continuity-checkpoint.glb",
+    assetRevision: "continuity-4",
+    vehicleCount: 2,
+    nominalLengthMeters: 50.61,
+    reviewPlatformLengthMeters: 90,
+    traction: "electric",
+    revision: "continuity-review-4",
+    primarySource: "https://www.deutschebahn.com/de/ICE-3-7033052",
+    productionTrainId: "ice3",
+    approvalStatus: "private-review",
+    reviewStage: "continuity",
+    reviewSummary: "The rebuilt 403.0 and 403.1 use one shared body cross-section, continuous black glazing band and a slightly lower exact stripe datum. The rearmost cab pane now approaches the regular passenger-window width, and all five cab panes use the matching passenger-glass colour before tapering into the windscreen. The remaining six vehicles stay deferred until this continuity gate is approved.",
+    comparisonCandidateId: "ice3-br403-v2-unified",
+    comparisonLabel: "Complete unified formation",
+  },
+  "ice3-br403-v2-unified": {
+    id: "ice3-br403-v2-unified",
+    badge: "I3 U",
+    label: "DB ICE 3 · Class 403 unified formation",
+    shortLabel: "ICE 3 unified BR403",
+    assetPath: "/models/trains/blender/ice3/ice3-br403-unified-blender.glb",
+    assetRevision: "production-unified-1",
+    vehicleCount: 8,
+    nominalLengthMeters: 200.32,
+    reviewPlatformLengthMeters: 220,
+    traction: "electric",
+    revision: "unified-production-1",
+    primarySource: "https://www.deutschebahn.com/de/ICE-3-7033052",
+    productionTrainId: "ice3",
+    approvalStatus: "approved-production",
+    reviewStage: "formation",
+    reviewSummary: "Approved production Class 403. All eight vehicles share the accepted body, black glazing band and lowered red stripe datums; the Bordrestaurant, service, converter and transformer cars retain their distinct window and equipment rhythms. Normal gameplay uses this same metric GLB with emissive lenses and one combined moving headlight beam.",
+    comparisonCandidateId: "ice3-br403-v2-continuity",
+    comparisonLabel: "Approved two-car checkpoint",
+    headlights: {
+      frontInsetMeters: 0.28,
+      heightMeters: 1.675,
+      lateralMeters: 0.27,
+      beamLengthMeters: 38,
+      color: "#ffe3a3",
+    },
   },
 } as const satisfies Record<string, TrainReviewCandidate>;
 

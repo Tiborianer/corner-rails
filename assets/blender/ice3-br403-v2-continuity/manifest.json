@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 4,
+  "generator": "Blender 5.2 LTS Python API",
+  "candidateId": "ice3-br403-v2-continuity",
+  "approvalStatus": "private-review",
+  "reviewStage": "continuity",
+  "productionRegistryModified": false,
+  "comparisonBaseline": "public/models/train-lab/ice3-br403-v2/ice3-br403-v2-blender.glb",
+  "targetFormation": "modernized DB ICE 3 Class 403 eight-car set",
+  "currentCheckpoint": {
+    "vehicleCount": 2,
+    "lengthMeters": 50.61,
+    "vehicles": [
+      "403.0 first-class end car",
+      "403.1 first-class transformer car"
+    ],
+    "remainingFormationVehiclesDeferred": 6
+  },
+  "approvedCabFeatures": {
+    "sourceCheckpoint": 7,
+    "preserved": [
+      "panoramic windscreen",
+      "wipers",
+      "headlight arrangement",
+      "nose proportions"
+    ],
+    "supportingShellRebuilt": true,
+    "separateNoseCapExported": false,
+    "sideCabGlazingRevision": "five-pane passenger-band-aligned ribbon with a 1.08 m rearmost pane and passenger-glass material, tapering into the windscreen",
+    "rearmostCabPaneWidthMeters": 1.08,
+    "sideCabGlassMaterial": "ICE3_V2_Glass_Interior"
+  },
+  "sharedBodyProfile": {
+    "id": "class403-continuity-v1",
+    "vertexCount": 19,
+    "widthMeters": 2.95,
+    "bottomZMeters": 0.68,
+    "shoulderZMeters": 3.18,
+    "roofZMeters": 3.89,
+    "junctionToleranceMeters": 0.001
+  },
+  "glazingBand": {
+    "centerZMeters": 2.48,
+    "heightMeters": 0.74,
+    "recessSurfaceYMeters": 1.486,
+    "glassSurfaceYMeters": 1.493,
+    "style": "continuous matte-black recess with inset smoked panes and dark mullions"
+  },
+  "bodyStripe": {
+    "centerZMeters": 1.84,
+    "heightMeters": 0.18,
+    "junctionToleranceMeters": 0.002,
+    "noseBehavior": "smooth downward sweep beginning from the lowered passenger-body datum"
+  },
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "railContactPlaneZ": 0,
+    "railContactAnchor": "rail_contact_origin",
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "pantographContactHeightMeters": 5.5,
+    "calibrationTrackExported": false
+  },
+  "masterBlend": "assets/blender/ice3-br403-v2-continuity/ice3-br403-v2-continuity-master.blend",
+  "checkpointGlb": "public/models/train-lab/ice3-br403-v2-continuity/ice3-br403-v2-continuity-checkpoint.glb",
+  "moduleGlbs": {
+    "403.0": "public/models/train-lab/ice3-br403-v2-continuity/ice3-br403-v2-continuity-403-0.glb",
+    "403.1": "public/models/train-lab/ice3-br403-v2-continuity/ice3-br403-v2-continuity-403-1.glb"
+  },
+  "userReferenceFilenames": [
+    "ice_3_front_sideview.jpg.avif",
+    "ice_3_front_forwardview.jpg.avif",
+    "ice_car_sideview.jpg",
+    "ICE_3_second_class_car_sideview.png.webp",
+    "ice_3_front-side_view.jpeg"
+  ],
+  "referencePolicy": "Research only. Local images are referenced by filename, not copied, packed, textured, embedded, or shipped.",
+  "sources": [
+    "https://www.deutschebahn.com/de/ICE-3-7033052",
+    "https://www.deutschebahn.com/resource/blob/12723788/819f9bc39b4e262b31c18cfd132b4654/DB-403_04_2023-data.pdf",
+    "https://www.deutschebahn.com/de/presse/suche_Medienpakete/5-Schoener-speisen--6854504"
+  ],
+  "nextApprovalGate": "Approve the two-car body, glazing-band and stripe continuity before generating the remaining six vehicles."
+}

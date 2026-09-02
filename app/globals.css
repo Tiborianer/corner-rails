@@ -1555,7 +1555,7 @@ button:disabled {
   font-size: 0.86rem;
 }
 
-.railjet-lab-control-head > button {
+.railjet-lab-control-head button {
   padding: 6px 8px;
   border: 0;
   border-radius: 8px;
@@ -1563,6 +1563,11 @@ button:disabled {
   background: rgba(255, 255, 255, 0.08);
   cursor: pointer;
   font-size: 0.6rem;
+}
+
+.railjet-lab-control-actions {
+  display: flex;
+  gap: 5px;
 }
 
 .railjet-lab-controls > p {

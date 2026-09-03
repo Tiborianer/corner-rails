@@ -10,6 +10,19 @@ export type SystemId =
 
 export type TrainKind = "scheduled" | "event";
 export type WeatherKind = "clear" | "rain" | "thunderstorm";
+export type BadgeId =
+  | "grand-terminus"
+  | "storm-watcher"
+  | "midnight-arrival"
+  | "perfect-score"
+  | "rush-hour"
+  | "clean-comeback"
+  | "millionaire"
+  | "master-engineer"
+  | "event-curator"
+  | "complete-timetable"
+  | "storm-sleeper"
+  | "triple-prestige";
 export type TrainStyle =
   | "dmu"
   | "regional"
@@ -108,6 +121,10 @@ export interface GameState {
   platformLanes: PlatformLane[];
   firstTrainComplete: boolean;
   arrivals: number;
+  servedTrainIds: string[];
+  unlockedBadges: BadgeId[];
+  cleanedFromCritical: boolean;
+  stormNightjetServed: boolean;
   prestige: number;
   weather: WeatherKind;
   weatherRemaining: number;

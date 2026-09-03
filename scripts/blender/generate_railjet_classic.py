@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -26,9 +27,10 @@ from mathutils import Matrix, Vector
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SOURCE_DIR = PROJECT_ROOT / "assets" / "blender" / "railjet-classic"
-OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / "trains" / "blender" / "railjet"
-MASTER_PATH = SOURCE_DIR / "railjet-classic-master.blend"
+LIVERY_V2_REVIEW = "--livery-v2" in sys.argv
+SOURCE_DIR = PROJECT_ROOT / "assets" / "blender" / ("railjet-classic-livery-v2" if LIVERY_V2_REVIEW else "railjet-classic")
+OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / ("train-lab/railjet-classic-livery-v2" if LIVERY_V2_REVIEW else "trains/blender/railjet")
+MASTER_PATH = SOURCE_DIR / ("railjet-classic-livery-v2-master.blend" if LIVERY_V2_REVIEW else "railjet-classic-master.blend")
 
 TAURUS_LENGTH = 19.28
 COACH_LENGTH = 26.50
@@ -43,6 +45,7 @@ PANTOGRAPH_CONTACT_HEIGHT_METERS = 5.5
 
 OFFICIAL_SOURCES = (
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
+    "https://www.oebb.at/de/reiseplanung-services/im-zug/unsere-zuege/railjet",
     "https://data.oebb.at/dam/jcr%3A1e0c5a41-5293-439a-bed9-4f160d8aa1da/tfz1116.pdf",
     "https://static.dc.siemens.com/mobility/webfeature/green-mobility/files/brochure/viaggio-comfort-en.pdf",
 )
@@ -106,18 +109,20 @@ def make_material(
 
 def build_materials() -> dict[str, bpy.types.Material]:
     return {
-        "railjet_red": make_material("RJ_Red", (0.46, 0.018, 0.038, 1.0), metallic=0.04, roughness=0.43),
-        "signal_red": make_material("RJ_Door_Red", (0.72, 0.025, 0.042, 1.0), metallic=0.02, roughness=0.4),
-        "deep_red": make_material("RJ_Deep_Red", (0.25, 0.012, 0.024, 1.0), metallic=0.08, roughness=0.38),
-        "light_body": make_material("RJ_Pearl_Light", (0.74, 0.75, 0.72, 1.0), metallic=0.12, roughness=0.36),
-        "anthracite": make_material("RJ_Anthracite", (0.055, 0.062, 0.064, 1.0), metallic=0.14, roughness=0.32),
-        "glass": make_material("RJ_Smoked_Glass", (0.018, 0.055, 0.068, 1.0), metallic=0.22, roughness=0.16),
-        "roof": make_material("RJ_Roof", (0.12, 0.125, 0.12, 1.0), metallic=0.42, roughness=0.42),
+        # Calibrated from current OEBB fleet photography: wine-red body,
+        # vermilion accent, graphite flank and cool aluminium skirt.
+        "railjet_red": make_material("RJ_Wine_Red", (0.40, 0.016, 0.022, 1.0), metallic=0.10, roughness=0.30),
+        "signal_red": make_material("RJ_Bright_Red", (0.84, 0.024, 0.020, 1.0), metallic=0.05, roughness=0.31),
+        "deep_red": make_material("RJ_Deep_Wine", (0.20, 0.006, 0.011, 1.0), metallic=0.10, roughness=0.32),
+        "light_body": make_material("RJ_Aluminium", (0.68, 0.71, 0.72, 1.0), metallic=0.30, roughness=0.33),
+        "anthracite": make_material("RJ_Graphite", (0.034, 0.040, 0.043, 1.0), metallic=0.16, roughness=0.34),
+        "glass": make_material("RJ_Smoked_Glass", (0.012, 0.030, 0.038, 1.0), metallic=0.28, roughness=0.12),
+        "roof": make_material("RJ_Roof", (0.055, 0.060, 0.061, 1.0), metallic=0.46, roughness=0.40),
         "underframe": make_material("RJ_Underframe", (0.035, 0.04, 0.042, 1.0), metallic=0.55, roughness=0.48),
         "wheel": make_material("RJ_Wheel", (0.055, 0.06, 0.062, 1.0), metallic=0.82, roughness=0.27),
         "steel": make_material("RJ_Steel", (0.36, 0.39, 0.39, 1.0), metallic=0.86, roughness=0.24),
         "lamp": make_material("RJ_Lamp", (1.0, 0.78, 0.33, 1.0), metallic=0.03, roughness=0.18),
-        "warm_glass": make_material("RJ_Warm_Cabin", (0.38, 0.22, 0.08, 1.0), metallic=0.05, roughness=0.24),
+        "warm_glass": make_material("RJ_Warm_Cabin", (0.31, 0.17, 0.055, 1.0), metallic=0.05, roughness=0.24),
         "ballast": make_material("Review_Ballast", (0.19, 0.22, 0.21, 1.0), roughness=0.95),
         "sleeper": make_material("Review_Sleeper", (0.20, 0.12, 0.075, 1.0), roughness=0.9),
         "ground": make_material("Review_Ground", (0.23, 0.35, 0.25, 1.0), roughness=0.97),
@@ -327,6 +332,39 @@ def polygon_mesh(name: str, vertices: Sequence[Sequence[float]], material: bpy.t
     return mesh
 
 
+def add_text_label(
+    collection: bpy.types.Collection,
+    name: str,
+    text: str,
+    location: Sequence[float],
+    material: bpy.types.Material,
+    parent: bpy.types.Object,
+    *,
+    side: int,
+    size: float,
+    scale_x: float = 1.0,
+) -> bpy.types.Object:
+    """Add original lightweight livery lettering using Blender's built-in font."""
+    curve = bpy.data.curves.new(name, type="FONT")
+    curve.body = text
+    curve.align_x = "CENTER"
+    curve.align_y = "CENTER"
+    curve.size = size
+    curve.shear = 0.22
+    curve.extrude = 0.008
+    curve.resolution_u = 3
+    return link_object(
+        collection,
+        name,
+        curve,
+        location=location,
+        scale=(scale_x, 1.0, 1.0),
+        rotation=(-side * math.pi / 2, 0.0, 0.0),
+        parent=parent,
+        material=material,
+    )
+
+
 def add_beam_between(
     collection: bpy.types.Collection,
     cube: bpy.types.Mesh,
@@ -418,17 +456,25 @@ def add_coach_livery(
     band_length = body_end - body_start
     for side in (-1, 1):
         y = side * (COACH_WIDTH / 2 + 0.012)
-        add_box(collection, cube, f"{role}_window_band_{side}", (band_length, 0.036, 1.15), (band_center, y, 2.83), materials["anthracite"], root)
-        add_box(collection, cube, f"{role}_lower_skirt_{side}", (band_length + 0.22, 0.04, 0.48), (band_center, y + side * 0.004, 1.21), materials["anthracite"], root)
-        add_box(collection, cube, f"{role}_red_belt_{side}", (band_length + 0.08, 0.047, 0.20), (band_center, y + side * 0.01, 2.06), materials["railjet_red"], root)
+        # Viaggio Comfort exterior: burgundy upper shell, dark glazing band,
+        # graphite lower flank, vivid red belt and aluminium equipment skirt.
+        # The prototype used a continuous black window ribbon here. Real
+        # Viaggio Comfort cars retain wine-red bodywork between each window;
+        # only the glazing and its narrow seals are dark.
+        add_box(collection, cube, f"{role}_graphite_flank_{side}", (band_length + 0.18, 0.048, 1.18), (band_center, y + side * 0.006, 1.68), materials["anthracite"], root)
+        add_box(collection, cube, f"{role}_red_belt_{side}", (band_length + 0.10, 0.056, 0.19), (band_center, y + side * 0.014, 2.36), materials["signal_red"], root)
+        add_box(collection, cube, f"{role}_silver_skirt_{side}", (band_length + 0.28, 0.052, 0.56), (band_center, y + side * 0.012, 0.95), materials["light_body"], root)
 
         door_positions = [-10.7, 10.7]
         if nose_negative:
             door_positions = [-8.8, 10.7]
         for door_index, x in enumerate(door_positions):
-            add_box(collection, cube, f"{role}_door_{side}_{door_index}", (1.12, 0.06, 2.15), (x, y + side * 0.018, 2.08), materials["signal_red"], root)
+            add_box(collection, cube, f"{role}_door_surround_{side}_{door_index}", (1.30, 0.058, 2.22), (x, y + side * 0.020, 2.08), materials["light_body"], root)
+            add_box(collection, cube, f"{role}_door_{side}_{door_index}", (1.08, 0.066, 2.04), (x, y + side * 0.032, 2.10), materials["anthracite"], root)
             add_box(collection, cube, f"{role}_door_window_{side}_{door_index}", (0.72, 0.07, 0.72), (x, y + side * 0.055, 2.73), materials["glass"], root)
             add_box(collection, cube, f"{role}_door_step_{side}_{door_index}", (1.05, 0.18, 0.11), (x, y + side * 0.16, 1.03), materials["steel"], root)
+            edge_x = x + (0.52 if door_index else -0.52)
+            add_box(collection, cube, f"{role}_door_edge_red_{side}_{door_index}", (0.075, 0.078, 1.72), (edge_x, y + side * 0.048, 2.13), materials["signal_red"], root)
 
         usable_start = -8.85 if not nose_negative else -6.95
         usable_end = 8.85
@@ -440,10 +486,15 @@ def add_coach_livery(
             add_box(collection, cube, f"{role}_window_warm_{side}_{window_index}", (window_width * 0.86, 0.025, 0.60), (x, y - side * 0.01, 2.84), materials["warm_glass"], root)
         for divider_index in range(1, window_count):
             x = usable_start + spacing * divider_index
-            add_box(collection, cube, f"{role}_window_divider_{side}_{divider_index}", (0.085, 0.075, 0.94), (x, y + side * 0.064, 2.87), materials["light_body"], root)
+            add_box(collection, cube, f"{role}_window_divider_{side}_{divider_index}", (0.085, 0.075, 0.94), (x, y + side * 0.064, 2.87), materials["anthracite"], root)
+
+        add_text_label(collection, f"{role}_railjet_wordmark_{side}", "railjet", (1.25, y + side * 0.082, 1.69), materials["light_body"], root, side=side, size=0.83, scale_x=1.12)
+        class_text = "1" if role in {"first", "driving_trailer"} else "2"
+        for label_index, x in enumerate(door_positions):
+            add_text_label(collection, f"{role}_class_{side}_{label_index}", class_text, (x, y + side * 0.086, 2.86), materials["light_body"], root, side=side, size=0.34)
 
     roof_mesh = roof_strip_mesh(f"{role}_roof_strip_mesh", length, nose_negative)
-    link_object(collection, f"{role}_red_roof", roof_mesh, parent=root, material=materials["railjet_red"])
+    link_object(collection, f"{role}_dark_roof", roof_mesh, parent=root, material=materials["roof"])
     add_box(collection, cube, f"{role}_underframe_spine", (length - 5.0, 1.72, 0.38), (0.35 if nose_negative else 0, 0, 0.68), materials["underframe"], root)
     for equipment_index, (x, width) in enumerate(((-5.2, 3.0), (-1.0, 2.0), (3.4, 2.8), (7.0, 1.65))):
         if nose_negative and x < -5.8:
@@ -494,7 +545,7 @@ def build_coach(
     root["vehicle_role"] = role
     root["length_m"] = COACH_LENGTH
     sections = [(-13.25, 0.94, 0.98, 0), (-12.90, 1.0, 1.0, 0), (12.90, 1.0, 1.0, 0), (13.25, 0.94, 0.98, 0)]
-    shell = loft_mesh(f"railjet_{role}_body_mesh", sections, COACH_PROFILE, materials["light_body"])
+    shell = loft_mesh(f"railjet_{role}_body_mesh", sections, COACH_PROFILE, materials["railjet_red"])
     link_object(collection, f"railjet_{role}_lofted_body", shell, parent=root)
     add_coach_livery(collection, root, cube, materials, role=role, length=COACH_LENGTH, window_count=window_count)
     add_coach_roof_equipment(collection, root, cube, materials, role)
@@ -618,8 +669,8 @@ def build_taurus(
 
     for side in (-1, 1):
         y = side * 1.515
-        add_box(collection, cube, f"taurus_side_dark_band_{side}", (13.25, 0.05, 1.12), (0, y, 2.82), materials["anthracite"], root)
-        add_box(collection, cube, f"taurus_side_lower_panel_{side}", (14.8, 0.055, 0.55), (0, y + side * 0.01, 1.25), materials["deep_red"], root)
+        add_box(collection, cube, f"taurus_side_lower_panel_{side}", (15.35, 0.055, 1.26), (0, y + side * 0.01, 1.52), materials["anthracite"], root)
+        add_box(collection, cube, f"taurus_silver_sill_{side}", (15.4, 0.062, 0.27), (0, y + side * 0.018, 0.82), materials["light_body"], root)
         for cab_sign in (-1, 1):
             add_box(collection, cube, f"taurus_side_window_{side}_{cab_sign}", (1.35, 0.064, 0.82), (cab_sign * 7.25, y + side * 0.035, 3.08), materials["glass"], root)
             add_box(collection, cube, f"taurus_cab_door_{side}_{cab_sign}", (0.78, 0.06, 1.95), (cab_sign * 6.20, y + side * 0.02, 2.12), materials["railjet_red"], root)
@@ -628,13 +679,16 @@ def build_taurus(
             x = -3.6 + vent_index * 1.42
             add_box(collection, cube, f"taurus_vent_{side}_{vent_index}", (0.92, 0.065, 0.67), (x, y + side * 0.04, 2.76), materials["roof"], root)
         sweep_vertices = [
-            (-7.0, y + side * 0.07, 1.55),
-            (7.1, y + side * 0.07, 1.20),
-            (7.1, y + side * 0.07, 1.48),
-            (-7.0, y + side * 0.07, 1.92),
+            (-7.45, y + side * 0.074, 2.24),
+            (-2.10, y + side * 0.074, 2.18),
+            (7.55, y + side * 0.074, 1.62),
+            (7.55, y + side * 0.074, 1.84),
+            (-1.90, y + side * 0.074, 2.43),
+            (-7.45, y + side * 0.074, 2.46),
         ]
-        sweep = polygon_mesh(f"taurus_sweep_{side}_mesh", sweep_vertices, materials["light_body"])
-        link_object(collection, f"taurus_light_sweep_{side}", sweep, parent=root)
+        sweep = polygon_mesh(f"taurus_sweep_{side}_mesh", sweep_vertices, materials["signal_red"])
+        link_object(collection, f"taurus_bright_red_sweep_{side}", sweep, parent=root)
+        add_text_label(collection, f"taurus_railjet_wordmark_{side}", "railjet", (0.65, y + side * 0.09, 2.82), materials["light_body"], root, side=side, size=1.02, scale_x=1.08)
 
     for front_sign in (-1, 1):
         prefix = f"taurus_cab_{front_sign}"
@@ -668,7 +722,7 @@ def build_driving_trailer(
         (-13.25, 0.42, 0.64, -0.05), (-12.72, 0.67, 0.82, -0.02), (-11.70, 0.95, 0.97, 0),
         (-10.65, 1.0, 1.0, 0), (12.90, 1.0, 1.0, 0), (13.25, 0.94, 0.98, 0),
     ]
-    shell = loft_mesh("driving_trailer_lofted_body_mesh", sections, COACH_PROFILE, materials["light_body"])
+    shell = loft_mesh("driving_trailer_lofted_body_mesh", sections, COACH_PROFILE, materials["railjet_red"])
     link_object(collection, "driving_trailer_lofted_body", shell, parent=root)
     add_coach_livery(collection, root, cube, materials, role=role, length=COACH_LENGTH, window_count=8, nose_negative=True)
     add_coach_roof_equipment(collection, root, cube, materials, role)
@@ -677,10 +731,29 @@ def build_driving_trailer(
     add_bogie(collection, root, cube, cylinder, materials, name="driving_trailer_bogie_b", x=9.5, axle_spacing=2.5, wheel_radius=0.46, bogie_width=1.92)
     add_cab_glazing(collection, root, materials, front_sign=-1, half_length=COACH_LENGTH / 2, prefix="driving_trailer_cab", wide=False)
     add_headlights(collection, root, cube, materials, front_sign=-1, half_length=COACH_LENGTH / 2, prefix="driving_trailer_cab")
-    add_box(collection, cube, "driving_trailer_nose_apron", (0.52, 1.95, 0.42), (-13.02, 0, 0.63), materials["railjet_red"], root, rotation=(0, 0.11, 0))
+    add_box(collection, cube, "driving_trailer_nose_apron", (0.52, 1.95, 0.42), (-13.02, 0, 0.63), materials["anthracite"], root, rotation=(0, 0.11, 0))
     for side in (-1, 1):
         add_box(collection, cube, f"driving_trailer_side_cab_window_{side}", (1.65, 0.064, 0.78), (-10.85, side * 1.44, 3.06), materials["glass"], root)
-        add_box(collection, cube, f"driving_trailer_cab_red_mask_{side}", (3.0, 0.052, 0.28), (-11.42, side * 1.43, 3.77), materials["railjet_red"], root)
+        cab_panel = [
+            (-13.08, side * 1.435, 0.98),
+            (-10.82, side * 1.445, 1.18),
+            (-9.30, side * 1.445, 1.78),
+            (-9.30, side * 1.445, 2.18),
+            (-11.05, side * 1.445, 1.72),
+            (-13.08, side * 1.435, 1.38),
+        ]
+        panel = polygon_mesh(f"driving_trailer_cab_graphite_{side}_mesh", cab_panel, materials["anthracite"])
+        link_object(collection, f"driving_trailer_cab_graphite_{side}", panel, parent=root)
+        cab_sweep = [
+            (-12.90, side * 1.452, 1.40),
+            (-10.95, side * 1.452, 1.70),
+            (-9.25, side * 1.452, 2.19),
+            (-9.25, side * 1.452, 2.40),
+            (-11.05, side * 1.452, 1.89),
+            (-12.90, side * 1.452, 1.62),
+        ]
+        sweep = polygon_mesh(f"driving_trailer_cab_sweep_{side}_mesh", cab_sweep, materials["signal_red"])
+        link_object(collection, f"driving_trailer_cab_bright_red_sweep_{side}", sweep, parent=root)
     add_metric_contract(collection, root)
     return root
 
@@ -857,7 +930,7 @@ def main() -> None:
         module_paths[role] = str(path.relative_to(PROJECT_ROOT))
 
     formation_root = build_formation(prototypes, assets, cube, materials)
-    formation_path = OUTPUT_DIR / "railjet-classic-blender.glb"
+    formation_path = OUTPUT_DIR / ("railjet-classic-livery-v2.glb" if LIVERY_V2_REVIEW else "railjet-classic-blender.glb")
     export_glb(formation_root, formation_path)
     add_review_environment(assets, formation_root, cube, materials)
 
@@ -867,7 +940,7 @@ def main() -> None:
     bpy.ops.wm.save_as_mainfile(filepath=str(MASTER_PATH), compress=True)
 
     manifest = {
-        "schemaVersion": 2,
+        "schemaVersion": 3 if LIVERY_V2_REVIEW else 2,
         "generator": "Blender 5.2 LTS Python API",
         "formation": "Classic ÖBB Railjet",
         "lengthMeters": round(FORMATION_LENGTH, 3),
@@ -889,7 +962,16 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "productionRailjetModified": True,
+        "liveryRevision": "reference-calibrated-v2" if LIVERY_V2_REVIEW else "production-v1",
+        "liveryReferenceNotes": {
+            "upperBody": "OEBB wine red",
+            "accent": "bright red belt and cab sweep",
+            "lowerBody": "graphite",
+            "skirt": "cool aluminium",
+            "roof": "dark graphite",
+            "lettering": "original Blender-font approximation; no copied logo artwork",
+        },
+        "productionRailjetModified": not LIVERY_V2_REVIEW,
     }
     (SOURCE_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("CORNER_RAILS_RAILJET_CLASSIC_GENERATED")

@@ -394,6 +394,34 @@ button:disabled {
   backdrop-filter: blur(14px);
 }
 
+.badge-button {
+  min-width: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.badge-button span {
+  font-size: 0.88rem;
+}
+
+.badge-button em {
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 0.55rem;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-button.active {
+  color: var(--ink);
+  background: var(--signal);
+}
+
+.badge-button.active em {
+  color: rgba(30, 43, 40, 0.72);
+}
+
 .mission-chip {
   position: absolute;
   z-index: 11;
@@ -686,11 +714,131 @@ button:disabled {
 .build-panel,
 .train-list,
 .tier-panel,
+.badges-panel,
 .save-panel,
 .help-panel {
   height: calc(100% - 69px);
   overflow-y: auto;
   padding: 16px 18px 24px;
+}
+
+.badge-summary {
+  padding: 14px;
+  border-radius: 12px;
+  color: #f5f0e2;
+  background: linear-gradient(135deg, #263f39, #172c28);
+  box-shadow: 0 10px 28px rgba(20, 39, 35, 0.14);
+}
+
+.badge-summary > span {
+  display: block;
+  color: var(--signal);
+  font-size: 0.55rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+}
+
+.badge-summary > strong {
+  display: block;
+  margin: 4px 0 8px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 1.65rem;
+}
+
+.badge-summary > div {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.badge-summary > div i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--signal);
+  transition: width 180ms ease;
+}
+
+.badge-summary p {
+  margin: 8px 0 0;
+  color: rgba(245, 240, 226, 0.68);
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.badge-grid {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.badge-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 70px;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.badge-card > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(57, 76, 71, 0.16);
+  border-radius: 50%;
+  color: #89928f;
+  background: #ebe7db;
+  font-size: 1.18rem;
+}
+
+.badge-card small {
+  display: block;
+  color: var(--rail-red);
+  font-size: 0.5rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.badge-card strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.76rem;
+}
+
+.badge-card p {
+  margin: 3px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.62rem;
+}
+
+.badge-card > b {
+  color: #909995;
+  font-size: 0.48rem;
+  letter-spacing: 0.08em;
+}
+
+.badge-card.unlocked {
+  border-color: rgba(202, 143, 27, 0.45);
+  background: linear-gradient(100deg, rgba(249, 223, 151, 0.48), rgba(255, 255, 255, 0.70));
+}
+
+.badge-card.unlocked > span {
+  border-color: rgba(202, 143, 27, 0.54);
+  background: #f7d776;
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
+.badge-card.unlocked > b {
+  color: #8a5d08;
 }
 
 .development-meter {
@@ -1820,6 +1968,7 @@ button:disabled {
   .brand h1 { font-size: 0.82rem; }
   .speed-audio { top: 10px; right: 10px; }
   .speed-control button, .icon-button { min-width: 31px; height: 31px; }
+  .badge-button { min-width: 48px; }
   .hud {
     top: 50px;
     left: 10px;

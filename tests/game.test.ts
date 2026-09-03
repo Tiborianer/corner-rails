@@ -5,10 +5,12 @@ import path from "node:path";
 import { readFile, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import sharp from "sharp";
-import { LENGTH_COSTS, PLATFORM_COSTS, TRAINS, createInitialState } from "../app/game/data";
+import { LENGTH_COSTS, PLATFORM_COSTS, TIER_COSTS, TRAINS, createInitialState } from "../app/game/data";
+import { BADGES } from "../app/game/badges";
 import { decodeSave, encodeSave } from "../app/game/save";
 import {
   canPurchase,
+  awardBadges,
   cleanStation,
   cleaningCost,
   chooseTrainFormationOrientation,
@@ -97,6 +99,14 @@ describe("Corner Rails economy and progression", () => {
     expect(LENGTH_COSTS).toEqual([30, 90, 1_200, 7_500]);
   });
 
+  it("keeps the Tier 1 station upgrade at exactly 500 coins", () => {
+    expect(TIER_COSTS).toEqual([500, 2_000, 8_000, 30_000]);
+    const ready = { ...fundedState(), upgradesUsed: 3 };
+    const tiered = tierUp(ready);
+    expect(tiered.tier).toBe(2);
+    expect(tiered.coins).toBe(99_500);
+  });
+
   it("counts systems and structure against the same three-use cap", () => {
     let state = fundedState();
     state = purchaseUpgrade(state, { kind: "platform" });
@@ -110,7 +120,7 @@ describe("Corner Rails economy and progression", () => {
   });
 
   it("removes the development cap at Tier 5", () => {
-    let state = { ...fundedState(), tier: 5 as const, upgradesUsed: 3 };
+    let state: GameState = { ...fundedState(), tier: 5, upgradesUsed: 3 };
     state = purchaseUpgrade(state, { kind: "platform" });
     state = purchaseUpgrade(state, { kind: "length" });
     state = purchaseUpgrade(state, { kind: "system", system: "electrification" });
@@ -118,6 +128,62 @@ describe("Corner Rails economy and progression", () => {
     expect(state.lengthLevel).toBe(2);
     expect(state.systems.electrification).toBe(true);
     expect(state.upgradesUsed).toBe(3);
+  });
+});
+
+describe("badges", () => {
+  it("defines twelve unique achievements with short clues", () => {
+    expect(BADGES).toHaveLength(12);
+    expect(new Set(BADGES.map((badge) => badge.id)).size).toBe(12);
+    expect(BADGES.every((badge) => badge.clue.length <= 45)).toBe(true);
+  });
+
+  it("awards milestone and difficult badges from real game state", () => {
+    const previous = fundedState();
+    const completed = {
+      ...previous,
+      tier: 5 as const,
+      platforms: 5,
+      lengthLevel: 5,
+      systems: Object.fromEntries(Object.keys(previous.systems).map((key) => [key, true])) as GameState["systems"],
+      weather: "thunderstorm" as const,
+      lifetimeCoins: 1_000_000,
+      cleanedFromCritical: true,
+      stormNightjetServed: true,
+      prestige: 3,
+      boosts: [{ id: "badge-test", label: "Badge test", amount: 20, remaining: 60 }],
+      servedTrainIds: TRAINS.map((train) => train.id),
+      platformLanes: Array.from({ length: 5 }, (_, platformIndex) => ({
+        platformIndex,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: TRAINS[platformIndex].id,
+          phase: "dwell" as const,
+          phaseElapsed: 1,
+          phaseDuration: 10,
+          payout: 10,
+          firstService: false,
+        },
+      })),
+    };
+    const awarded = awardBadges(previous, completed);
+    expect(awarded.unlockedBadges).toHaveLength(BADGES.length);
+    expect(new Set(awarded.unlockedBadges)).toEqual(new Set(BADGES.map((badge) => badge.id)));
+  });
+
+  it("keeps badges through prestige and save-code round trips", () => {
+    const state = {
+      ...fundedState(),
+      unlockedBadges: ["grand-terminus", "storm-watcher"] as GameState["unlockedBadges"],
+      servedTrainIds: ["nightjet", "ice-s"],
+      cleanedFromCritical: true,
+      stormNightjetServed: true,
+    };
+    const restored = decodeSave(encodeSave(state));
+    expect(restored.unlockedBadges).toEqual(state.unlockedBadges);
+    expect(restored.servedTrainIds).toEqual(state.servedTrainIds);
+    expect(restored.cleanedFromCritical).toBe(true);
+    expect(restored.stormNightjetServed).toBe(true);
   });
 });
 
@@ -1326,6 +1392,40 @@ describe("per-train Blender approval laboratory", () => {
 });
 
 describe("production metric railway and Railjet registry", () => {
+  it("ships two private reference-livery Railjet candidates without changing production", async () => {
+    const io = new NodeIO();
+    const candidates = [
+      { id: "railjet-classic-livery-v2" as const, length: 205.375, vehicles: 8 },
+      { id: "railjet-nextgen-livery-v2" as const, length: 258, vehicles: 10 },
+    ];
+    for (const candidate of candidates) {
+      const record = TRAIN_REVIEW_CANDIDATES[candidate.id];
+      const modelPath = path.resolve("public", record.assetPath.slice(1));
+      const document = await io.read(modelPath);
+      const root = document.getRoot();
+      const nodeNames = root.listNodes().map((node) => node.getName());
+      const materialNames = root.listMaterials().map((material) => material.getName());
+      const bounds = getBounds(root.listScenes()[0]);
+      expect(record).toMatchObject({ approvalStatus: "private-review", vehicleCount: candidate.vehicles, nominalLengthMeters: candidate.length });
+      expect(materialNames).toEqual(expect.arrayContaining(["RJ_Wine_Red", "RJ_Bright_Red", "RJ_Graphite", "RJ_Aluminium", "RJ_Smoked_Glass"]));
+      expect(nodeNames.some((name) => name.includes("red_belt"))).toBe(true);
+      expect(nodeNames.some((name) => name.includes("silver_skirt"))).toBe(true);
+      expect(nodeNames.some((name) => name.includes("railjet_wordmark"))).toBe(true);
+      expect(nodeNames.some((name) => name.includes("window_band") || name.includes("window_ribbon"))).toBe(false);
+      expect(bounds.max[0] - bounds.min[0]).toBeGreaterThan(candidate.length - 0.1);
+      expect(bounds.max[0] - bounds.min[0]).toBeLessThan(candidate.length + 0.3);
+      expect((await stat(modelPath)).size).toBeLessThan(500_000);
+
+      const manifest = JSON.parse(await readFile(path.resolve("assets/blender", candidate.id, "manifest.json"), "utf8"));
+      expect(manifest).toMatchObject({ schemaVersion: 3, vehicleCount: candidate.vehicles, liveryRevision: "reference-calibrated-v2", productionRailjetModified: false });
+    }
+
+    const digest = async (file: string) => createHash("sha256").update(await readFile(path.resolve(file))).digest("hex");
+    expect(await digest("public/models/trains/blender/railjet/railjet-classic-blender.glb")).toBe("d1f489c7e6562051dba5e156a868e8b437bf95864e2070409bfab74ed1df9383");
+    expect(await digest("public/models/trains/blender/railjet/railjet-nextgen-blender.glb")).toBe("c054832ca766eee16dd4592d69d4ba42d0867bf963ab8f705e63dea8e75c49cc");
+    expect(await digest("public/models/trains/railjet.glb")).toBe("9b0bdff278461f9ad9fe35378679e8e82c31839bcdc487bda53a159175f9503e");
+  });
+
   it("defines the complete production railway contract and calculated five-lane layout", () => {
     expect(RAILWAY_METRIC_PROFILE).toMatchObject({
       metersToWorld: 0.071,

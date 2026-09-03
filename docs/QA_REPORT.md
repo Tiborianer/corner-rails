@@ -176,6 +176,12 @@ The local private route passed stationary day/night/rain, stopping/pass controls
 - [ICE 3 unified emissive lenses and headlight beams](../qa/train-review/ice3-br403-v2-unified/ice3-br403-v2-unified-night-headlights.jpg)
 
 The user approved I3 U for production on 2026-09-02. Normal gameplay now resolves the Tier 4 `ice3` service to the 200.32 m metric Class 403 GLB, preserves that visual ID in manual save codes, and migrates older active ICE 3 saves to it. The production renderer uses the approved single moving headlight beam and the laboratory-style warm directional platform fill with tightly bounded local point lights. The former `public/models/trains/ice3.glb` remains untouched for rollback.
+
+## 2026-09-03 Railjet livery V2 and badge collection
+
+The private train-review laboratory now includes separate classic and new-generation Railjet livery V2 candidates. Their geometry is unchanged; the review pass corrects the external colour hierarchy to a wine-red upper body, bright-red belt, graphite lower flank and aluminium skirt while preserving generation-specific doors, windows and driving ends. The normal game continues loading the previously approved production Railjet files until the user explicitly approves these recolours.
+
+The normal game now contains twelve persistent badges spanning approachable milestones and difficult long-term challenges. A compact medal counter opens a collection drawer with a short clue, difficulty and unlocked state. Award checks use real simulation state, survive prestige and `CR1` export/import, and deliberately ignore debug-bar mutations. Regression coverage also locks the Tier 1→2 station cost at exactly 500 coins. The complete Vitest suite now contains 73 passing checks.
 - [Production Nightjet with Taurus leading](../qa/production-nightjet-taurus-leading.png)
 - [Rare production Nightjet with cab car leading](../qa/production-nightjet-cab-car-leading.png)
 - [Production Nightjet mobile layout](../qa/production-nightjet-mobile.png)

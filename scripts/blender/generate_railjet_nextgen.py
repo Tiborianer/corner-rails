@@ -23,9 +23,10 @@ if SPEC is None or SPEC.loader is None:
 common = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(common)
 
-SOURCE_DIR = PROJECT_ROOT / "assets" / "blender" / "railjet-nextgen"
-OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / "trains" / "blender" / "railjet"
-MASTER_PATH = SOURCE_DIR / "railjet-nextgen-master.blend"
+LIVERY_V2_REVIEW = common.LIVERY_V2_REVIEW
+SOURCE_DIR = PROJECT_ROOT / "assets" / "blender" / ("railjet-nextgen-livery-v2" if LIVERY_V2_REVIEW else "railjet-nextgen")
+OUTPUT_DIR = PROJECT_ROOT / "public" / "models" / ("train-lab/railjet-nextgen-livery-v2" if LIVERY_V2_REVIEW else "trains/blender/railjet")
+MASTER_PATH = SOURCE_DIR / ("railjet-nextgen-livery-v2-master.blend" if LIVERY_V2_REVIEW else "railjet-nextgen-master.blend")
 
 LOCOMOTIVE_LENGTH = 19.28
 FORMATION_GAP = 0.085
@@ -35,6 +36,7 @@ COACH_WIDTH = 2.825
 
 OFFICIAL_SOURCES = (
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
+    "https://www.oebb.at/de/reiseplanung-services/im-zug/unsere-zuege/railjet",
     "https://press.siemens.com/global/en/pressrelease/obb-puts-first-new-generation-railjet-siemens-mobility-service-and-orders-19-more",
     "https://www.mobility.siemens.com/global/en/portfolio/references/railjet.html",
     "https://konzern.oebb.at/de/dam/jcr%3A9a8a8bc6-35bd-4dc5-9cc0-fc4470742bcf/OEBB-Umsetzungsplan%202025-2030.pdf",
@@ -88,15 +90,17 @@ def add_nextgen_livery(
 
     for side in (-1, 1):
         y = side * (COACH_WIDTH / 2 + 0.014)
-        common.add_box(collection, cube, f"{role}_black_window_ribbon_{side}", (band_length, 0.045, 1.18), (center, y, 2.91), materials["anthracite"], root)
-        common.add_box(collection, cube, f"{role}_silver_flank_{side}", (band_length + 0.18, 0.05, 0.68), (center, y + side * 0.006, 1.73), materials["light_body"], root)
-        common.add_box(collection, cube, f"{role}_dark_skirt_{side}", (band_length + 0.26, 0.055, 0.52), (center, y + side * 0.012, 1.02), materials["anthracite"], root)
-        common.add_box(collection, cube, f"{role}_red_sill_{side}", (band_length + 0.12, 0.06, 0.20), (center, y + side * 0.018, 1.43), materials["signal_red"], root)
+        # Current Viaggio Next Level photography shows individual dark panes
+        # in the wine-red upper body, not a coach-length black window ribbon.
+        common.add_box(collection, cube, f"{role}_graphite_flank_{side}", (band_length + 0.18, 0.052, 1.30), (center, y + side * 0.006, 1.70), materials["anthracite"], root)
+        common.add_box(collection, cube, f"{role}_silver_skirt_{side}", (band_length + 0.24, 0.056, 0.56), (center, y + side * 0.012, 0.95), materials["light_body"], root)
+        common.add_box(collection, cube, f"{role}_red_belt_{side}", (band_length + 0.12, 0.062, 0.19), (center, y + side * 0.018, 2.36), materials["signal_red"], root)
 
         for door_index, x in enumerate(door_positions):
             door_bottom = 0.83 if low_floor else 1.08
             door_height = 2.48 if low_floor else 2.18
-            common.add_box(collection, cube, f"{role}_wide_door_{side}_{door_index}", (1.30, 0.07, door_height), (x, y + side * 0.028, door_bottom + door_height / 2), materials["signal_red"], root)
+            common.add_box(collection, cube, f"{role}_door_surround_{side}_{door_index}", (1.52, 0.068, door_height + 0.14), (x, y + side * 0.026, door_bottom + door_height / 2), materials["light_body"], root)
+            common.add_box(collection, cube, f"{role}_wide_door_{side}_{door_index}", (1.27, 0.078, door_height), (x, y + side * 0.042, door_bottom + door_height / 2), materials["anthracite"], root)
             common.add_box(collection, cube, f"{role}_door_glass_{side}_{door_index}", (0.86, 0.082, 0.84), (x, y + side * 0.072, 2.67), materials["glass"], root)
             common.add_box(collection, cube, f"{role}_door_step_{side}_{door_index}", (1.22, 0.21, 0.10), (x, y + side * 0.18, door_bottom - 0.02), materials["steel"], root)
 
@@ -106,10 +110,15 @@ def add_nextgen_livery(
             common.add_box(collection, cube, f"{role}_window_warm_{side}_{index}", (window_width * 0.84, 0.026, 0.59), (x, y - side * 0.012, 2.90), materials["warm_glass"], root)
         for divider_index in range(1, window_count):
             x = usable_start + spacing * divider_index
-            common.add_box(collection, cube, f"{role}_window_divider_{side}_{divider_index}", (0.082, 0.082, 0.96), (x, y + side * 0.071, 2.94), materials["light_body"], root)
+            common.add_box(collection, cube, f"{role}_window_divider_{side}_{divider_index}", (0.082, 0.082, 0.96), (x, y + side * 0.071, 2.94), materials["anthracite"], root)
+
+        common.add_text_label(collection, f"{role}_railjet_wordmark_{side}", "railjet", (1.45, y + side * 0.092, 1.78), materials["light_body"], root, side=side, size=0.83, scale_x=1.12)
+        class_text = "1" if role == "first" else "2"
+        for label_index, x in enumerate(door_positions):
+            common.add_text_label(collection, f"{role}_class_{side}_{label_index}", class_text, (x, y + side * 0.096, 2.72), materials["light_body"], root, side=side, size=0.36)
 
     roof_mesh = nextgen_roof_strip_mesh(f"{role}_nextgen_roof_mesh", driving=driving)
-    common.link_object(collection, f"{role}_red_roof", roof_mesh, parent=root, material=materials["railjet_red"])
+    common.link_object(collection, f"{role}_dark_roof", roof_mesh, parent=root, material=materials["roof"])
     common.add_box(collection, cube, f"{role}_underframe_spine", (COACH_LENGTH - 4.8, 1.72, 0.34), (0.3 if driving else 0, 0, 0.58), materials["underframe"], root)
     for index, (x, width) in enumerate(((-6.2, 2.4), (-2.2, 2.5), (2.1, 2.2), (6.2, 2.7))):
         if driving and x < -5.5:
@@ -139,7 +148,7 @@ def build_nextgen_coach(
         (COACH_LENGTH / 2 - 0.35, 1.0, 1.0, 0),
         (COACH_LENGTH / 2, 0.94, 0.98, 0),
     ]
-    shell = common.loft_mesh(f"{variant}_nextgen_body_mesh", sections, NEXTGEN_PROFILE, materials["light_body"])
+    shell = common.loft_mesh(f"{variant}_nextgen_body_mesh", sections, NEXTGEN_PROFILE, materials["railjet_red"])
     common.link_object(collection, f"{variant}_lofted_body", shell, parent=root)
     add_nextgen_livery(collection, root, cube, materials, role=variant, window_count=window_count, low_floor=low_floor)
     common.add_coach_roof_equipment(collection, root, cube, materials, variant)
@@ -178,7 +187,7 @@ def build_nextgen_driving_trailer(
         (-half + 3.30, 1.0, 1.0, 0), (half - 0.35, 1.0, 1.0, 0),
         (half, 0.94, 0.98, 0),
     ]
-    shell = common.loft_mesh("nextgen_driving_trailer_body_mesh", sections, NEXTGEN_PROFILE, materials["light_body"])
+    shell = common.loft_mesh("nextgen_driving_trailer_body_mesh", sections, NEXTGEN_PROFILE, materials["railjet_red"])
     common.link_object(collection, "nextgen_driving_trailer_lofted_body", shell, parent=root)
     add_nextgen_livery(collection, root, cube, materials, role=role, window_count=8, low_floor=True, driving=True)
     common.add_coach_roof_equipment(collection, root, cube, materials, role)
@@ -188,10 +197,29 @@ def build_nextgen_driving_trailer(
 
     common.add_cab_glazing(collection, root, materials, front_sign=-1, half_length=half, prefix="nextgen_driving_cab", wide=True)
     common.add_headlights(collection, root, cube, materials, front_sign=-1, half_length=half, prefix="nextgen_driving_cab")
-    common.add_box(collection, cube, "nextgen_driving_red_apron", (0.52, 2.12, 0.45), (-half + 0.18, 0, 0.60), materials["signal_red"], root, rotation=(0, 0.10, 0))
+    common.add_box(collection, cube, "nextgen_driving_graphite_apron", (0.52, 2.12, 0.45), (-half + 0.18, 0, 0.60), materials["anthracite"], root, rotation=(0, 0.10, 0))
     for side in (-1, 1):
         common.add_box(collection, cube, f"nextgen_driving_side_window_{side}", (1.75, 0.07, 0.82), (-half + 2.62, side * 1.43, 3.12), materials["glass"], root)
-        common.add_box(collection, cube, f"nextgen_driving_red_cab_arc_{side}", (3.5, 0.06, 0.26), (-half + 2.05, side * 1.45, 3.82), materials["signal_red"], root)
+        cab_panel = [
+            (-half + 0.18, side * 1.445, 0.92),
+            (-half + 2.60, side * 1.457, 1.12),
+            (-half + 4.10, side * 1.457, 1.88),
+            (-half + 4.10, side * 1.457, 2.28),
+            (-half + 2.68, side * 1.457, 1.68),
+            (-half + 0.18, side * 1.445, 1.32),
+        ]
+        panel = common.polygon_mesh(f"nextgen_driving_graphite_cab_{side}_mesh", cab_panel, materials["anthracite"])
+        common.link_object(collection, f"nextgen_driving_graphite_cab_{side}", panel, parent=root)
+        cab_sweep = [
+            (-half + 0.28, side * 1.468, 1.34),
+            (-half + 2.72, side * 1.468, 1.70),
+            (-half + 4.35, side * 1.468, 2.31),
+            (-half + 4.35, side * 1.468, 2.54),
+            (-half + 2.65, side * 1.468, 1.93),
+            (-half + 0.28, side * 1.468, 1.58),
+        ]
+        sweep = common.polygon_mesh(f"nextgen_driving_red_sweep_{side}_mesh", cab_sweep, materials["signal_red"])
+        common.link_object(collection, f"nextgen_driving_bright_red_sweep_{side}", sweep, parent=root)
     common.add_metric_contract(collection, root)
     return root
 
@@ -264,7 +292,7 @@ def main() -> None:
         module_paths[variant] = str(path.relative_to(PROJECT_ROOT))
 
     formation_root = build_formation(prototypes, assets, cube, materials)
-    formation_path = OUTPUT_DIR / "railjet-nextgen-blender.glb"
+    formation_path = OUTPUT_DIR / ("railjet-nextgen-livery-v2.glb" if LIVERY_V2_REVIEW else "railjet-nextgen-blender.glb")
     common.export_glb(formation_root, formation_path)
     common.add_review_environment(assets, formation_root, cube, materials)
     prototypes_collection.hide_viewport = True
@@ -273,7 +301,7 @@ def main() -> None:
     bpy.ops.wm.save_as_mainfile(filepath=str(MASTER_PATH), compress=True)
 
     manifest = {
-        "schemaVersion": 2,
+        "schemaVersion": 3 if LIVERY_V2_REVIEW else 2,
         "generator": "Blender 5.2 LTS Python API",
         "formation": "ÖBB Railjet new generation",
         "lengthMeters": FORMATION_LENGTH,
@@ -296,7 +324,17 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "productionRailjetModified": True,
+        "liveryRevision": "reference-calibrated-v2" if LIVERY_V2_REVIEW else "production-v1",
+        "liveryReferenceNotes": {
+            "upperBody": "OEBB wine red",
+            "accent": "bright red belt and driving-cab sweep",
+            "lowerBody": "graphite",
+            "skirt": "cool aluminium",
+            "roof": "dark graphite",
+            "doorSurround": "cool aluminium",
+            "lettering": "original Blender-font approximation; no copied logo artwork",
+        },
+        "productionRailjetModified": not LIVERY_V2_REVIEW,
     }
     (SOURCE_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("CORNER_RAILS_RAILJET_NEXTGEN_GENERATED")

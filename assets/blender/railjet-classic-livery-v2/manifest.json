@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 3,
+  "generator": "Blender 5.2 LTS Python API",
+  "formation": "Classic \u00d6BB Railjet",
+  "lengthMeters": 205.375,
+  "vehicleCount": 8,
+  "consist": [
+    "taurus",
+    "economy",
+    "economy",
+    "economy",
+    "economy",
+    "restaurant",
+    "first",
+    "driving-trailer"
+  ],
+  "masterBlend": "assets/blender/railjet-classic-livery-v2/railjet-classic-livery-v2-master.blend",
+  "formationGlb": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-livery-v2.glb",
+  "moduleGlbs": {
+    "taurus": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-taurus.glb",
+    "economy": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-economy.glb",
+    "restaurant": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-restaurant.glb",
+    "first": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-first.glb",
+    "driving_trailer": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-driving-trailer.glb"
+  },
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "railContactPlaneZ": 0.0,
+    "railContactAnchor": "rail_contact_origin",
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "pantographContactHeightMeters": 5.5,
+    "calibrationTrackExported": false
+  },
+  "sources": [
+    "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
+    "https://www.oebb.at/de/reiseplanung-services/im-zug/unsere-zuege/railjet",
+    "https://data.oebb.at/dam/jcr%3A1e0c5a41-5293-439a-bed9-4f160d8aa1da/tfz1116.pdf",
+    "https://static.dc.siemens.com/mobility/webfeature/green-mobility/files/brochure/viaggio-comfort-en.pdf"
+  ],
+  "liveryRevision": "reference-calibrated-v2",
+  "liveryReferenceNotes": {
+    "upperBody": "OEBB wine red",
+    "accent": "bright red belt and cab sweep",
+    "lowerBody": "graphite",
+    "skirt": "cool aluminium",
+    "roof": "dark graphite",
+    "lettering": "original Blender-font approximation; no copied logo artwork"
+  },
+  "productionRailjetModified": false
+}

@@ -272,7 +272,7 @@ function SegmentedControl<T extends string>({ label, value, options, onChange }:
 }
 
 export default function TrainReviewLab({ initialState }: { initialState: TrainReviewLabInitialState }) {
-  const candidate = TRAIN_REVIEW_CANDIDATES[initialState.candidateId];
+  const candidate: TrainReviewCandidate = TRAIN_REVIEW_CANDIDATES[initialState.candidateId];
   const [motion, setMotion] = useState(initialState.motion);
   const [atmosphere, setAtmosphere] = useState(initialState.atmosphere);
   const [scale, setScale] = useState(initialState.scale);

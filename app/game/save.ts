@@ -1,4 +1,5 @@
-import { createInitialState } from "./data";
+import { createInitialState, TRAINS } from "./data";
+import { isBadgeId } from "./badges";
 import type { ActiveTrain, GameState, PlatformLane } from "./types";
 
 function checksum(input: string): string {
@@ -89,6 +90,11 @@ export function decodeSave(code: string): GameState {
     rainRemaining?: number;
   };
   const defaults = createInitialState(legacy.prestige ?? 0);
+  const knownTrainIds = new Set(TRAINS.map((train) => train.id));
+  const servedTrainIds = Array.isArray(legacy.servedTrainIds)
+    ? [...new Set(legacy.servedTrainIds.filter((trainId): trainId is string => typeof trainId === "string" && knownTrainIds.has(trainId)))]
+    : [];
+  const unlockedBadges = Array.isArray(legacy.unlockedBadges) ? legacy.unlockedBadges.filter(isBadgeId) : [];
   const weather = legacy.weather === "rain" || legacy.weather === "thunderstorm" || legacy.weather === "clear"
     ? legacy.weather
     : legacy.raining ? "rain" : "clear";
@@ -122,6 +128,10 @@ export function decodeSave(code: string): GameState {
     ...serializableParsed,
     systems: { ...defaults.systems, ...parsed.systems },
     platformLanes,
+    servedTrainIds,
+    unlockedBadges: [...new Set(unlockedBadges)],
+    cleanedFromCritical: legacy.cleanedFromCritical === true,
+    stormNightjetServed: legacy.stormNightjetServed === true,
     weather,
     weatherRemaining,
     nextLightningIn: typeof legacy.nextLightningIn === "number" ? Math.max(0, legacy.nextLightningIn) : 0,

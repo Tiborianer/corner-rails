@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { AudioBus } from "./game/audio";
+import { BADGES } from "./game/badges";
 import {
   LENGTH_COSTS,
   MISSIONS,
@@ -23,6 +24,7 @@ import { decodeSave, encodeSave } from "./game/save";
 import {
   DEVELOPMENT_CAP,
   SEASONS,
+  awardBadges,
   canPurchase,
   claimMission,
   cleanStation,
@@ -100,29 +102,41 @@ type Action =
   | { type: "toast"; message: string | null };
 
 function reducer(state: GameState, action: Action): GameState {
+  let next: GameState;
   switch (action.type) {
     case "tick":
-      return tickGame(state, action.delta);
+      next = tickGame(state, action.delta);
+      break;
     case "select-region":
-      return selectRegion(state);
+      next = selectRegion(state);
+      break;
     case "place-platform":
-      return placeFreePlatform(state);
+      next = placeFreePlatform(state);
+      break;
     case "purchase":
-      return purchaseUpgrade(state, action.upgrade);
+      next = purchaseUpgrade(state, action.upgrade);
+      break;
     case "undo":
-      return undoLastUpgrade(state);
+      next = undoLastUpgrade(state);
+      break;
     case "tier-up":
-      return tierUp(state);
+      next = tierUp(state);
+      break;
     case "clean":
-      return cleanStation(state);
+      next = cleanStation(state);
+      break;
     case "speed":
-      return setSpeed(state, action.speed);
+      next = setSpeed(state, action.speed);
+      break;
     case "claim-mission":
-      return claimMission(state);
+      next = claimMission(state);
+      break;
     case "event":
-      return triggerEvent(state, action.eventId);
+      next = triggerEvent(state, action.eventId);
+      break;
     case "prestige":
-      return prestigeStation(state);
+      next = prestigeStation(state);
+      break;
     case "debug":
       return debugState(state, action.mode);
     case "import":
@@ -130,6 +144,7 @@ function reducer(state: GameState, action: Action): GameState {
     case "toast":
       return { ...state, toast: action.message };
   }
+  return awardBadges(state, next);
 }
 
 function formatCoins(value: number) {
@@ -210,7 +225,7 @@ function Metric({ icon, label, value, tone, children }: { icon: string; label: s
 
 export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?: boolean }) {
   const [state, dispatch] = useReducer(reducer, undefined, () => createInitialState());
-  const [drawer, setDrawer] = useState<"build" | "trains" | "tier" | "save" | "help" | null>(null);
+  const [drawer, setDrawer] = useState<"build" | "trains" | "tier" | "badges" | "save" | "help" | null>(null);
   const [confirmUpgrade, setConfirmUpgrade] = useState<UpgradeAction | null>(null);
   const [importCode, setImportCode] = useState("");
   const [saveCode, setSaveCode] = useState("");
@@ -295,6 +310,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
       if (event.key === "1" || event.key === "2" || event.key === "3") dispatch({ type: "speed", speed: Number(event.key) as 1 | 2 | 3 });
       if (event.key.toLowerCase() === "b") setDrawer((current) => current === "build" ? null : "build");
       if (event.key.toLowerCase() === "r") setDrawer((current) => current === "trains" ? null : "trains");
+      if (event.key.toLowerCase() === "a") setDrawer((current) => current === "badges" ? null : "badges");
       if (event.key === "Escape") {
         setDrawer(null);
         setConfirmUpgrade(null);
@@ -390,6 +406,9 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
               <button key={speed} className={state.speed === speed ? "active" : ""} onClick={() => dispatch({ type: "speed", speed: speed as 1 | 2 | 3 })}>{speed}×</button>
             ))}
           </div>
+          <button className={`icon-button badge-button ${drawer === "badges" ? "active" : ""}`} onClick={() => setDrawer(drawer === "badges" ? null : "badges")} aria-label={`Badges: ${state.unlockedBadges.length} of ${BADGES.length} unlocked`}>
+            <span aria-hidden="true">🏅</span><em>{state.unlockedBadges.length}/{BADGES.length}</em>
+          </button>
           <button className="icon-button" onClick={toggleAudio} aria-label={muted ? "Turn sound on" : "Mute sound"}>{muted ? "🔇" : "🔊"}</button>
           <button className="icon-button" onClick={() => setDrawer("help")} aria-label="Help">?</button>
         </div>
@@ -452,7 +471,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
       {drawer && state.region && (
         <aside className={`drawer drawer-${drawer}`} aria-label={`${drawer} panel`}>
           <div className="drawer-head">
-            <div><small>STATION CONTROL</small><h2>{drawer === "build" ? "Develop" : drawer === "trains" ? "Train requirements" : drawer === "tier" ? "Tier progression" : drawer === "save" ? "Manual save" : "How to play"}</h2></div>
+            <div><small>STATION CONTROL</small><h2>{drawer === "build" ? "Develop" : drawer === "trains" ? "Train requirements" : drawer === "tier" ? "Tier progression" : drawer === "badges" ? "Badges" : drawer === "save" ? "Manual save" : "How to play"}</h2></div>
             <button onClick={() => setDrawer(null)} aria-label="Close panel">×</button>
           </div>
 
@@ -532,6 +551,29 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
             </div>
           )}
 
+          {drawer === "badges" && (
+            <div className="badges-panel">
+              <div className="badge-summary">
+                <span>COLLECTION</span>
+                <strong>{state.unlockedBadges.length}/{BADGES.length}</strong>
+                <div><i style={{ width: `${(state.unlockedBadges.length / BADGES.length) * 100}%` }} /></div>
+                <p>Badges stay unlocked when you prestige and are included in save codes.</p>
+              </div>
+              <div className="badge-grid">
+                {BADGES.map((badge) => {
+                  const unlocked = state.unlockedBadges.includes(badge.id);
+                  return (
+                    <article key={badge.id} className={`badge-card ${unlocked ? "unlocked" : "locked"}`}>
+                      <span aria-hidden="true">{unlocked ? badge.icon : "◇"}</span>
+                      <div><small>{badge.difficulty}</small><strong>{badge.name}</strong><p>{badge.clue}</p></div>
+                      <b>{unlocked ? "UNLOCKED" : "LOCKED"}</b>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {drawer === "save" && (
             <div className="save-panel">
               <p>Corner Rails never saves automatically. Copy this code before closing the page; importing it grants no offline earnings.</p>
@@ -549,7 +591,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
                 <li><b>2</b><div><strong>Welcome the first train</strong><p>Trains arrive automatically. Keep the station clean to protect its rating.</p></div></li>
                 <li><b>3</b><div><strong>Develop three times, then tier up</strong><p>Every permanent purchase uses a shared slot until Tier 5. Better infrastructure attracts better trains.</p></div></li>
               </ol>
-              <p className="keyboard-note"><kbd>B</kbd> Build · <kbd>R</kbd> Trains · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Speed · <kbd>Esc</kbd> Close</p>
+              <p className="keyboard-note"><kbd>B</kbd> Build · <kbd>R</kbd> Trains · <kbd>A</kbd> Badges · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Speed · <kbd>Esc</kbd> Close</p>
             </div>
           )}
         </aside>

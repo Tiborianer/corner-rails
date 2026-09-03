@@ -8,8 +8,10 @@ import {
   TRAINS,
   createInitialState,
 } from "./data";
+import { BADGES } from "./badges";
 import type {
   ActiveTrain,
+  BadgeId,
   GameState,
   MissionState,
   SystemId,
@@ -108,6 +110,62 @@ export function stationRating(state: GameState): number {
   return Math.round(
     clamp(permanent + state.cleanliness * 0.2 + temporary - weatherRatingPenalty(state.weather), 0, 100),
   );
+}
+
+function hasCompletedEveryDevelopment(state: GameState): boolean {
+  return (
+    state.tier === 5 &&
+    state.platforms === 5 &&
+    state.lengthLevel === 5 &&
+    Object.values(state.systems).every(Boolean)
+  );
+}
+
+function meetsBadgeRequirement(id: BadgeId, previous: GameState, state: GameState): boolean {
+  const scheduledIds = TRAINS.filter((train) => train.kind === "scheduled").map((train) => train.id);
+  switch (id) {
+    case "grand-terminus":
+      return state.tier === 5;
+    case "storm-watcher":
+      return state.weather === "thunderstorm" || state.lightningStrikeId > 0;
+    case "midnight-arrival":
+      return state.servedTrainIds.includes("nightjet");
+    case "perfect-score":
+      return stationRating(state) === 100;
+    case "rush-hour":
+      return Math.max(
+        previous.platformLanes.filter((lane) => lane.activeTrain).length,
+        state.platformLanes.filter((lane) => lane.activeTrain).length,
+      ) >= 5;
+    case "clean-comeback":
+      return state.cleanedFromCritical;
+    case "millionaire":
+      return state.lifetimeCoins >= 1_000_000;
+    case "master-engineer":
+      return hasCompletedEveryDevelopment(state);
+    case "event-curator":
+      return state.servedTrainIds.includes("ice-s") && state.servedTrainIds.includes("br01");
+    case "complete-timetable":
+      return scheduledIds.every((trainId) => state.servedTrainIds.includes(trainId));
+    case "storm-sleeper":
+      return state.stormNightjetServed;
+    case "triple-prestige":
+      return state.prestige >= 3;
+  }
+}
+
+/** Apply achievement rules after a normal game transition. Debug actions skip
+ * this helper in the UI reducer so the testing bar cannot award real badges. */
+export function awardBadges(previous: GameState, state: GameState): GameState {
+  const unlocked = new Set(state.unlockedBadges);
+  const newlyUnlocked = BADGES.filter((badge) => !unlocked.has(badge.id) && meetsBadgeRequirement(badge.id, previous, state));
+  if (newlyUnlocked.length === 0) return state;
+  newlyUnlocked.forEach((badge) => unlocked.add(badge.id));
+  return {
+    ...state,
+    unlockedBadges: [...unlocked],
+    toast: `🏅 Badge unlocked: ${newlyUnlocked[0].name}${newlyUnlocked.length > 1 ? ` · +${newlyUnlocked.length - 1} more` : ""}`,
+  };
 }
 
 export function ratingMultiplier(rating: number): number {
@@ -274,6 +332,8 @@ function completeTrain(state: GameState, platformIndex: number, active: ActiveTr
     cleanliness: clamp(state.cleanliness - dirt, 0, 100),
     firstTrainComplete: true,
     arrivals: state.arrivals + 1,
+    servedTrainIds: state.servedTrainIds.includes(train.id) ? state.servedTrainIds : [...state.servedTrainIds, train.id],
+    stormNightjetServed: state.stormNightjetServed || (train.id === "nightjet" && state.weather === "thunderstorm"),
     boosts: state.boosts,
     toast: train.kind === "event"
       ? `Platform ${platformIndex + 1}: ${train.name} completed its run-through · +${active.payout.toLocaleString()} coins`
@@ -586,7 +646,13 @@ export function cleanStation(state: GameState): GameState {
   if (cost === 0) return { ...state, toast: "The station is already spotless." };
   if (state.coins < cost) return { ...state, toast: `Need ${(cost - state.coins).toLocaleString()} more coins to clean.` };
   return incrementMission(
-    { ...state, coins: state.coins - cost, cleanliness: 100, toast: `Station cleaned · −${cost.toLocaleString()} coins` },
+    {
+      ...state,
+      coins: state.coins - cost,
+      cleanliness: 100,
+      cleanedFromCritical: state.cleanedFromCritical || state.cleanliness <= 20,
+      toast: `Station cleaned · −${cost.toLocaleString()} coins`,
+    },
     "clean",
   );
 }
@@ -622,7 +688,12 @@ export function triggerEvent(state: GameState, eventId: "ice-s" | "br01"): GameS
 export function prestigeStation(state: GameState): GameState {
   if (state.tier < 5) return { ...state, toast: "Reach Tier 5 before prestiging." };
   const next = createInitialState(state.prestige + 1);
-  return { ...next, region: "germany", toast: `Prestige ${next.prestige}: permanent +${next.prestige * 5} rating.` };
+  return {
+    ...next,
+    region: "germany",
+    unlockedBadges: state.unlockedBadges,
+    toast: `Prestige ${next.prestige}: permanent +${next.prestige * 5} rating.`,
+  };
 }
 
 export function debugState(

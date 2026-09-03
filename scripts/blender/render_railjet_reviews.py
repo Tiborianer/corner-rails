@@ -15,8 +15,8 @@ import bpy
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 generation = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "classic"
-if generation not in {"classic", "nextgen"}:
-    raise ValueError("generation must be classic or nextgen")
+if generation not in {"classic", "nextgen", "classic-livery-v2", "nextgen-livery-v2"}:
+    raise ValueError("generation must be classic, nextgen, classic-livery-v2 or nextgen-livery-v2")
 
 scene = bpy.context.scene
 scene.render.resolution_x = 1440
@@ -39,11 +39,14 @@ constraint.target = target
 constraint.track_axis = "TRACK_NEGATIVE_Z"
 constraint.up_axis = "UP_Y"
 
-length = 205.375 if generation == "classic" else 258.0
+is_classic = generation.startswith("classic")
+length = 205.375 if is_classic else 258.0
 lead_center = length / 2 - 19.28 / 2
 lead_bogie_center = lead_center + 4.95
-tail_center = -length / 2 + (26.5 if generation == "classic" else 26.4394) / 2
-output = PROJECT_ROOT / "qa" / "railjet-lab"
+tail_center = -length / 2 + (26.5 if is_classic else 26.4394) / 2
+output = PROJECT_ROOT / "qa" / ("train-review" if generation.endswith("livery-v2") else "railjet-lab")
+if generation.endswith("livery-v2"):
+    output = output / f"railjet-{generation}"
 output.mkdir(parents=True, exist_ok=True)
 
 views = {

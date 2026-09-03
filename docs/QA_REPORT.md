@@ -181,6 +181,8 @@ The user approved I3 U for production on 2026-09-02. Normal gameplay now resolve
 
 The private train-review laboratory now includes separate classic and new-generation Railjet livery V2 candidates. Their geometry is unchanged; the review pass corrects the external colour hierarchy to a wine-red upper body, bright-red belt, graphite lower flank and aluminium skirt while preserving generation-specific doors, windows and driving ends. The normal game continues loading the previously approved production Railjet files until the user explicitly approves these recolours.
 
+The new-generation candidate was revised to V2.1 after visual review exposed solid anthracite door slabs on the passenger cars. Each door leaf now continues the coach's wine-red upper panel, bright-red waist belt, graphite lower flank and aluminium skirt, with a narrow dark window and pale surround. A dedicated close review render and hierarchy regression checks guard against the obsolete full-height `wide_door` geometry returning. The approved production Railjet files remain byte-identical.
+
 The normal game now contains twelve persistent badges spanning approachable milestones and difficult long-term challenges. A compact medal counter opens a collection drawer with a short clue, difficulty and unlocked state. Award checks use real simulation state, survive prestige and `CR1` export/import, and deliberately ignore debug-bar mutations. Regression coverage also locks the Tier 1→2 station cost at exactly 500 coins. The complete Vitest suite now contains 73 passing checks.
 - [Production Nightjet with Taurus leading](../qa/production-nightjet-taurus-leading.png)
 - [Rare production Nightjet with cab car leading](../qa/production-nightjet-cab-car-leading.png)

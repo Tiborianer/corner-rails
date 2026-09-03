@@ -1417,7 +1417,14 @@ describe("production metric railway and Railjet registry", () => {
       expect((await stat(modelPath)).size).toBeLessThan(500_000);
 
       const manifest = JSON.parse(await readFile(path.resolve("assets/blender", candidate.id, "manifest.json"), "utf8"));
-      expect(manifest).toMatchObject({ schemaVersion: 3, vehicleCount: candidate.vehicles, liveryRevision: "reference-calibrated-v2", productionRailjetModified: false });
+      expect(manifest).toMatchObject({ schemaVersion: 3, vehicleCount: candidate.vehicles, productionRailjetModified: false });
+      expect(manifest.liveryRevision).toMatch(/^reference-calibrated-v2/);
+      if (candidate.id === "railjet-nextgen-livery-v2") {
+        expect(nodeNames.some((name) => name.includes("wide_door"))).toBe(false);
+        expect(nodeNames.some((name) => name.includes("door_upper_leaf"))).toBe(true);
+        expect(nodeNames.some((name) => name.includes("door_lower_leaf"))).toBe(true);
+        expect(nodeNames.some((name) => name.includes("door_red_belt"))).toBe(true);
+      }
     }
 
     const digest = async (file: string) => createHash("sha256").update(await readFile(path.resolve(file))).digest("hex");

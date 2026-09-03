@@ -99,9 +99,24 @@ def add_nextgen_livery(
         for door_index, x in enumerate(door_positions):
             door_bottom = 0.83 if low_floor else 1.08
             door_height = 2.48 if low_floor else 2.18
+            door_top = door_bottom + door_height
+            skirt_top = 1.22
+            belt_bottom = 2.265
+            belt_top = 2.455
             common.add_box(collection, cube, f"{role}_door_surround_{side}_{door_index}", (1.52, 0.068, door_height + 0.14), (x, y + side * 0.026, door_bottom + door_height / 2), materials["light_body"], root)
-            common.add_box(collection, cube, f"{role}_wide_door_{side}_{door_index}", (1.27, 0.078, door_height), (x, y + side * 0.042, door_bottom + door_height / 2), materials["anthracite"], root)
-            common.add_box(collection, cube, f"{role}_door_glass_{side}_{door_index}", (0.86, 0.082, 0.84), (x, y + side * 0.072, 2.67), materials["glass"], root)
+            # The real VNL door is not a solid black slab. Its leaf continues
+            # the wine-red upper body, red waist belt, graphite lower flank and
+            # aluminium skirt. Keeping those four horizontal datums continuous
+            # removes the conspicuous black rectangles at every coach end.
+            upper_height = max(0.08, door_top - belt_top)
+            lower_height = max(0.08, belt_bottom - max(skirt_top, door_bottom))
+            skirt_height = max(0.08, min(skirt_top, door_top) - door_bottom)
+            common.add_box(collection, cube, f"{role}_door_upper_leaf_{side}_{door_index}", (1.27, 0.078, upper_height), (x, y + side * 0.042, belt_top + upper_height / 2), materials["railjet_red"], root)
+            common.add_box(collection, cube, f"{role}_door_lower_leaf_{side}_{door_index}", (1.27, 0.078, lower_height), (x, y + side * 0.042, max(skirt_top, door_bottom) + lower_height / 2), materials["anthracite"], root)
+            common.add_box(collection, cube, f"{role}_door_skirt_leaf_{side}_{door_index}", (1.27, 0.078, skirt_height), (x, y + side * 0.042, door_bottom + skirt_height / 2), materials["light_body"], root)
+            common.add_box(collection, cube, f"{role}_door_red_belt_{side}_{door_index}", (1.27, 0.086, belt_top - belt_bottom), (x, y + side * 0.051, (belt_bottom + belt_top) / 2), materials["signal_red"], root)
+            common.add_box(collection, cube, f"{role}_door_glass_{side}_{door_index}", (0.42, 0.090, 0.82), (x, y + side * 0.078, 2.82), materials["glass"], root)
+            common.add_box(collection, cube, f"{role}_door_handle_{side}_{door_index}", (0.055, 0.096, 0.34), (x + 0.39, y + side * 0.082, 2.18), materials["steel"], root)
             common.add_box(collection, cube, f"{role}_door_step_{side}_{door_index}", (1.22, 0.21, 0.10), (x, y + side * 0.18, door_bottom - 0.02), materials["steel"], root)
 
         for index in range(window_count):
@@ -324,7 +339,7 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "liveryRevision": "reference-calibrated-v2" if LIVERY_V2_REVIEW else "production-v1",
+        "liveryRevision": "reference-calibrated-v2.1" if LIVERY_V2_REVIEW else "production-v1",
         "liveryReferenceNotes": {
             "upperBody": "OEBB wine red",
             "accent": "bright red belt and driving-cab sweep",
@@ -332,6 +347,7 @@ def main() -> None:
             "skirt": "cool aluminium",
             "roof": "dark graphite",
             "doorSurround": "cool aluminium",
+            "doorLeaf": "continuous wine-red, bright-red, graphite and aluminium body datums with a narrow vertical window",
             "lettering": "original Blender-font approximation; no copied logo artwork",
         },
         "productionRailjetModified": not LIVERY_V2_REVIEW,

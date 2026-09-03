@@ -44,6 +44,7 @@ length = 205.375 if is_classic else 258.0
 lead_center = length / 2 - 19.28 / 2
 lead_bogie_center = lead_center + 4.95
 tail_center = -length / 2 + (26.5 if is_classic else 26.4394) / 2
+coach_detail_center = -9.65 if not is_classic else 0.0
 output = PROJECT_ROOT / "qa" / ("train-review" if generation.endswith("livery-v2") else "railjet-lab")
 if generation.endswith("livery-v2"):
     output = output / f"railjet-{generation}"
@@ -64,6 +65,11 @@ views = {
         "camera": (tail_center - 19.0, -29.0, 16.5),
         "target": (tail_center, 0.0, 2.1),
         "ortho": 31.0,
+    },
+    "coach-door-detail": {
+        "camera": (coach_detail_center + 1.5, -31.0, 7.0),
+        "target": (coach_detail_center, 0.0, 2.15),
+        "ortho": 29.5,
     },
     "wheel-rail-detail": {
         "camera": (lead_bogie_center + 4.5, -7.0, 3.8),

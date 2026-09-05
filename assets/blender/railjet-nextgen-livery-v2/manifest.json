@@ -49,14 +49,15 @@
   "sources": [
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
     "https://www.oebb.at/de/reiseplanung-services/im-zug/unsere-zuege/railjet",
+    "https://data.oebb.at/dam/jcr%3A1e0c5a41-5293-439a-bed9-4f160d8aa1da/tfz1116.pdf",
     "https://press.siemens.com/global/en/pressrelease/obb-puts-first-new-generation-railjet-siemens-mobility-service-and-orders-19-more",
     "https://www.mobility.siemens.com/global/en/portfolio/references/railjet.html",
     "https://konzern.oebb.at/de/dam/jcr%3A9a8a8bc6-35bd-4dc5-9cc0-fc4470742bcf/OEBB-Umsetzungsplan%202025-2030.pdf"
   ],
-  "liveryRevision": "reference-calibrated-v2.2",
+  "liveryRevision": "reference-calibrated-v2.3",
   "liveryReferenceNotes": {
     "upperBody": "OEBB wine red",
-    "accent": "bright red belt and driving-cab sweep",
+    "accent": "level bright-red belt and bright-red cab nose field",
     "lowerBody": "graphite",
     "skirt": "cool aluminium",
     "roof": "dark graphite",
@@ -76,6 +77,13 @@
         2.5
       ],
       "surfaceRule": "non-overlapping vertical spans on one shared side plane"
+    },
+    "taurusCab": {
+      "class": "OEBB Class 1116 Taurus / Siemens ES64U2",
+      "windscreen": "two inset trapezoidal panes on one curved black visor, sampled directly on the lofted cab surface",
+      "sideCabGlazing": "swept trapezoidal pane in a tapered black mask",
+      "stripe": "broad horizontal bright-red belt with surface-following cab wraps",
+      "headlights": "paired vertical housings with two circular lenses per side"
     },
     "lettering": "original Blender-font approximation; no copied logo artwork"
   },

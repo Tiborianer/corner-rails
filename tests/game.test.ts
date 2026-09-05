@@ -1421,6 +1421,7 @@ describe("production metric railway and Railjet registry", () => {
       expect(manifest).toMatchObject({ schemaVersion: 3, vehicleCount: candidate.vehicles, productionRailjetModified: false });
       expect(manifest.liveryRevision).toMatch(/^reference-calibrated-v2/);
       if (candidate.id === "railjet-nextgen-livery-v2") {
+        expect(materialNames).toContain("RJ2_Taurus_Headlamp");
         expect(nodeNames.some((name) => name.includes("wide_door"))).toBe(false);
         expect(nodeNames.some((name) => name.includes("door_upper_leaf"))).toBe(true);
         expect(nodeNames.some((name) => name.includes("door_lower_leaf"))).toBe(true);
@@ -1443,6 +1444,19 @@ describe("production metric railway and Railjet registry", () => {
           brightRedBelt: [2.05, 2.5],
           surfaceRule: "non-overlapping vertical spans on one shared side plane",
         });
+        expect(manifest.liveryRevision).toBe("reference-calibrated-v2.3");
+        expect(manifest.liveryReferenceNotes.taurusCab).toMatchObject({
+          class: "OEBB Class 1116 Taurus / Siemens ES64U2",
+          windscreen: expect.stringContaining("curved black visor"),
+          stripe: expect.stringContaining("horizontal bright-red belt"),
+        });
+        expect(nodeNames.filter((name) => name.includes("taurus_reference_cab_") && name.includes("windscreen_glass"))).toHaveLength(4);
+        expect(nodeNames.filter((name) => name.includes("taurus_reference_side_window_glass"))).toHaveLength(4);
+        expect(nodeNames.filter((name) => name.includes("taurus_reference_red_belt_center"))).toHaveLength(2);
+        expect(nodeNames.filter((name) => name.includes("taurus_reference_red_belt_cab"))).toHaveLength(4);
+        expect(nodeNames.filter((name) => name.includes("taurus_reference_cab_") && name.includes("headlight_lens"))).toHaveLength(8);
+        expect(nodeNames.some((name) => name.startsWith("taurus_cab_") && name.includes("windshield"))).toBe(false);
+        expect(nodeNames.some((name) => name.includes("taurus_bright_red_sweep"))).toBe(false);
       }
     }
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import math
 from pathlib import Path
 
 import bpy
@@ -44,9 +45,14 @@ SIDE_SKIRT_TOP = 1.22
 SIDE_GRAPHITE_TOP = 2.05
 SIDE_RED_BELT_TOP = 2.50
 
+TAURUS_HALF_LENGTH = common.TAURUS_LENGTH / 2
+TAURUS_SIDE_RED_BELT_BOTTOM = 2.11
+TAURUS_SIDE_RED_BELT_TOP = 2.41
+
 OFFICIAL_SOURCES = (
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
     "https://www.oebb.at/de/reiseplanung-services/im-zug/unsere-zuege/railjet",
+    "https://data.oebb.at/dam/jcr%3A1e0c5a41-5293-439a-bed9-4f160d8aa1da/tfz1116.pdf",
     "https://press.siemens.com/global/en/pressrelease/obb-puts-first-new-generation-railjet-siemens-mobility-service-and-orders-19-more",
     "https://www.mobility.siemens.com/global/en/portfolio/references/railjet.html",
     "https://konzern.oebb.at/de/dam/jcr%3A9a8a8bc6-35bd-4dc5-9cc0-fc4470742bcf/OEBB-Umsetzungsplan%202025-2030.pdf",
@@ -169,6 +175,318 @@ def add_nextgen_livery(
             continue
         common.add_box(collection, cube, f"{role}_underfloor_equipment_{index}", (width, 1.44, 0.36), (x, 0, 0.56), materials["roof"], root)
 
+
+def taurus_front_surface_x(front_sign: int, y: float, z: float, offset: float = 0.0) -> float:
+    """Approximate the curved ES64U2 cab skin at a front-facing detail."""
+    # The lower windscreen edge lies on the near-vertical nose at almost full
+    # buffer length.  Only the upper glass follows the strong roofward sweep.
+    # The previous formula began tapering too low and buried most of the panes
+    # inside the lofted shell, leaving only their wipers visible head-on.
+    height_factor = max(0.0, min(1.0, (z - 2.72) / 0.86))
+    lateral_factor = min(1.0, abs(y) / 1.06)
+    lateral_taper = (0.12 + 0.10 * height_factor) * lateral_factor ** 1.7
+    magnitude = TAURUS_HALF_LENGTH - 0.015 - 0.43 * height_factor - lateral_taper
+    return front_sign * (magnitude + offset)
+
+
+def taurus_side_surface_y(side: int, x: float, offset: float = 0.0) -> float:
+    """Follow the Taurus side taper so cab glazing never floats off the shell."""
+    x_abs = abs(x)
+    if x_abs <= 7.15:
+        half_width = 1.50
+    elif x_abs <= 8.20:
+        half_width = 1.50 - 0.03 * ((x_abs - 7.15) / 1.05)
+    else:
+        half_width = 1.47 - 0.39 * min(1.0, (x_abs - 8.20) / 0.98)
+    return side * (half_width + offset)
+
+
+def add_taurus_front_patch(
+    collection: bpy.types.Collection,
+    root: bpy.types.Object,
+    materials: dict[str, bpy.types.Material],
+    *,
+    name: str,
+    front_sign: int,
+    yz_outline: list[tuple[float, float]],
+    material_key: str,
+    offset: float,
+) -> bpy.types.Object:
+    vertices = [
+        (taurus_front_surface_x(front_sign, y, z, offset), y, z)
+        for y, z in yz_outline
+    ]
+    mesh = common.polygon_mesh(f"{name}_mesh", vertices, materials[material_key])
+    return common.link_object(collection, name, mesh, parent=root)
+
+
+def add_taurus_side_patch(
+    collection: bpy.types.Collection,
+    root: bpy.types.Object,
+    materials: dict[str, bpy.types.Material],
+    *,
+    name: str,
+    side: int,
+    xz_outline: list[tuple[float, float]],
+    material_key: str,
+    offset: float,
+) -> bpy.types.Object:
+    points = xz_outline if side > 0 else list(reversed(xz_outline))
+    vertices = [
+        (x, taurus_side_surface_y(side, x, offset), z)
+        for x, z in points
+    ]
+    mesh = common.polygon_mesh(f"{name}_mesh", vertices, materials[material_key])
+    return common.link_object(collection, name, mesh, parent=root)
+
+
+def refine_taurus_livery_v2(
+    root: bpy.types.Object,
+    cube: bpy.types.Mesh,
+    cylinder: bpy.types.Mesh,
+    materials: dict[str, bpy.types.Material],
+) -> None:
+    """Replace the generic Taurus cab cards and diagonal stripe for V2 review."""
+    collection = root.users_collection[0]
+    obsolete_fragments = (
+        "taurus_side_window_",
+        "taurus_cab_door_",
+        "taurus_vent_",
+        "taurus_railjet_wordmark_",
+        "taurus_cab_-1_windshield",
+        "taurus_cab_1_windshield",
+        "taurus_cab_-1_headlight",
+        "taurus_cab_1_headlight",
+        "taurus_cab_-1_marker",
+        "taurus_cab_1_marker",
+        "taurus_bright_red_sweep_",
+    )
+    for obj in list(root.children_recursive):
+        if any(fragment in obj.name for fragment in obsolete_fragments):
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+    for side in (-1, 1):
+        # Preserve the proven graphite lower body and aluminium sill, then
+        # redraw the Railjet belt as one broad horizontal datum.  A solid
+        # centre segment prevents the line from disappearing at WebGL depth
+        # precision; short surface-following end pieces wrap it onto the cabs.
+        common.add_box(
+            collection,
+            cube,
+            f"taurus_reference_red_belt_center_{side}",
+            (14.8, 0.044, TAURUS_SIDE_RED_BELT_TOP - TAURUS_SIDE_RED_BELT_BOTTOM),
+            (0.0, side * 1.535, (TAURUS_SIDE_RED_BELT_BOTTOM + TAURUS_SIDE_RED_BELT_TOP) / 2),
+            materials["signal_red"],
+            root,
+        )
+        for front_sign in (-1, 1):
+            sign = float(front_sign)
+            end_belt = [
+                (sign * 7.34, TAURUS_SIDE_RED_BELT_BOTTOM),
+                (sign * 8.76, TAURUS_SIDE_RED_BELT_BOTTOM),
+                (sign * 8.76, TAURUS_SIDE_RED_BELT_TOP),
+                (sign * 7.34, TAURUS_SIDE_RED_BELT_TOP),
+            ]
+            if front_sign < 0:
+                end_belt = list(reversed(end_belt))
+            add_taurus_side_patch(
+                collection,
+                root,
+                materials,
+                name=f"taurus_reference_red_belt_cab_{side}_{front_sign}",
+                side=side,
+                xz_outline=end_belt,
+                material_key="signal_red",
+                offset=0.045,
+            )
+
+            # A broad trapezoidal black side mask surrounds a swept, inset cab
+            # pane. The outer mask wraps toward the front visor while the rear
+            # glass edge is almost vertical, matching the ES64U2 cab opening.
+            x_rear = sign * 6.76
+            mask_outline = [
+                (x_rear, 2.62),
+                (sign * 8.58, 2.67),
+                (sign * 8.34, 3.55),
+                (sign * 6.84, 3.57),
+            ]
+            glass_outline = [
+                (sign * 6.94, 2.73),
+                (sign * 8.34, 2.78),
+                (sign * 8.16, 3.42),
+                (sign * 7.00, 3.45),
+            ]
+            if front_sign < 0:
+                mask_outline = list(reversed(mask_outline))
+                glass_outline = list(reversed(glass_outline))
+            add_taurus_side_patch(
+                collection,
+                root,
+                materials,
+                name=f"taurus_reference_side_window_mask_{side}_{front_sign}",
+                side=side,
+                xz_outline=mask_outline,
+                material_key="anthracite",
+                offset=0.006,
+            )
+            add_taurus_side_patch(
+                collection,
+                root,
+                materials,
+                name=f"taurus_reference_side_window_glass_{side}_{front_sign}",
+                side=side,
+                xz_outline=glass_outline,
+                material_key="glass",
+                offset=0.011,
+            )
+
+            door_center = sign * 6.18
+            common.add_box(
+                collection,
+                cube,
+                f"taurus_reference_cab_door_{side}_{front_sign}",
+                (0.82, 0.026, 1.88),
+                (door_center, side * 1.512, 2.09),
+                materials["railjet_red"],
+                root,
+            )
+            common.add_box(
+                collection,
+                cube,
+                f"taurus_reference_cab_door_glass_{side}_{front_sign}",
+                (0.48, 0.032, 0.60),
+                (door_center, side * 1.520, 2.77),
+                materials["glass"],
+                root,
+            )
+
+            # Two high shoulder grilles replace the former row of six black
+            # squares, which incorrectly read as passenger windows.
+            vent_center = sign * 4.82
+            vent_outline = [
+                (vent_center - sign * 0.86, 3.56),
+                (vent_center + sign * 0.86, 3.56),
+                (vent_center + sign * 0.72, 3.88),
+                (vent_center - sign * 0.72, 3.88),
+            ]
+            if front_sign < 0:
+                vent_outline = list(reversed(vent_outline))
+            add_taurus_side_patch(
+                collection,
+                root,
+                materials,
+                name=f"taurus_reference_roof_vent_{side}_{front_sign}",
+                side=side,
+                xz_outline=vent_outline,
+                material_key="roof",
+                offset=0.009,
+            )
+
+        common.add_text_label(
+            collection,
+            f"taurus_reference_railjet_wordmark_{side}",
+            "railjet",
+            (0.45, side * 1.526, 2.67),
+            materials["light_body"],
+            root,
+            side=side,
+            size=1.12,
+            scale_x=1.12,
+        )
+
+    for front_sign in (-1, 1):
+        prefix = f"taurus_reference_cab_{front_sign}"
+        # The central nose on the real Railjet locomotive is a brighter red
+        # field beneath the windscreen rather than a diagonal side slash.
+        add_taurus_front_patch(
+            collection,
+            root,
+            materials,
+            name=f"{prefix}_red_nose_panel",
+            front_sign=front_sign,
+            yz_outline=[(-0.73, 1.20), (-0.91, 2.47), (0.91, 2.47), (0.73, 1.20)],
+            material_key="signal_red",
+            offset=0.022,
+        )
+
+        # Full-width curved visor plus two inset trapezoidal panes. Geometry is
+        # sampled on the lofted cab surface so it neither sinks into the nose
+        # nor casts the detached-card shadow seen on the earlier candidate.
+        add_taurus_front_patch(
+            collection,
+            root,
+            materials,
+            name=f"{prefix}_windscreen_mask",
+            front_sign=front_sign,
+            yz_outline=[
+                (-0.93, 2.49), (-1.04, 3.31), (-0.90, 3.53),
+                (0.0, 3.59), (0.90, 3.53), (1.04, 3.31), (0.93, 2.49),
+            ],
+            material_key="anthracite",
+            offset=0.026,
+        )
+        for pane_side in (-1, 1):
+            glass_outline = [
+                (pane_side * 0.09, 2.58),
+                (pane_side * 0.78, 2.58),
+                (pane_side * 0.91, 2.70),
+                (pane_side * 0.96, 3.28),
+                (pane_side * 0.82, 3.43),
+                (pane_side * 0.08, 3.48),
+            ]
+            if pane_side > 0:
+                glass_outline = list(reversed(glass_outline))
+            add_taurus_front_patch(
+                collection,
+                root,
+                materials,
+                name=f"{prefix}_windscreen_glass_{pane_side}",
+                front_sign=front_sign,
+                yz_outline=glass_outline,
+                material_key="glass",
+                offset=0.042,
+            )
+
+            wiper_y = pane_side * 0.46
+            common.add_beam_between(
+                collection,
+                cube,
+                f"{prefix}_windscreen_wiper_{pane_side}",
+                (taurus_front_surface_x(front_sign, wiper_y, 2.60, 0.052), wiper_y, 2.60),
+                (taurus_front_surface_x(front_sign, pane_side * 0.26, 3.34, 0.052), pane_side * 0.26, 3.34),
+                0.032,
+                materials["underframe"],
+                root,
+            )
+
+        for lamp_side in (-1, 1):
+            lamp_y = lamp_side * 0.86
+            add_taurus_front_patch(
+                collection,
+                root,
+                materials,
+                name=f"{prefix}_headlight_housing_{lamp_side}",
+                front_sign=front_sign,
+                yz_outline=[
+                    (lamp_y - 0.20, 1.53), (lamp_y - 0.25, 2.26),
+                    (lamp_y + 0.25, 2.26), (lamp_y + 0.20, 1.53),
+                ],
+                material_key="light_body",
+                offset=0.034,
+            )
+            for lamp_index, lamp_z in enumerate((1.78, 2.08)):
+                x = taurus_front_surface_x(front_sign, lamp_y, lamp_z, 0.050)
+                common.add_cylinder(
+                    collection,
+                    cylinder,
+                    f"{prefix}_headlight_lens_{lamp_side}_{lamp_index}",
+                    0.105 if lamp_index == 0 else 0.15,
+                    0.040,
+                    (x, lamp_y, lamp_z),
+                    materials["taurus_lamp"],
+                    root,
+                    rotation=(0.0, math.pi / 2, 0.0),
+                )
 
 def build_nextgen_coach(
     prototypes: bpy.types.Collection,
@@ -316,6 +634,17 @@ def main() -> None:
         materials["anthracite"] = common.make_material(
             "RJ2_Graphite_V2", (0.066, 0.076, 0.082, 1.0), metallic=0.13, roughness=0.32
         )
+        materials["taurus_lamp"] = common.make_material(
+            "RJ2_Taurus_Headlamp", (1.0, 0.86, 0.55, 1.0), metallic=0.02, roughness=0.16
+        )
+        lamp_bsdf = materials["taurus_lamp"].node_tree.nodes.get("Principled BSDF")
+        if lamp_bsdf:
+            emission_input = lamp_bsdf.inputs.get("Emission Color") or lamp_bsdf.inputs.get("Emission")
+            if emission_input:
+                emission_input.default_value = (1.0, 0.72, 0.30, 1.0)
+            emission_strength = lamp_bsdf.inputs.get("Emission Strength")
+            if emission_strength:
+                emission_strength.default_value = 2.2
     cube = common.unit_cube_mesh()
     cylinder = common.unit_cylinder_mesh(16)
     assets = common.make_collection("Railjet_Blender_Assets")
@@ -323,6 +652,8 @@ def main() -> None:
 
     taurus = common.build_taurus(prototypes_collection, cube, cylinder, materials)
     taurus.name = "railjet_nextgen_taurus_root"
+    if LIVERY_V2_REVIEW:
+        refine_taurus_livery_v2(taurus, cube, cylinder, materials)
     prototypes: dict[str, bpy.types.Object] = {
         "taurus": taurus,
         "first_a": build_nextgen_coach(prototypes_collection, cube, cylinder, materials, role="first", variant="first_a", window_count=8, low_floor=False),
@@ -375,10 +706,10 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "liveryRevision": "reference-calibrated-v2.2" if LIVERY_V2_REVIEW else "production-v1",
+        "liveryRevision": "reference-calibrated-v2.3" if LIVERY_V2_REVIEW else "production-v1",
         "liveryReferenceNotes": {
             "upperBody": "OEBB wine red",
-            "accent": "bright red belt and driving-cab sweep",
+            "accent": "level bright-red belt and bright-red cab nose field",
             "lowerBody": "graphite",
             "skirt": "cool aluminium",
             "roof": "dark graphite",
@@ -389,6 +720,13 @@ def main() -> None:
                 "graphiteFlank": [SIDE_SKIRT_TOP, SIDE_GRAPHITE_TOP],
                 "brightRedBelt": [SIDE_GRAPHITE_TOP, SIDE_RED_BELT_TOP],
                 "surfaceRule": "non-overlapping vertical spans on one shared side plane",
+            },
+            "taurusCab": {
+                "class": "OEBB Class 1116 Taurus / Siemens ES64U2",
+                "windscreen": "two inset trapezoidal panes on one curved black visor, sampled directly on the lofted cab surface",
+                "sideCabGlazing": "swept trapezoidal pane in a tapered black mask",
+                "stripe": "broad horizontal bright-red belt with surface-following cab wraps",
+                "headlights": "paired vertical housings with two circular lenses per side",
             },
             "lettering": "original Blender-font approximation; no copied logo artwork",
         },

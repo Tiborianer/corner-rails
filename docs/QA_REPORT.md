@@ -107,6 +107,8 @@ The local private route passed stationary day/night/rain, stopping/pass controls
 - [Classic Blender wheel/rail detail](../qa/railjet-lab/classic-blender-wheel-rail-detail.jpg)
 - [New-generation Blender driving-trailer detail](../qa/railjet-lab/nextgen-blender-driving-trailer-detail.jpg)
 - [New-generation Blender wheel/rail detail](../qa/railjet-lab/nextgen-blender-wheel-rail-detail.jpg)
+- [Railjet V2.3 Taurus exact front](../qa/train-review/railjet-nextgen-livery-v2/nextgen-livery-v2-blender-taurus-front.jpg)
+- [Railjet V2.3 Taurus exact side](../qa/train-review/railjet-nextgen-livery-v2/nextgen-livery-v2-blender-taurus-side.jpg)
 - [Classic calibrated browser view](../qa/railjet-lab/classic-blender-desktop.png)
 - [Candidate D wheel/rail inspection view](../qa/railjet-lab/classic-blender-wheel-rail-detail.png)
 - [New-generation calibrated browser view](../qa/railjet-lab/nextgen-blender-desktop.png)
@@ -182,6 +184,8 @@ The user approved I3 U for production on 2026-09-02. Normal gameplay now resolve
 The private train-review laboratory now includes separate classic and new-generation Railjet livery V2 candidates. Their geometry is unchanged; the review pass corrects the external colour hierarchy to a wine-red upper body, bright-red belt, graphite lower flank and aluminium skirt while preserving generation-specific doors, windows and driving ends. The normal game continues loading the previously approved production Railjet files until the user explicitly approves these recolours.
 
 The new-generation candidate was revised through V2.2 after visual review exposed solid anthracite slabs on the passenger cars. The first correction rebuilt the door leaves; the follow-up identified the underlying Blender bug: shared primitive meshes kept their first black material instead of each object's intended material. Primitive material slots are now overridden per object, and the side livery uses non-overlapping, reference-proportioned wine-red, bright-red, graphite and aluminium bands. Dedicated close renders and material-assignment regression checks guard against either failure returning. The approved production Railjet files remain byte-identical.
+
+V2.3 leaves those corrected passenger cars byte-identical and rebuilds only the Class 1116 Taurus treatment. The front visor and two trapezoidal panes are sampled against the curved cab skin, swept side windows follow the taper, the fake row of six square side vents is replaced by high shoulder grilles, and the former diagonal slash becomes one broad level bright-red belt with short surface-following cab wraps. New exact front and side Blender captures complement the existing three-quarter review. The production classic, production new-generation and rollback Railjet GLBs remain byte-identical.
 
 The normal game now contains twelve persistent badges spanning approachable milestones and difficult long-term challenges. A compact medal counter opens a collection drawer with a short clue, difficulty and unlocked state. Award checks use real simulation state, survive prestige and `CR1` export/import, and deliberately ignore debug-bar mutations. Regression coverage also locks the Tier 1→2 station cost at exactly 500 coins. The complete Vitest suite now contains 73 passing checks.
 - [Production Nightjet with Taurus leading](../qa/production-nightjet-taurus-leading.png)

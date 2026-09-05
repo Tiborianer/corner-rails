@@ -61,6 +61,16 @@ views = {
         "target": (lead_center, 0.0, 2.15),
         "ortho": 27.0,
     },
+    "taurus-front": {
+        "camera": (lead_center + 30.0, 0.0, 2.52),
+        "target": (lead_center, 0.0, 2.52),
+        "ortho": 5.25,
+    },
+    "taurus-side": {
+        "camera": (lead_center, -31.0, 6.8),
+        "target": (lead_center, 0.0, 2.15),
+        "ortho": 21.6,
+    },
     "driving-trailer-detail": {
         "camera": (tail_center - 19.0, -29.0, 16.5),
         "target": (tail_center, 0.0, 2.1),

@@ -55,6 +55,7 @@
     "https://konzern.oebb.at/de/dam/jcr%3A9a8a8bc6-35bd-4dc5-9cc0-fc4470742bcf/OEBB-Umsetzungsplan%202025-2030.pdf"
   ],
   "liveryRevision": "reference-calibrated-v2.3",
+  "approvalStatus": "approved-production",
   "liveryReferenceNotes": {
     "upperBody": "OEBB wine red",
     "accent": "level bright-red belt and bright-red cab nose field",
@@ -87,5 +88,5 @@
     },
     "lettering": "original Blender-font approximation; no copied logo artwork"
   },
-  "productionRailjetModified": false
+  "productionRailjetModified": true
 }

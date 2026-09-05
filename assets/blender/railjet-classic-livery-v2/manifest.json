@@ -44,14 +44,16 @@
     "https://data.oebb.at/dam/jcr%3A1e0c5a41-5293-439a-bed9-4f160d8aa1da/tfz1116.pdf",
     "https://static.dc.siemens.com/mobility/webfeature/green-mobility/files/brochure/viaggio-comfort-en.pdf"
   ],
-  "liveryRevision": "reference-calibrated-v2",
+  "liveryRevision": "reference-calibrated-v2.1",
   "liveryReferenceNotes": {
     "upperBody": "OEBB wine red",
     "accent": "bright red belt and cab sweep",
     "lowerBody": "graphite",
     "skirt": "cool aluminium",
     "roof": "dark graphite",
-    "lettering": "original Blender-font approximation; no copied logo artwork"
+    "lettering": "original Blender-font approximation; no copied logo artwork",
+    "doorLeaf": "continuous wine-red, bright-red, graphite and aluminium body datums with a narrow vertical window",
+    "depthFix": "all side colour panels use non-overlapping vertical spans to prevent WebGL z-fighting"
   },
   "productionRailjetModified": false
 }

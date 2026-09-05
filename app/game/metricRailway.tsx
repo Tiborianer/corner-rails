@@ -55,6 +55,12 @@ export function platformLengthMeters(lengthLevel: number) {
   return RAILWAY_METRIC_PROFILE.platformLengthMetersByLevel[index];
 }
 
+export function platformTunnelOffset(lengthMeters: number) {
+  const platformLength = railwayMetersToWorld(lengthMeters);
+  const tunnelLength = railwayMetersToWorld(8);
+  return Math.min(platformLength / 2 - tunnelLength * 0.72, platformLength * 0.24);
+}
+
 export function MetricTrack({
   z = 0,
   length = railwayMetersToWorld(RAILWAY_METRIC_PROFILE.trackLengthMeters),
@@ -108,12 +114,14 @@ export function MetricPlatform({
   side = 1,
   amenities = true,
   lampIntensity = 0.15,
+  tunnelEntrance = false,
 }: {
   trackCenter: number;
   lengthMeters?: number;
   side?: 1 | -1;
   amenities?: boolean;
   lampIntensity?: number;
+  tunnelEntrance?: boolean;
 }) {
   const railTop = RAILWAY_METRIC_PROFILE.railTopY;
   const surfaceY = railTop + railwayMetersToWorld(RAILWAY_METRIC_PROFILE.platformHeightMeters);
@@ -125,6 +133,9 @@ export function MetricPlatform({
   const centerZ = metricPlatformCenter(trackCenter, side);
   const slabHeight = surfaceY - RAILWAY_GROUND_Y;
   const fixtureXs = PLATFORM_FIXTURE_RATIOS.map((ratio) => ratio * length);
+  const tunnelX = platformTunnelOffset(lengthMeters);
+  const tunnelLength = railwayMetersToWorld(8);
+  const tunnelWidth = railwayMetersToWorld(2.2);
 
   return (
     <group>
@@ -182,6 +193,45 @@ export function MetricPlatform({
               <meshStandardMaterial color="#40504f" />
             </mesh>
           ))}
+        </group>
+      )}
+      {tunnelEntrance && (
+        <group name="platform_subway_entrance" position={[tunnelX, surfaceY, centerZ]}>
+          <mesh name="platform_subway_dark_opening" position={[0, 0.018, 0]} receiveShadow>
+            <boxGeometry args={[tunnelLength, 0.012, tunnelWidth]} />
+            <meshStandardMaterial color="#17211f" roughness={0.94} />
+          </mesh>
+          {[-1, 1].map((edge) => (
+            <group key={edge} position={[0, 0, edge * (tunnelWidth / 2 + 0.018)]}>
+              <mesh position={[0, 0.075, 0]} castShadow>
+                <boxGeometry args={[tunnelLength + 0.05, 0.15, 0.032]} />
+                <meshStandardMaterial color="#848a82" roughness={0.82} />
+              </mesh>
+              <mesh position={[0, 0.18, 0]} castShadow>
+                <boxGeometry args={[tunnelLength + 0.05, 0.014, 0.018]} />
+                <meshStandardMaterial color="#33413f" metalness={0.4} roughness={0.45} />
+              </mesh>
+            </group>
+          ))}
+          {Array.from({ length: 5 }, (_, index) => {
+            const stepLength = tunnelLength / 5;
+            return (
+              <mesh key={index} name={`platform_subway_step_${index}`} position={[tunnelLength / 2 - stepLength * (index + 0.5), 0.024 + index * 0.008, 0]} receiveShadow>
+                <boxGeometry args={[stepLength - 0.008, 0.018, tunnelWidth * 0.82]} />
+                <meshStandardMaterial color="#b8b6aa" roughness={0.9} />
+              </mesh>
+            );
+          })}
+          {[-1, 1].map((end) => [-1, 1].map((edge) => (
+            <mesh key={`${end}-${edge}`} position={[end * tunnelLength * 0.42, 0.22, edge * tunnelWidth * 0.48]} castShadow>
+              <boxGeometry args={[0.018, 0.32, 0.018]} />
+              <meshStandardMaterial color="#33413f" metalness={0.38} roughness={0.48} />
+            </mesh>
+          )))}
+          <mesh name="platform_subway_canopy" position={[0, 0.39, 0]} castShadow>
+            <boxGeometry args={[tunnelLength * 0.92, 0.025, tunnelWidth * 1.08]} />
+            <meshStandardMaterial color="#507274" metalness={0.18} roughness={0.35} transparent opacity={0.78} />
+          </mesh>
         </group>
       )}
     </group>

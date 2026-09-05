@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { AudioBus } from "./game/audio";
-import { BADGES } from "./game/badges";
+import { BADGES, newlyUnlockedBadgeIds } from "./game/badges";
 import {
   LENGTH_COSTS,
   MISSIONS,
@@ -231,12 +231,14 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
   const [saveCode, setSaveCode] = useState("");
   const [muted, setMuted] = useState(true);
   const [showPrestige, setShowPrestige] = useState(false);
+  const [badgeQueue, setBadgeQueue] = useState<(typeof BADGES)[number][]>([]);
   const debugEnabled = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
   const audio = useRef(new AudioBus());
   const previousTrains = useRef<Record<number, string | null>>({});
   const previousPhases = useRef<Record<number, string | null>>({});
   const previousCoins = useRef(0);
   const previousLightningStrike = useRef(0);
+  const previousUnlockedBadges = useRef(state.unlockedBadges);
 
   const rating = stationRating(state);
   const ratingDetails = stationRatingBreakdown(state).slice(0, 3);
@@ -272,6 +274,23 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
     const timer = window.setTimeout(() => dispatch({ type: "toast", message: null }), 4_000);
     return () => window.clearTimeout(timer);
   }, [state.toast]);
+
+  useEffect(() => {
+    const newIds = newlyUnlockedBadgeIds(previousUnlockedBadges.current, state.unlockedBadges);
+    previousUnlockedBadges.current = state.unlockedBadges;
+    if (newIds.length === 0) return;
+    const definitions = newIds.flatMap((badgeId) => {
+      const badge = BADGES.find((candidate) => candidate.id === badgeId);
+      return badge ? [badge] : [];
+    });
+    setBadgeQueue((current) => [...current, ...definitions.filter((badge) => !current.some((item) => item.id === badge.id))]);
+  }, [state.unlockedBadges]);
+
+  useEffect(() => {
+    if (badgeQueue.length === 0) return;
+    const timer = window.setTimeout(() => setBadgeQueue((current) => current.slice(1)), 6_000);
+    return () => window.clearTimeout(timer);
+  }, [badgeQueue]);
 
   useEffect(() => {
     for (const lane of state.platformLanes) {
@@ -358,7 +377,10 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
 
   function importSave() {
     try {
-      dispatch({ type: "import", state: decodeSave(importCode) });
+      const importedState = decodeSave(importCode);
+      previousUnlockedBadges.current = importedState.unlockedBadges;
+      setBadgeQueue([]);
+      dispatch({ type: "import", state: importedState });
       setImportCode("");
       setDrawer(null);
     } catch (error) {
@@ -425,6 +447,22 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
               : `Party lights · +${eventBoost?.amount ?? 0} rating · ${state.eventPassesRemaining > 0 ? `next run in ${shortDuration(state.eventNextPassIn)}` : "special runs complete"}`}</em>
           </div>
         </aside>
+      )}
+
+      {badgeQueue[0] && (
+        <button
+          className="badge-unlock-notice"
+          type="button"
+          aria-live="polite"
+          onClick={() => {
+            setDrawer("badges");
+            setBadgeQueue((current) => current.slice(1));
+          }}
+        >
+          <span aria-hidden="true">{badgeQueue[0].icon}</span>
+          <div><small>BADGE UNLOCKED</small><strong>{badgeQueue[0].name}</strong><em>{badgeQueue[0].clue}</em></div>
+          {badgeQueue.length > 1 && <b>+{badgeQueue.length - 1}</b>}
+        </button>
       )}
 
       {state.region && state.platformPlaced && (

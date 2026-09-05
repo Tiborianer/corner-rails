@@ -707,6 +707,7 @@ def main() -> None:
         },
         "sources": list(OFFICIAL_SOURCES),
         "liveryRevision": "reference-calibrated-v2.3" if LIVERY_V2_REVIEW else "production-v1",
+        "approvalStatus": "approved-production" if LIVERY_V2_REVIEW else "production-v1",
         "liveryReferenceNotes": {
             "upperBody": "OEBB wine red",
             "accent": "level bright-red belt and bright-red cab nose field",
@@ -730,7 +731,7 @@ def main() -> None:
             },
             "lettering": "original Blender-font approximation; no copied logo artwork",
         },
-        "productionRailjetModified": not LIVERY_V2_REVIEW,
+        "productionRailjetModified": True,
     }
     (SOURCE_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print("CORNER_RAILS_RAILJET_NEXTGEN_GENERATED")

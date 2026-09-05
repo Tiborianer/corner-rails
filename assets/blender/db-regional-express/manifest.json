@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "generator": "Blender 5.2 LTS Python API",
   "candidateId": "db-regional-express-dosto-br245",
   "approvalStatus": "private-review",
@@ -56,10 +56,18 @@
   ],
   "referencePolicy": "Research only. Local images are not copied, embedded, textured, or shipped.",
   "sources": [
-    "https://www.alstom.com/solutions/rolling-stock/locomotives/traxx-passenger-locomotives-comfortable-borderless-operations-passengers",
-    "https://static.maerklin.de/damcontent/c5/f3/c5f37262c345d58891232c1a1d886e971470385112.pdf",
+    "https://www.alstom.com/solutions/rolling-stock/traxx-locomotives-superior-performance-every-environment",
+    "https://www.deutschebahn.com/resource/blob/12724132/94cb6e76adb9ff756caf9f2940d0bcba/DB-245_________12-2013-data.pdf",
+    "https://mediathek.deutschebahn.com/marsDB/en/instance/picture/Regionalbahn-zwischen-Biessenhofen---Fuessen.xhtml?oid=4771052",
+    "https://static.maerklin.de/damcontent/67/c1/67c14cd4c5695139104abb44a822f3e81714454196.pdf",
     "https://static.maerklin.de/damcontent/e8/c7/e8c7b162b92f2a98c76550a19ffc900c1654606154.pdf",
     "https://www.deutschebahn.com/resource/blob/12723972/27f230ccadd935116edcb92217fda017/DB-Wg-D_____11-2004_Doppelstock-data.pdf"
   ],
+  "assetRevision": "reference-detail-r2",
+  "revisionNotes": {
+    "br245Cab": "surface-fitted dark visor, split windscreens, destination display, fascia lamp stacks, wipers and swept side glazing",
+    "br245Body": "asymmetric diesel intake grilles, access panels, cab steps and segmented multi-engine roof equipment",
+    "doubleDeckCars": "inset window seals, detailed twin-leaf doors, handles, class markers, REGIO lettering and ribbed HVAC housings"
+  },
   "productionRegistryModified": false
 }

@@ -43,6 +43,14 @@ WHEEL_TREAD_CENTER_METERS = STANDARD_GAUGE_METERS / 2
 RAIL_CONTACT_PLANE_Z = 0.0
 PANTOGRAPH_CONTACT_HEIGHT_METERS = 5.5
 
+# Non-overlapping exterior colour datums. Keeping these panels edge-to-edge is
+# important after the 0.071 runtime scale: overlapping near-coplanar surfaces
+# previously let graphite win the depth test and appear as a large black slab.
+CLASSIC_SKIRT_BOTTOM = 0.68
+CLASSIC_SKIRT_TOP = 1.22
+CLASSIC_GRAPHITE_TOP = 2.26
+CLASSIC_RED_BELT_TOP = 2.46
+
 OFFICIAL_SOURCES = (
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
     "https://www.oebb.at/de/reiseplanung-services/im-zug/unsere-zuege/railjet",
@@ -470,20 +478,28 @@ def add_coach_livery(
         # The prototype used a continuous black window ribbon here. Real
         # Viaggio Comfort cars retain wine-red bodywork between each window;
         # only the glazing and its narrow seals are dark.
-        add_box(collection, cube, f"{role}_graphite_flank_{side}", (band_length + 0.18, 0.048, 1.18), (band_center, y + side * 0.006, 1.68), materials["anthracite"], root)
-        add_box(collection, cube, f"{role}_red_belt_{side}", (band_length + 0.10, 0.056, 0.19), (band_center, y + side * 0.014, 2.36), materials["signal_red"], root)
-        add_box(collection, cube, f"{role}_silver_skirt_{side}", (band_length + 0.28, 0.052, 0.56), (band_center, y + side * 0.012, 0.95), materials["light_body"], root)
+        panel_y = y + side * 0.014
+        add_box(collection, cube, f"{role}_graphite_flank_{side}", (band_length + 0.18, 0.058, CLASSIC_GRAPHITE_TOP - CLASSIC_SKIRT_TOP - 0.012), (band_center, panel_y, (CLASSIC_SKIRT_TOP + CLASSIC_GRAPHITE_TOP) / 2), materials["anthracite"], root)
+        add_box(collection, cube, f"{role}_red_belt_{side}", (band_length + 0.10, 0.058, CLASSIC_RED_BELT_TOP - CLASSIC_GRAPHITE_TOP - 0.012), (band_center, panel_y, (CLASSIC_GRAPHITE_TOP + CLASSIC_RED_BELT_TOP) / 2), materials["signal_red"], root)
+        add_box(collection, cube, f"{role}_silver_skirt_{side}", (band_length + 0.28, 0.058, CLASSIC_SKIRT_TOP - CLASSIC_SKIRT_BOTTOM - 0.012), (band_center, panel_y, (CLASSIC_SKIRT_BOTTOM + CLASSIC_SKIRT_TOP) / 2), materials["light_body"], root)
 
         door_positions = [-10.7, 10.7]
         if nose_negative:
             door_positions = [-8.8, 10.7]
         for door_index, x in enumerate(door_positions):
-            add_box(collection, cube, f"{role}_door_surround_{side}_{door_index}", (1.30, 0.058, 2.22), (x, y + side * 0.020, 2.08), materials["light_body"], root)
-            add_box(collection, cube, f"{role}_door_{side}_{door_index}", (1.08, 0.066, 2.04), (x, y + side * 0.032, 2.10), materials["anthracite"], root)
-            add_box(collection, cube, f"{role}_door_window_{side}_{door_index}", (0.72, 0.07, 0.72), (x, y + side * 0.055, 2.73), materials["glass"], root)
+            door_bottom = 1.08
+            door_top = 3.12
+            add_box(collection, cube, f"{role}_door_surround_{side}_{door_index}", (1.30, 0.062, 2.22), (x, y + side * 0.022, 2.08), materials["light_body"], root)
+            upper_height = door_top - CLASSIC_RED_BELT_TOP
+            lower_height = CLASSIC_GRAPHITE_TOP - CLASSIC_SKIRT_TOP
+            skirt_height = CLASSIC_SKIRT_TOP - door_bottom
+            add_box(collection, cube, f"{role}_door_upper_leaf_{side}_{door_index}", (1.08, 0.072, upper_height), (x, y + side * 0.038, CLASSIC_RED_BELT_TOP + upper_height / 2), materials["railjet_red"], root)
+            add_box(collection, cube, f"{role}_door_lower_leaf_{side}_{door_index}", (1.08, 0.072, lower_height), (x, y + side * 0.038, CLASSIC_SKIRT_TOP + lower_height / 2), materials["anthracite"], root)
+            add_box(collection, cube, f"{role}_door_skirt_leaf_{side}_{door_index}", (1.08, 0.072, skirt_height), (x, y + side * 0.038, door_bottom + skirt_height / 2), materials["light_body"], root)
+            add_box(collection, cube, f"{role}_door_red_belt_{side}_{door_index}", (1.08, 0.080, CLASSIC_RED_BELT_TOP - CLASSIC_GRAPHITE_TOP), (x, y + side * 0.050, (CLASSIC_GRAPHITE_TOP + CLASSIC_RED_BELT_TOP) / 2), materials["signal_red"], root)
+            add_box(collection, cube, f"{role}_door_window_{side}_{door_index}", (0.42, 0.088, 0.76), (x, y + side * 0.074, 2.76), materials["glass"], root)
+            add_box(collection, cube, f"{role}_door_handle_{side}_{door_index}", (0.05, 0.092, 0.32), (x + 0.34, y + side * 0.078, 2.12), materials["steel"], root)
             add_box(collection, cube, f"{role}_door_step_{side}_{door_index}", (1.05, 0.18, 0.11), (x, y + side * 0.16, 1.03), materials["steel"], root)
-            edge_x = x + (0.52 if door_index else -0.52)
-            add_box(collection, cube, f"{role}_door_edge_red_{side}_{door_index}", (0.075, 0.078, 1.72), (edge_x, y + side * 0.048, 2.13), materials["signal_red"], root)
 
         usable_start = -8.85 if not nose_negative else -6.95
         usable_end = 8.85
@@ -971,7 +987,7 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "liveryRevision": "reference-calibrated-v2" if LIVERY_V2_REVIEW else "production-v1",
+        "liveryRevision": "reference-calibrated-v2.1" if LIVERY_V2_REVIEW else "production-v1",
         "liveryReferenceNotes": {
             "upperBody": "OEBB wine red",
             "accent": "bright red belt and cab sweep",
@@ -979,6 +995,8 @@ def main() -> None:
             "skirt": "cool aluminium",
             "roof": "dark graphite",
             "lettering": "original Blender-font approximation; no copied logo artwork",
+            "doorLeaf": "continuous wine-red, bright-red, graphite and aluminium body datums with a narrow vertical window",
+            "depthFix": "all side colour panels use non-overlapping vertical spans to prevent WebGL z-fighting",
         },
         "productionRailjetModified": not LIVERY_V2_REVIEW,
     }

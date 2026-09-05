@@ -1541,6 +1541,44 @@ button:disabled {
   animation: toast-in 180ms ease-out;
 }
 
+.badge-unlock-notice {
+  position: absolute;
+  z-index: 52;
+  top: 88px;
+  right: 20px;
+  width: min(310px, calc(100vw - 40px));
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 225, 132, 0.82);
+  border-radius: 14px;
+  color: #f9f4df;
+  background: linear-gradient(135deg, rgba(29, 50, 46, 0.97), rgba(80, 54, 23, 0.96));
+  box-shadow: 0 16px 44px rgba(14, 27, 25, 0.32), inset 0 0 22px rgba(255, 208, 70, 0.08);
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  animation: badge-unlock-in 360ms cubic-bezier(0.2, 0.86, 0.22, 1);
+}
+
+.badge-unlock-notice > span {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 221, 115, 0.14);
+  font-size: 1.5rem;
+}
+
+.badge-unlock-notice div { display: grid; gap: 2px; }
+.badge-unlock-notice small { color: #f1c85d; font-size: 0.52rem; font-weight: 900; letter-spacing: 0.14em; }
+.badge-unlock-notice strong { font-size: 0.82rem; }
+.badge-unlock-notice em { color: rgba(249, 244, 223, 0.72); font-size: 0.6rem; font-style: normal; }
+.badge-unlock-notice > b { color: #f1c85d; font-size: 0.66rem; }
+
 .debug-tools {
   position: absolute;
   z-index: 60;
@@ -1939,6 +1977,11 @@ button:disabled {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+@keyframes badge-unlock-in {
+  from { opacity: 0; transform: translateX(28px) scale(0.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
 @keyframes cleanliness-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(181, 31, 46, 0); }
   50% { box-shadow: 0 0 0 6px rgba(181, 31, 46, 0.17); }
@@ -1999,6 +2042,11 @@ button:disabled {
   }
   .event-banner > span { width: 34px; height: 34px; font-size: 1.05rem; }
   .event-banner em { font-size: 0.58rem; }
+  .badge-unlock-notice {
+    top: 102px;
+    right: 10px;
+    width: min(280px, calc(100vw - 20px));
+  }
   .mission-chip p { display: none; }
   .mission-chip.event-active { top: 220px; }
   .game-nav {

@@ -6,7 +6,7 @@ import { readFile, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { LENGTH_COSTS, PLATFORM_COSTS, TIER_COSTS, TRAINS, createInitialState } from "../app/game/data";
-import { BADGES } from "../app/game/badges";
+import { BADGES, newlyUnlockedBadgeIds } from "../app/game/badges";
 import { decodeSave, encodeSave } from "../app/game/save";
 import {
   canPurchase,
@@ -66,6 +66,7 @@ import {
   RAILWAY_METRIC_PROFILE,
   metricPlatformCenter,
   platformLengthMeters,
+  platformTunnelOffset,
   productionTrackCenter,
   railwayMetersToWorld,
 } from "../app/game/metricRailway";
@@ -107,6 +108,12 @@ describe("Corner Rails economy and progression", () => {
     expect(tiered.coins).toBe(99_500);
   });
 
+  it("renders the station tier button from the shared 500-coin cost table", async () => {
+    const uiSource = await readFile(path.resolve("app/CornerRails.tsx"), "utf8");
+    expect(uiSource).toContain("TIER_COSTS[state.tier - 1].toLocaleString()");
+    expect(uiSource).not.toContain("2,500");
+  });
+
   it("counts systems and structure against the same three-use cap", () => {
     let state = fundedState();
     state = purchaseUpgrade(state, { kind: "platform" });
@@ -136,6 +143,13 @@ describe("badges", () => {
     expect(BADGES).toHaveLength(12);
     expect(new Set(BADGES.map((badge) => badge.id)).size).toBe(12);
     expect(BADGES.every((badge) => badge.clue.length <= 45)).toBe(true);
+  });
+
+  it("identifies only newly unlocked badges for the corner notification queue", () => {
+    expect(newlyUnlockedBadgeIds(["grand-terminus"], ["grand-terminus", "storm-watcher", "perfect-score"])).toEqual([
+      "storm-watcher",
+      "perfect-score",
+    ]);
   });
 
   it("awards milestone and difficult badges from real game state", () => {
@@ -431,7 +445,13 @@ describe("Railjet visual bake-off assets", () => {
       expect(nodeNames.some((name) => name.startsWith("review_"))).toBe(false);
       expect(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).toHaveLength(definition.vehicleCount);
       expect(new Set(nodeNames.filter((name) => /^vehicle_\d\d_/.test(name))).size).toBe(definition.vehicleCount);
-      expect(nodeNames.some((name) => name.includes("taurus_cab") && name.includes("windshield"))).toBe(true);
+      expect(
+        nodeNames.some(
+          (name) =>
+            (name.includes("taurus_cab") || name.includes("taurus_reference_cab")) &&
+            (name.includes("windshield") || name.includes("windscreen")),
+        ),
+      ).toBe(true);
       expect(nodeNames.some((name) => name.includes("driving") && name.includes("windshield"))).toBe(true);
       expect(nodeNames.some((name) => name.includes("bogie"))).toBe(true);
       expect(nodeNames.some((name) => name.includes("door"))).toBe(true);
@@ -515,7 +535,7 @@ describe("per-train Blender approval laboratory", () => {
     expect(TRAIN_REVIEW_CANDIDATES["db-regional-express"]).toMatchObject({
       approvalStatus: "private-review",
       productionTrainId: "unassigned",
-      assetRevision: "1",
+      assetRevision: "2",
       vehicleCount: 4,
       nominalLengthMeters: 99.84,
       traction: "diesel",
@@ -553,6 +573,10 @@ describe("per-train Blender approval laboratory", () => {
     expect(nodeNames).toContain("vehicle_02_second_class");
     expect(nodeNames).toContain("vehicle_03_driving_trailer");
     expect(nodeNames.some((name) => name.includes("br245_engine_grille"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("br245_cab_1_windscreen_mask"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("br245_cab_1_wiper"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("door_centre_seam"))).toBe(true);
+    expect(nodeNames.some((name) => name.includes("window_seal"))).toBe(true);
     expect(nodeNames.some((name) => name.includes("driving_trailer_front_windscreen"))).toBe(true);
     expect(nodeNames.some((name) => name.includes("upper_window"))).toBe(true);
     expect(nodeNames.some((name) => name.includes("lower_window"))).toBe(true);
@@ -588,9 +612,11 @@ describe("per-train Blender approval laboratory", () => {
   it("records user reference filenames without copying or embedding the images", async () => {
     const manifest = JSON.parse(await readFile(path.resolve("assets/blender/db-regional-express/manifest.json"), "utf8"));
     expect(manifest).toMatchObject({
+      schemaVersion: 2,
       candidateId: "db-regional-express-dosto-br245",
       approvalStatus: "private-review",
       productionRegistryModified: false,
+      assetRevision: "reference-detail-r2",
       userReferenceFilenames: [
         "Regio_Clean_side_view.jpg",
         "Regio_miniature_view.jpg",
@@ -956,15 +982,11 @@ describe("per-train Blender approval laboratory", () => {
       assetRevision: "continuity-4",
       vehicleCount: 2,
       nominalLengthMeters: 50.61,
-      comparisonCandidateId: "ice3-br403-v2-unified",
-      comparisonLabel: "Complete unified formation",
     });
     expect(TRAIN_REVIEW_CANDIDATES["ice3-br403-v2"]).toMatchObject({
       vehicleCount: 8,
       nominalLengthMeters: 200.32,
       assetRevision: "formation-1",
-      comparisonCandidateId: "ice3-br403-v2-continuity",
-      comparisonLabel: "New continuity checkpoint",
     });
     const productionVisual = trainVisualVariants({ id: "ice3", modelKey: "ice3" })[0];
     expect(productionVisual).toEqual(ICE3_VISUAL_VARIANTS[0]);
@@ -1087,8 +1109,6 @@ describe("per-train Blender approval laboratory", () => {
       assetRevision: "production-unified-1",
       vehicleCount: 8,
       nominalLengthMeters: 200.32,
-      comparisonCandidateId: "ice3-br403-v2-continuity",
-      comparisonLabel: "Approved two-car checkpoint",
       headlights: {
         frontInsetMeters: 0.28,
         heightMeters: 1.675,
@@ -1392,7 +1412,7 @@ describe("per-train Blender approval laboratory", () => {
 });
 
 describe("production metric railway and Railjet registry", () => {
-  it("ships two private reference-livery Railjet candidates without changing production", async () => {
+  it("keeps classic Railjet private while promoting the approved new generation", async () => {
     const io = new NodeIO();
     const candidates = [
       { id: "railjet-classic-livery-v2" as const, length: 205.375, vehicles: 8 },
@@ -1406,7 +1426,11 @@ describe("production metric railway and Railjet registry", () => {
       const nodeNames = root.listNodes().map((node) => node.getName());
       const materialNames = root.listMaterials().map((material) => material.getName());
       const bounds = getBounds(root.listScenes()[0]);
-      expect(record).toMatchObject({ approvalStatus: "private-review", vehicleCount: candidate.vehicles, nominalLengthMeters: candidate.length });
+      expect(record).toMatchObject({
+        approvalStatus: candidate.id === "railjet-nextgen-livery-v2" ? "approved-production" : "private-review",
+        vehicleCount: candidate.vehicles,
+        nominalLengthMeters: candidate.length,
+      });
       const graphiteMaterial = candidate.id === "railjet-nextgen-livery-v2" ? "RJ2_Graphite_V2" : "RJ_Graphite";
       expect(materialNames).toEqual(expect.arrayContaining(["RJ_Wine_Red", "RJ_Bright_Red", graphiteMaterial, "RJ_Aluminium", "RJ_Smoked_Glass"]));
       expect(nodeNames.some((name) => name.includes("red_belt"))).toBe(true);
@@ -1418,9 +1442,14 @@ describe("production metric railway and Railjet registry", () => {
       expect((await stat(modelPath)).size).toBeLessThan(500_000);
 
       const manifest = JSON.parse(await readFile(path.resolve("assets/blender", candidate.id, "manifest.json"), "utf8"));
-      expect(manifest).toMatchObject({ schemaVersion: 3, vehicleCount: candidate.vehicles, productionRailjetModified: false });
+      expect(manifest).toMatchObject({
+        schemaVersion: 3,
+        vehicleCount: candidate.vehicles,
+        productionRailjetModified: candidate.id === "railjet-nextgen-livery-v2",
+      });
       expect(manifest.liveryRevision).toMatch(/^reference-calibrated-v2/);
       if (candidate.id === "railjet-nextgen-livery-v2") {
+        expect(record.assetPath).toBe("/models/trains/blender/railjet/railjet-nextgen-blender.glb");
         expect(materialNames).toContain("RJ2_Taurus_Headlamp");
         expect(nodeNames.some((name) => name.includes("wide_door"))).toBe(false);
         expect(nodeNames.some((name) => name.includes("door_upper_leaf"))).toBe(true);
@@ -1457,12 +1486,16 @@ describe("production metric railway and Railjet registry", () => {
         expect(nodeNames.filter((name) => name.includes("taurus_reference_cab_") && name.includes("headlight_lens"))).toHaveLength(8);
         expect(nodeNames.some((name) => name.startsWith("taurus_cab_") && name.includes("windshield"))).toBe(false);
         expect(nodeNames.some((name) => name.includes("taurus_bright_red_sweep"))).toBe(false);
+      } else {
+        expect(nodeNames.some((name) => name.includes("door_upper_leaf"))).toBe(true);
+        expect(nodeNames.some((name) => name.includes("door_red_belt"))).toBe(true);
+        expect(manifest.liveryRevision).toBe("reference-calibrated-v2.1");
       }
     }
 
     const digest = async (file: string) => createHash("sha256").update(await readFile(path.resolve(file))).digest("hex");
     expect(await digest("public/models/trains/blender/railjet/railjet-classic-blender.glb")).toBe("d1f489c7e6562051dba5e156a868e8b437bf95864e2070409bfab74ed1df9383");
-    expect(await digest("public/models/trains/blender/railjet/railjet-nextgen-blender.glb")).toBe("c054832ca766eee16dd4592d69d4ba42d0867bf963ab8f705e63dea8e75c49cc");
+    expect(await digest("public/models/trains/blender/railjet/railjet-nextgen-blender.glb")).toBe("a6e2ef2bcefb3ca111f78d84dce49eb1c0bbaef9dc51e5f867b1f255126db56f");
     expect(await digest("public/models/trains/railjet.glb")).toBe("9b0bdff278461f9ad9fe35378679e8e82c31839bcdc487bda53a159175f9503e");
   });
 
@@ -1486,6 +1519,8 @@ describe("production metric railway and Railjet registry", () => {
     const nearPlatformEdge = platformCenter - railwayMetersToWorld(RAILWAY_METRIC_PROFILE.platformWidthMeters / 2);
     const trainSide = laneCenters[4] + railwayMetersToWorld(RAILWAY_METRIC_PROFILE.vehicleWidthMeters / 2);
     expect(nearPlatformEdge - trainSide).toBeCloseTo(railwayMetersToWorld(0.2), 6);
+    expect(platformTunnelOffset(220)).toBeGreaterThan(0);
+    expect(platformTunnelOffset(280)).toBeLessThan(railwayMetersToWorld(280) / 2);
   });
 
   it("keeps every still-unapproved train on its temporary legacy profile", () => {

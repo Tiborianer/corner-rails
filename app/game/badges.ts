@@ -30,3 +30,8 @@ export const BADGE_IDS = new Set<BadgeId>(BADGES.map((badge) => badge.id));
 export function isBadgeId(value: unknown): value is BadgeId {
   return typeof value === "string" && BADGE_IDS.has(value as BadgeId);
 }
+
+export function newlyUnlockedBadgeIds(previous: readonly BadgeId[], current: readonly BadgeId[]) {
+  const alreadyUnlocked = new Set(previous);
+  return current.filter((badgeId) => !alreadyUnlocked.has(badgeId));
+}

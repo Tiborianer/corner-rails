@@ -104,8 +104,10 @@ RAIL_CONTACT_PLANE_Z = 0.0
 # The user's four local images remain the primary appearance references, but are
 # intentionally represented by filename only and are not copied into the repo.
 OFFICIAL_SOURCES = (
-    "https://www.alstom.com/solutions/rolling-stock/locomotives/traxx-passenger-locomotives-comfortable-borderless-operations-passengers",
-    "https://static.maerklin.de/damcontent/c5/f3/c5f37262c345d58891232c1a1d886e971470385112.pdf",
+    "https://www.alstom.com/solutions/rolling-stock/traxx-locomotives-superior-performance-every-environment",
+    "https://www.deutschebahn.com/resource/blob/12724132/94cb6e76adb9ff756caf9f2940d0bcba/DB-245_________12-2013-data.pdf",
+    "https://mediathek.deutschebahn.com/marsDB/en/instance/picture/Regionalbahn-zwischen-Biessenhofen---Fuessen.xhtml?oid=4771052",
+    "https://static.maerklin.de/damcontent/67/c1/67c14cd4c5695139104abb44a822f3e81714454196.pdf",
     "https://static.maerklin.de/damcontent/e8/c7/e8c7b162b92f2a98c76550a19ffc900c1654606154.pdf",
     "https://www.deutschebahn.com/resource/blob/12723972/27f230ccadd935116edcb92217fda017/DB-Wg-D_____11-2004_Doppelstock-data.pdf",
 )
@@ -149,7 +151,7 @@ def reset_scene() -> None:
 
 def make_materials() -> dict[str, bpy.types.Material]:
     make = common.make_material
-    return {
+    materials = {
         "traffic_red": make("DBRE_Traffic_Red", (0.66, 0.012, 0.025, 1), metallic=0.05, roughness=0.38),
         "deep_red": make("DBRE_Deep_Red", (0.30, 0.008, 0.014, 1), metallic=0.08, roughness=0.42),
         "light_grey": make("DBRE_Light_Grey", (0.74, 0.75, 0.72, 1), metallic=0.14, roughness=0.39),
@@ -168,6 +170,23 @@ def make_materials() -> dict[str, bpy.types.Material]:
         "sleeper": make("DBRE_Review_Sleeper", (0.23, 0.14, 0.08, 1), roughness=0.92),
         "ground": make("DBRE_Review_Ground", (0.25, 0.37, 0.27, 1), roughness=0.98),
     }
+    lamp_bsdf = materials["lamp"].node_tree.nodes.get("Principled BSDF")
+    if lamp_bsdf:
+        emission_input = lamp_bsdf.inputs.get("Emission Color") or lamp_bsdf.inputs.get("Emission")
+        if emission_input:
+            emission_input.default_value = (1.0, 0.70, 0.22, 1.0)
+        emission_strength = lamp_bsdf.inputs.get("Emission Strength")
+        if emission_strength:
+            emission_strength.default_value = 2.4
+    display_bsdf = materials["display"].node_tree.nodes.get("Principled BSDF")
+    if display_bsdf:
+        emission_input = display_bsdf.inputs.get("Emission Color") or display_bsdf.inputs.get("Emission")
+        if emission_input:
+            emission_input.default_value = (0.34, 0.58, 0.04, 1.0)
+        emission_strength = display_bsdf.inputs.get("Emission Strength")
+        if emission_strength:
+            emission_strength.default_value = 1.1
+    return materials
 
 
 LOCO_PROFILE = (
@@ -286,13 +305,13 @@ def add_front_face(
     trailer: bool = False,
 ) -> None:
     s = float(sign)
-    face_x = s * (half_length + 0.035)
-    # The final cab shell is deliberately blunt like the supplied BR 245 and
-    # Dosto references. Keep the recognition surfaces just outside that end
-    # plane so they cannot disappear into the loft when the nose is thickened.
-    top_x = face_x
+    face_x = s * (half_length + 0.025)
     lower_z = 2.22 if trailer else 2.48
     upper_z = 3.74 if trailer else 3.64
+    if not trailer:
+        add_br245_front_details(collection, root, cube, materials, sign=sign, half_length=half_length, prefix=prefix)
+        return
+    top_x = face_x - s * 0.12
     mask_vertices = [
         (face_x, -1.02, lower_z), (face_x, 1.02, lower_z),
         (top_x, 1.15, upper_z), (top_x, -1.15, upper_z),
@@ -323,6 +342,119 @@ def add_front_face(
     common.add_box(collection, cube, f"{prefix}_centre_lamp", (0.09, 0.24, 0.18), (top_x + s * 0.04, 0, upper_z + 0.43), materials["lamp"], root)
 
 
+def br245_front_surface_x(sign: int, y: float, z: float, half_length: float, offset: float = 0.0) -> float:
+    """Sample the gently raked, slightly crowned TRAXX DE cab face."""
+    height = max(0.0, min(1.0, (z - 1.20) / 2.55))
+    crown = 0.012 * (abs(y) / 1.18) ** 1.6
+    # The shared loft closes at the nominal end plane. Keep every recognition
+    # patch just outside that cap, while a subtle height slope still makes the
+    # visor and fascia read as one raked surface at isometric scale.
+    return sign * (half_length + 0.052 - 0.018 * height - crown + offset)
+
+
+def add_br245_front_patch(
+    collection: bpy.types.Collection,
+    root: bpy.types.Object,
+    materials: dict[str, bpy.types.Material],
+    *,
+    name: str,
+    sign: int,
+    half_length: float,
+    yz_outline: list[tuple[float, float]],
+    material_key: str,
+    offset: float,
+) -> bpy.types.Object:
+    points = yz_outline if sign > 0 else list(reversed(yz_outline))
+    vertices = [(br245_front_surface_x(sign, y, z, half_length, offset), y, z) for y, z in points]
+    mesh = common.polygon_mesh(f"{name}_mesh", vertices, materials[material_key])
+    return common.link_object(collection, name, mesh, parent=root)
+
+
+def add_br245_front_details(
+    collection: bpy.types.Collection,
+    root: bpy.types.Object,
+    cube: bpy.types.Mesh,
+    materials: dict[str, bpy.types.Material],
+    *,
+    sign: int,
+    half_length: float,
+    prefix: str,
+) -> None:
+    # White/grey lower fascia and dark visor reproduce the strongest BR 245
+    # recognition cues without shipping a protected DB logo texture.
+    add_br245_front_patch(
+        collection, root, materials, name=f"{prefix}_light_fascia", sign=sign,
+        half_length=half_length,
+        yz_outline=[(-0.91, 1.16), (-1.04, 2.34), (1.04, 2.34), (0.91, 1.16)],
+        material_key="light_grey", offset=0.022,
+    )
+    add_br245_front_patch(
+        collection, root, materials, name=f"{prefix}_windscreen_mask", sign=sign,
+        half_length=half_length,
+        yz_outline=[(-1.08, 2.58), (-1.10, 3.45), (-0.91, 3.69), (0.91, 3.69), (1.10, 3.45), (1.08, 2.58)],
+        material_key="anthracite", offset=0.030,
+    )
+    for pane_side in (-1, 1):
+        outline = [
+            (pane_side * 0.08, 2.70), (pane_side * 0.92, 2.70),
+            (pane_side * 0.96, 3.37), (pane_side * 0.79, 3.56),
+            (pane_side * 0.10, 3.56),
+        ]
+        if pane_side > 0:
+            outline.reverse()
+        add_br245_front_patch(
+            collection, root, materials, name=f"{prefix}_windscreen_{pane_side}", sign=sign,
+            half_length=half_length, yz_outline=outline, material_key="glass", offset=0.045,
+        )
+        # Twin rectangular lamp stacks sit in the pale front fascia.
+        lamp_y = pane_side * 0.72
+        for lamp_index, lamp_z in enumerate((1.55, 1.86)):
+            lamp_x = br245_front_surface_x(sign, lamp_y, lamp_z, half_length, 0.052)
+            common.add_box(
+                collection, cube, f"{prefix}_lamp_{pane_side}_{lamp_index}",
+                (0.055, 0.30, 0.18), (lamp_x, lamp_y, lamp_z), materials["lamp"], root,
+            )
+    display_x = br245_front_surface_x(sign, 0.0, 3.84, half_length, 0.045)
+    common.add_box(collection, cube, f"{prefix}_destination_display", (0.055, 1.10, 0.21), (display_x, 0, 3.84), materials["display"], root)
+    # A narrow centre seam, wipers and grab rails keep the cab readable close up.
+    common.add_box(collection, cube, f"{prefix}_windscreen_divider", (0.052, 0.055, 0.83), (br245_front_surface_x(sign, 0, 3.12, half_length, 0.054), 0, 3.12), materials["anthracite"], root)
+    for wiper_side in (-1, 1):
+        common.add_beam_between(
+            collection, cube, f"{prefix}_wiper_{wiper_side}",
+            (br245_front_surface_x(sign, wiper_side * 0.50, 2.72, half_length, 0.060), wiper_side * 0.50, 2.72),
+            (br245_front_surface_x(sign, wiper_side * 0.20, 3.42, half_length, 0.060), wiper_side * 0.20, 3.42),
+            0.028, materials["underframe"], root,
+        )
+
+
+def br245_side_surface_y(side: int, x: float, offset: float = 0.0) -> float:
+    x_abs = abs(x)
+    if x_abs <= 7.70:
+        half_width = LOCOMOTIVE_WIDTH / 2
+    elif x_abs <= 8.30:
+        half_width = LOCOMOTIVE_WIDTH / 2 - 0.03 * ((x_abs - 7.70) / 0.60)
+    else:
+        half_width = LOCOMOTIVE_WIDTH / 2 - 0.31 * min(1.0, (x_abs - 8.30) / 1.15)
+    return side * (half_width + offset)
+
+
+def add_br245_side_patch(
+    collection: bpy.types.Collection,
+    root: bpy.types.Object,
+    materials: dict[str, bpy.types.Material],
+    *,
+    name: str,
+    side: int,
+    xz_outline: list[tuple[float, float]],
+    material_key: str,
+    offset: float,
+) -> bpy.types.Object:
+    points = xz_outline if side > 0 else list(reversed(xz_outline))
+    vertices = [(x, br245_side_surface_y(side, x, offset), z) for x, z in points]
+    mesh = common.polygon_mesh(f"{name}_mesh", vertices, materials[material_key])
+    return common.link_object(collection, name, mesh, parent=root)
+
+
 def build_br245(
     prototypes: bpy.types.Collection,
     cube: bpy.types.Mesh,
@@ -335,9 +467,9 @@ def build_br245(
     root["class"] = "DB Class 245 / TRAXX DE Multi-Engine"
     root["length_m"] = LOCOMOTIVE_LENGTH
     sections = [
-        (-9.45, 0.82, 0.90, -0.03), (-9.02, 0.92, 0.96, -0.01), (-8.25, 0.99, 0.99, 0),
+        (-9.45, 0.68, 0.84, -0.08), (-9.12, 0.84, 0.92, -0.04), (-8.62, 0.95, 0.98, -0.01), (-8.25, 0.99, 0.99, 0),
         (-7.72, 1.0, 1.0, 0), (7.72, 1.0, 1.0, 0), (8.25, 0.99, 0.99, 0),
-        (9.02, 0.92, 0.96, -0.01), (9.45, 0.82, 0.90, -0.03),
+        (8.62, 0.95, 0.98, -0.01), (9.12, 0.84, 0.92, -0.04), (9.45, 0.68, 0.84, -0.08),
     ]
     shell = common.loft_mesh("br245_lofted_body_mesh", sections, LOCO_PROFILE, materials["traffic_red"])
     common.link_object(collection, "br245_lofted_body", shell, parent=root)
@@ -348,15 +480,39 @@ def build_br245(
         y = side * (LOCOMOTIVE_WIDTH / 2 + 0.014)
         common.add_box(collection, cube, f"br245_lower_grey_band_{side}", (15.8, 0.05, 0.50), (0, y, 1.14), materials["mid_grey"], root)
         for cab_sign in (-1, 1):
-            common.add_box(collection, cube, f"br245_side_window_{side}_{cab_sign}", (1.05, 0.065, 0.74), (cab_sign * 7.48, y + side * 0.04, 3.18), materials["glass"], root)
+            sign = float(cab_sign)
+            cab_mask = [
+                (sign * 6.88, 2.73), (sign * 8.62, 2.79),
+                (sign * 8.38, 3.57), (sign * 6.95, 3.59),
+            ]
+            cab_glass = [
+                (sign * 7.02, 2.82), (sign * 8.42, 2.87),
+                (sign * 8.24, 3.45), (sign * 7.08, 3.48),
+            ]
+            if cab_sign < 0:
+                cab_mask.reverse()
+                cab_glass.reverse()
+            add_br245_side_patch(collection, root, materials, name=f"br245_side_window_mask_{side}_{cab_sign}", side=side, xz_outline=cab_mask, material_key="anthracite", offset=0.018)
+            add_br245_side_patch(collection, root, materials, name=f"br245_side_window_glass_{side}_{cab_sign}", side=side, xz_outline=cab_glass, material_key="glass", offset=0.026)
             common.add_box(collection, cube, f"br245_cab_door_{side}_{cab_sign}", (0.78, 0.062, 1.82), (cab_sign * 6.42, y + side * 0.025, 2.14), materials["traffic_red"], root)
-            common.add_box(collection, cube, f"br245_cab_door_window_{side}_{cab_sign}", (0.54, 0.07, 0.54), (cab_sign * 6.42, y + side * 0.06, 2.75), materials["glass"], root)
-        # The large vertical engine-room grilles are the quickest BR245 side cue.
-        for vent_index, x in enumerate((-4.15, -2.95, 1.55, 2.75, 3.95)):
-            common.add_box(collection, cube, f"br245_engine_grille_{side}_{vent_index}", (0.88, 0.07, 1.00), (x, y + side * 0.045, 2.66), materials["deep_red"], root)
-            for rib in range(5):
-                common.add_box(collection, cube, f"br245_engine_grille_{side}_{vent_index}_rib_{rib}", (0.035, 0.078, 0.84), (x - 0.31 + rib * 0.155, y + side * 0.06, 2.66), materials["anthracite"], root)
-        common.add_box(collection, cube, f"br245_centre_access_panel_{side}", (2.15, 0.062, 1.18), (-0.15, y + side * 0.03, 2.46), materials["traffic_red"], root)
+            common.add_box(collection, cube, f"br245_cab_door_window_mask_{side}_{cab_sign}", (0.60, 0.070, 0.64), (cab_sign * 6.42, y + side * 0.054, 2.78), materials["anthracite"], root)
+            common.add_box(collection, cube, f"br245_cab_door_window_{side}_{cab_sign}", (0.48, 0.076, 0.52), (cab_sign * 6.42, y + side * 0.072, 2.78), materials["glass"], root)
+            common.add_box(collection, cube, f"br245_cab_door_handle_{side}_{cab_sign}", (0.055, 0.084, 0.30), (cab_sign * 6.13, y + side * 0.076, 2.03), materials["light_grey"], root)
+            for step_index in range(3):
+                common.add_box(collection, cube, f"br245_cab_step_{side}_{cab_sign}_{step_index}", (0.34, 0.14, 0.08), (cab_sign * (6.12 + step_index * 0.11), y + side * 0.13, 1.23 - step_index * 0.17), materials["steel"], root)
+
+        # One large central intake plus asymmetric auxiliary grilles matches
+        # the TRAXX DE Multi-Engine silhouette better than repeated windows.
+        grille_specs = [(-4.00, 1.62, 0.82), (-2.55, 0.76, 0.72), (2.10, 0.76, 0.72), (3.55, 1.62, 0.82)]
+        for vent_index, (x, width, height) in enumerate(grille_specs):
+            common.add_box(collection, cube, f"br245_engine_grille_{side}_{vent_index}", (width, 0.075, height), (x, y + side * 0.050, 2.82), materials["deep_red"], root)
+            for rib in range(7):
+                rib_z = 2.82 - height * 0.36 + rib * height * 0.12
+                common.add_box(collection, cube, f"br245_engine_grille_{side}_{vent_index}_rib_{rib}", (width * 0.87, 0.082, 0.025), (x, y + side * 0.070, rib_z), materials["anthracite"], root)
+        common.add_box(collection, cube, f"br245_centre_access_panel_{side}", (2.45, 0.064, 1.32), (-0.18, y + side * 0.036, 2.43), materials["traffic_red"], root)
+        common.add_box(collection, cube, f"br245_centre_panel_seam_{side}", (0.035, 0.080, 1.18), (-0.18, y + side * 0.074, 2.43), materials["deep_red"], root)
+        for fastener_x in (-1.18, 0.82):
+            common.add_box(collection, cube, f"br245_access_handle_{side}_{fastener_x}", (0.04, 0.084, 0.26), (fastener_x, y + side * 0.078, 2.30), materials["light_grey"], root)
 
     for sign in (-1, 1):
         add_front_face(collection, root, cube, materials, sign=sign, half_length=LOCOMOTIVE_LENGTH / 2, prefix=f"br245_cab_{sign}")
@@ -402,9 +558,13 @@ def add_dosto_side_details(
         common.add_box(collection, cube, f"{role}_lower_skirt_{side}", (body_length + 0.12, 0.06, 0.46), (body_center, y + side * 0.024, 0.98), materials["mid_grey"], root)
 
         for door_index, x in enumerate(door_positions):
+            common.add_box(collection, cube, f"{role}_door_recess_{side}_{door_index}", (1.54, 0.070, 2.44), (x, y + side * 0.030, 2.05), materials["mid_grey"], root)
             common.add_box(collection, cube, f"{role}_door_{side}_{door_index}", (1.42, 0.072, 2.34), (x, y + side * 0.038, 2.05), materials["light_grey"], root)
+            common.add_box(collection, cube, f"{role}_door_centre_seam_{side}_{door_index}", (0.035, 0.086, 2.18), (x, y + side * 0.084, 2.05), materials["mid_grey"], root)
             for leaf in (-1, 1):
+                common.add_box(collection, cube, f"{role}_door_glass_seal_{side}_{door_index}_{leaf}", (0.40, 0.086, 0.82), (x + leaf * 0.29, y + side * 0.078, 2.58), materials["anthracite"], root)
                 common.add_box(collection, cube, f"{role}_door_glass_{side}_{door_index}_{leaf}", (0.34, 0.082, 0.74), (x + leaf * 0.29, y + side * 0.082, 2.58), materials["glass"], root)
+                common.add_box(collection, cube, f"{role}_door_handle_{side}_{door_index}_{leaf}", (0.035, 0.094, 0.28), (x + leaf * 0.12, y + side * 0.090, 2.02), materials["anthracite"], root)
             common.add_box(collection, cube, f"{role}_door_step_{side}_{door_index}", (1.34, 0.20, 0.12), (x, y + side * 0.17, 0.86), materials["steel"], root)
 
         upper_count = 10 if not cab_at_negative else 8
@@ -416,16 +576,21 @@ def add_dosto_side_details(
         for index in range(upper_count):
             x = window_start + upper_spacing * (index + 0.5)
             width = upper_spacing * 0.70
+            common.add_box(collection, cube, f"{role}_upper_window_seal_{side}_{index}", (width + 0.10, 0.078, 0.72), (x, y + side * 0.057, 3.62), materials["anthracite"], root)
             common.add_box(collection, cube, f"{role}_upper_window_{side}_{index}", (width, 0.075, 0.62), (x, y + side * 0.064, 3.62), materials["glass"], root)
             common.add_box(collection, cube, f"{role}_upper_window_warm_{side}_{index}", (width * 0.82, 0.025, 0.44), (x, y - side * 0.01, 3.59), materials["warm_glass"], root)
         for index in range(lower_count):
             x = window_start + lower_spacing * (index + 0.5)
             width = lower_spacing * 0.66
+            common.add_box(collection, cube, f"{role}_lower_window_seal_{side}_{index}", (width + 0.10, 0.078, 0.77), (x, y + side * 0.058, 1.72), materials["anthracite"], root)
             common.add_box(collection, cube, f"{role}_lower_window_{side}_{index}", (width, 0.075, 0.67), (x, y + side * 0.065, 1.72), materials["glass"], root)
             common.add_box(collection, cube, f"{role}_lower_window_warm_{side}_{index}", (width * 0.82, 0.025, 0.48), (x, y - side * 0.01, 1.70), materials["warm_glass"], root)
 
         if mixed_class:
             common.add_box(collection, cube, f"{role}_first_class_marker_{side}", (4.35, 0.065, 0.075), (4.65, y + side * 0.07, 4.05), materials["first_marker"], root)
+        common.add_text_label(collection, f"{role}_regio_label_{side}", "REGIO", (0.2, y + side * 0.095, 2.68), materials["light_grey"], root, side=side, size=0.34, scale_x=0.84)
+        for door_index, x in enumerate(door_positions):
+            common.add_text_label(collection, f"{role}_class_2_{side}_{door_index}", "2", (x + 0.92, y + side * 0.096, 2.64), materials["light_grey"], root, side=side, size=0.28)
 
     roof_mesh = roof_surface_mesh(f"{role}_roof_mesh", COACH_LENGTH, cab_cut=3.18 if cab_at_negative else 0.34)
     common.link_object(collection, f"{role}_curved_roof", roof_mesh, parent=root, material=materials["roof"])
@@ -438,6 +603,8 @@ def add_dosto_side_details(
         if cab_at_negative and index == 0:
             continue
         common.add_box(collection, cube, f"{role}_roof_hvac_{index}", (2.8, 1.56, 0.20), (x, 0, 4.69), materials["mid_grey"], root)
+        for rib in range(5):
+            common.add_box(collection, cube, f"{role}_roof_hvac_{index}_rib_{rib}", (0.055, 1.44, 0.045), (x - 0.90 + rib * 0.45, 0, 4.81), materials["steel"], root)
 
 
 def build_dosto_coach(
@@ -614,7 +781,7 @@ def main() -> None:
     bpy.ops.wm.save_as_mainfile(filepath=str(MASTER_PATH), compress=True)
 
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "generator": "Blender 5.2 LTS Python API",
         "candidateId": "db-regional-express-dosto-br245",
         "approvalStatus": "private-review",
@@ -645,6 +812,12 @@ def main() -> None:
         "userReferenceFilenames": list(USER_REFERENCE_FILENAMES),
         "referencePolicy": "Research only. Local images are not copied, embedded, textured, or shipped.",
         "sources": list(OFFICIAL_SOURCES),
+        "assetRevision": "reference-detail-r2",
+        "revisionNotes": {
+            "br245Cab": "surface-fitted dark visor, split windscreens, destination display, fascia lamp stacks, wipers and swept side glazing",
+            "br245Body": "asymmetric diesel intake grilles, access panels, cab steps and segmented multi-engine roof equipment",
+            "doubleDeckCars": "inset window seals, detailed twin-leaf doors, handles, class markers, REGIO lettering and ribbed HVAC housings",
+        },
         "productionRegistryModified": False,
     }
     (SOURCE_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

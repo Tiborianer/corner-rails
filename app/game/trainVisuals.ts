@@ -55,7 +55,7 @@ export const RAILJET_VISUAL_VARIANTS = [
     lengthMeters: 258,
     minimumLengthLevel: 5,
     selectionWeight: 1,
-    revision: "blender-2026-08-16",
+    revision: "blender-livery-v2-2026-09-05",
   },
 ] as const satisfies readonly TrainVisualVariant[];
 

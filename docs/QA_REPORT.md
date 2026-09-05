@@ -188,6 +188,14 @@ The new-generation candidate was revised through V2.2 after visual review expose
 V2.3 leaves those corrected passenger cars byte-identical and rebuilds only the Class 1116 Taurus treatment. The front visor and two trapezoidal panes are sampled against the curved cab skin, swept side windows follow the taper, the fake row of six square side vents is replaced by high shoulder grilles, and the former diagonal slash becomes one broad level bright-red belt with short surface-following cab wraps. New exact front and side Blender captures complement the existing three-quarter review. The production classic, production new-generation and rollback Railjet GLBs remain byte-identical.
 
 The normal game now contains twelve persistent badges spanning approachable milestones and difficult long-term challenges. A compact medal counter opens a collection drawer with a short clue, difficulty and unlocked state. Award checks use real simulation state, survive prestige and `CR1` export/import, and deliberately ignore debug-bar mutations. Regression coverage also locks the Tier 1→2 station cost at exactly 500 coins. The complete Vitest suite now contains 73 passing checks.
+
+## 2026-09-05 gameplay polish and paired train review
+
+Badge awards now produce a compact top-right unlock notice that identifies the badge and opens its collection entry without covering the station. The normal tier-up panel continues to read the shared 500-coin Tier 1→2 value, and a rendered-source regression prevents the old 2,500 display from returning. Every constructed platform gains a grounded covered stair/subway entrance at Tier 4 and Tier 5.
+
+The user-approved new-generation Railjet V2.3 is now the canonical production variant. Its reviewed GLB is byte-identical to the promoted file. The classic V2.1 remains private-review and replaces the former overlapping black coach-door slabs with non-overlapping segmented door and livery surfaces. The Regional-Express R2 remains private-review and adds a reference-shaped BR 245 cab, split windscreen, lamps, wipers, diesel grilles, richer double-deck window/door construction and roof equipment. The two private candidates cross-link inside one review laboratory for quick comparison.
+
+Only the approved unified ICE 3 route remains exposed. Earlier ICE 3 candidates are retained solely as unlinked source/regeneration baselines and no longer resolve from the public query router. The automated suite now contains 75 passing checks, and the production build plus rendered-HTML check pass.
 - [Production Nightjet with Taurus leading](../qa/production-nightjet-taurus-leading.png)
 - [Rare production Nightjet with cab car leading](../qa/production-nightjet-cab-car-leading.png)
 - [Production Nightjet mobile layout](../qa/production-nightjet-mobile.png)

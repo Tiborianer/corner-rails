@@ -543,7 +543,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
         </group>
       ) : state.region ? (
         <>
-          {laneZs.map((z) => <MetricPlatform key={z} trackCenter={z} lengthMeters={lengthMeters} amenities={state.systems.amenities} lampIntensity={lampIntensity} />)}
+          {laneZs.map((z) => <MetricPlatform key={z} trackCenter={z} lengthMeters={lengthMeters} amenities={state.systems.amenities} lampIntensity={lampIntensity} tunnelEntrance={state.tier >= 4} />)}
           <Dirt cleanliness={state.cleanliness} platformZs={platformZs} length={platformLength} />
           {state.platformLanes.map((lane) => lane.activeTrain && <Suspense key={`${lane.platformIndex}-${lane.activeTrain.trainId}-${lane.activeTrain.visualVariantId ?? "default"}`} fallback={null}><TrainConsist active={lane.activeTrain} trackCenter={laneZs[lane.platformIndex] ?? laneZs[0]} speed={state.speed} headlightIntensity={headlightIntensity} /></Suspense>)}
         </>

@@ -1407,7 +1407,8 @@ describe("production metric railway and Railjet registry", () => {
       const materialNames = root.listMaterials().map((material) => material.getName());
       const bounds = getBounds(root.listScenes()[0]);
       expect(record).toMatchObject({ approvalStatus: "private-review", vehicleCount: candidate.vehicles, nominalLengthMeters: candidate.length });
-      expect(materialNames).toEqual(expect.arrayContaining(["RJ_Wine_Red", "RJ_Bright_Red", "RJ_Graphite", "RJ_Aluminium", "RJ_Smoked_Glass"]));
+      const graphiteMaterial = candidate.id === "railjet-nextgen-livery-v2" ? "RJ2_Graphite_V2" : "RJ_Graphite";
+      expect(materialNames).toEqual(expect.arrayContaining(["RJ_Wine_Red", "RJ_Bright_Red", graphiteMaterial, "RJ_Aluminium", "RJ_Smoked_Glass"]));
       expect(nodeNames.some((name) => name.includes("red_belt"))).toBe(true);
       expect(nodeNames.some((name) => name.includes("silver_skirt"))).toBe(true);
       expect(nodeNames.some((name) => name.includes("railjet_wordmark"))).toBe(true);
@@ -1424,6 +1425,24 @@ describe("production metric railway and Railjet registry", () => {
         expect(nodeNames.some((name) => name.includes("door_upper_leaf"))).toBe(true);
         expect(nodeNames.some((name) => name.includes("door_lower_leaf"))).toBe(true);
         expect(nodeNames.some((name) => name.includes("door_red_belt"))).toBe(true);
+        const expectedPanelMaterials = [
+          ["red_belt", "RJ_Bright_Red"],
+          ["silver_skirt", "RJ_Aluminium"],
+          ["graphite_flank", "RJ2_Graphite_V2"],
+        ] as const;
+        for (const [nodeFragment, expectedMaterial] of expectedPanelMaterials) {
+          const matchingNodes = root.listNodes().filter((node) => node.getName().includes(nodeFragment));
+          expect(matchingNodes.length).toBeGreaterThan(0);
+          expect(matchingNodes.every((node) => node.getMesh()?.listPrimitives().every(
+            (primitive) => primitive.getMaterial()?.getName() === expectedMaterial,
+          ))).toBe(true);
+        }
+        expect(manifest.liveryReferenceNotes.sideBands).toEqual({
+          silverSkirt: [0.73, 1.22],
+          graphiteFlank: [1.22, 2.05],
+          brightRedBelt: [2.05, 2.5],
+          surfaceRule: "non-overlapping vertical spans on one shared side plane",
+        });
       }
     }
 

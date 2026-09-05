@@ -34,6 +34,16 @@ FORMATION_LENGTH = 258.0
 COACH_LENGTH = (FORMATION_LENGTH - LOCOMOTIVE_LENGTH - 9 * FORMATION_GAP) / 9
 COACH_WIDTH = 2.825
 
+# Reference-calibrated side datums for the Viaggio Next Level livery.  These
+# bands meet at their edges instead of being stacked as near-coplanar plates.
+# The previous overlap was only 0.0004-0.0009 world units after runtime scale,
+# which let the graphite panel win the depth test and hide the red/aluminium
+# bands in WebGL.
+SIDE_SKIRT_BOTTOM = 0.73
+SIDE_SKIRT_TOP = 1.22
+SIDE_GRAPHITE_TOP = 2.05
+SIDE_RED_BELT_TOP = 2.50
+
 OFFICIAL_SOURCES = (
     "https://static.web.oebb.at/konzern/oebb-flotte-2025/4/",
     "https://www.oebb.at/de/reiseplanung-services/im-zug/unsere-zuege/railjet",
@@ -92,17 +102,36 @@ def add_nextgen_livery(
         y = side * (COACH_WIDTH / 2 + 0.014)
         # Current Viaggio Next Level photography shows individual dark panes
         # in the wine-red upper body, not a coach-length black window ribbon.
-        common.add_box(collection, cube, f"{role}_graphite_flank_{side}", (band_length + 0.18, 0.052, 1.30), (center, y + side * 0.006, 1.70), materials["anthracite"], root)
-        common.add_box(collection, cube, f"{role}_silver_skirt_{side}", (band_length + 0.24, 0.056, 0.56), (center, y + side * 0.012, 0.95), materials["light_body"], root)
-        common.add_box(collection, cube, f"{role}_red_belt_{side}", (band_length + 0.12, 0.062, 0.19), (center, y + side * 0.018, 2.36), materials["signal_red"], root)
+        # Use mutually exclusive vertical spans.  No dark surface exists behind
+        # the red belt or aluminium skirt, so those colours cannot be occluded
+        # by z-fighting at the game's very small 0.071 runtime scale.
+        panel_y = y + side * 0.014
+        common.add_box(
+            collection, cube, f"{role}_graphite_flank_{side}",
+            (band_length + 0.18, 0.058, SIDE_GRAPHITE_TOP - SIDE_SKIRT_TOP - 0.012),
+            (center, panel_y, (SIDE_SKIRT_TOP + SIDE_GRAPHITE_TOP) / 2),
+            materials["anthracite"], root,
+        )
+        common.add_box(
+            collection, cube, f"{role}_silver_skirt_{side}",
+            (band_length + 0.24, 0.058, SIDE_SKIRT_TOP - SIDE_SKIRT_BOTTOM - 0.012),
+            (center, panel_y, (SIDE_SKIRT_BOTTOM + SIDE_SKIRT_TOP) / 2),
+            materials["light_body"], root,
+        )
+        common.add_box(
+            collection, cube, f"{role}_red_belt_{side}",
+            (band_length + 0.12, 0.058, SIDE_RED_BELT_TOP - SIDE_GRAPHITE_TOP - 0.012),
+            (center, panel_y, (SIDE_GRAPHITE_TOP + SIDE_RED_BELT_TOP) / 2),
+            materials["signal_red"], root,
+        )
 
         for door_index, x in enumerate(door_positions):
             door_bottom = 0.83 if low_floor else 1.08
             door_height = 2.48 if low_floor else 2.18
             door_top = door_bottom + door_height
-            skirt_top = 1.22
-            belt_bottom = 2.265
-            belt_top = 2.455
+            skirt_top = SIDE_SKIRT_TOP
+            belt_bottom = SIDE_GRAPHITE_TOP
+            belt_top = SIDE_RED_BELT_TOP
             common.add_box(collection, cube, f"{role}_door_surround_{side}_{door_index}", (1.52, 0.068, door_height + 0.14), (x, y + side * 0.026, door_bottom + door_height / 2), materials["light_body"], root)
             # The real VNL door is not a solid black slab. Its leaf continues
             # the wine-red upper body, red waist belt, graphite lower flank and
@@ -280,6 +309,13 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     common.reset_scene()
     materials = common.build_materials()
+    if LIVERY_V2_REVIEW:
+        # The VNL flank reads as graphite rather than absolute black in current
+        # ÖBB daylight photography. Keep a generation-specific material so the
+        # approved classic candidate is not altered by this review revision.
+        materials["anthracite"] = common.make_material(
+            "RJ2_Graphite_V2", (0.066, 0.076, 0.082, 1.0), metallic=0.13, roughness=0.32
+        )
     cube = common.unit_cube_mesh()
     cylinder = common.unit_cylinder_mesh(16)
     assets = common.make_collection("Railjet_Blender_Assets")
@@ -339,7 +375,7 @@ def main() -> None:
             "calibrationTrackExported": False,
         },
         "sources": list(OFFICIAL_SOURCES),
-        "liveryRevision": "reference-calibrated-v2.1" if LIVERY_V2_REVIEW else "production-v1",
+        "liveryRevision": "reference-calibrated-v2.2" if LIVERY_V2_REVIEW else "production-v1",
         "liveryReferenceNotes": {
             "upperBody": "OEBB wine red",
             "accent": "bright red belt and driving-cab sweep",
@@ -348,6 +384,12 @@ def main() -> None:
             "roof": "dark graphite",
             "doorSurround": "cool aluminium",
             "doorLeaf": "continuous wine-red, bright-red, graphite and aluminium body datums with a narrow vertical window",
+            "sideBands": {
+                "silverSkirt": [SIDE_SKIRT_BOTTOM, SIDE_SKIRT_TOP],
+                "graphiteFlank": [SIDE_SKIRT_TOP, SIDE_GRAPHITE_TOP],
+                "brightRedBelt": [SIDE_GRAPHITE_TOP, SIDE_RED_BELT_TOP],
+                "surfaceRule": "non-overlapping vertical spans on one shared side plane",
+            },
             "lettering": "original Blender-font approximation; no copied logo artwork",
         },
         "productionRailjetModified": not LIVERY_V2_REVIEW,

@@ -182,7 +182,16 @@ def link_object(
     obj.rotation_euler = rotation
     obj.parent = parent
     if material is not None and hasattr(data, "materials"):
-        data.materials.append(material)
+        # Primitive cubes and cylinders deliberately share their mesh data.
+        # Materials, however, belong to each object instance. Appending every
+        # material to the shared mesh left all polygons on slot zero, so the
+        # first (usually black underframe) material rendered on every livery
+        # panel. Keep one data slot and override it at object level instead.
+        if len(data.materials) == 0:
+            data.materials.append(material)
+        slot = obj.material_slots[0]
+        slot.link = "OBJECT"
+        slot.material = material
     return obj
 
 

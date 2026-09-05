@@ -53,7 +53,7 @@
     "https://www.mobility.siemens.com/global/en/portfolio/references/railjet.html",
     "https://konzern.oebb.at/de/dam/jcr%3A9a8a8bc6-35bd-4dc5-9cc0-fc4470742bcf/OEBB-Umsetzungsplan%202025-2030.pdf"
   ],
-  "liveryRevision": "reference-calibrated-v2.1",
+  "liveryRevision": "reference-calibrated-v2.2",
   "liveryReferenceNotes": {
     "upperBody": "OEBB wine red",
     "accent": "bright red belt and driving-cab sweep",
@@ -62,6 +62,21 @@
     "roof": "dark graphite",
     "doorSurround": "cool aluminium",
     "doorLeaf": "continuous wine-red, bright-red, graphite and aluminium body datums with a narrow vertical window",
+    "sideBands": {
+      "silverSkirt": [
+        0.73,
+        1.22
+      ],
+      "graphiteFlank": [
+        1.22,
+        2.05
+      ],
+      "brightRedBelt": [
+        2.05,
+        2.5
+      ],
+      "surfaceRule": "non-overlapping vertical spans on one shared side plane"
+    },
     "lettering": "original Blender-font approximation; no copied logo artwork"
   },
   "productionRailjetModified": false

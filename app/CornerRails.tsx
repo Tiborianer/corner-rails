@@ -232,7 +232,9 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
   const [muted, setMuted] = useState(true);
   const [showPrestige, setShowPrestige] = useState(false);
   const [badgeQueue, setBadgeQueue] = useState<(typeof BADGES)[number][]>([]);
-  const debugEnabled = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
+  // Temporarily expose the playtest controls in the normal game while the
+  // Germany vertical slice is still being tuned.
+  const debugEnabled = true;
   const audio = useRef(new AudioBus());
   const previousTrains = useRef<Record<number, string | null>>({});
   const previousPhases = useRef<Record<number, string | null>>({});

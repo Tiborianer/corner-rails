@@ -112,6 +112,7 @@ describe("Corner Rails economy and progression", () => {
     const uiSource = await readFile(path.resolve("app/CornerRails.tsx"), "utf8");
     expect(uiSource).toContain("TIER_COSTS[state.tier - 1].toLocaleString()");
     expect(uiSource).not.toContain("2,500");
+    expect(uiSource).toContain("const debugEnabled = true");
   });
 
   it("counts systems and structure against the same three-use cap", () => {

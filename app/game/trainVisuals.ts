@@ -14,6 +14,9 @@ export interface TrainVisualVariant {
   minimumLengthLevel: number;
   selectionWeight: number;
   revision: string;
+  /** Push-pull formations can run with their driving trailer at the front while
+   * continuing along the same gameplay path. */
+  cabCarLeadingChance?: number;
   headlights?: {
     frontInsetMeters: number;
     heightMeters: number;
@@ -23,6 +26,8 @@ export interface TrainVisualVariant {
 }
 
 const LEGACY_ASSET_VERSION = "5";
+export const CAB_CAR_LEADING_CHANCE = 0.25;
+const LEGACY_PUSH_PULL_MODEL_KEYS = new Set(["metronom", "ic2", "ice2", "comfortjet"]);
 
 export const RAILJET_VISUAL_VARIANTS = [
   {
@@ -40,6 +45,7 @@ export const RAILJET_VISUAL_VARIANTS = [
     minimumLengthLevel: 4,
     selectionWeight: 1,
     revision: "blender-2026-08-16",
+    cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
   },
   {
     id: "railjet-nextgen",
@@ -56,6 +62,7 @@ export const RAILJET_VISUAL_VARIANTS = [
     minimumLengthLevel: 5,
     selectionWeight: 1,
     revision: "blender-livery-v2-2026-09-05",
+    cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
   },
 ] as const satisfies readonly TrainVisualVariant[];
 
@@ -75,6 +82,7 @@ export const NIGHTJET_VISUAL_VARIANTS = [
     minimumLengthLevel: 5,
     selectionWeight: 1,
     revision: "blender-n2-2026-08-21",
+    cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
   },
 ] as const satisfies readonly TrainVisualVariant[];
 
@@ -114,7 +122,22 @@ export function legacyTrainVisual(modelKey: string): TrainVisualVariant {
     minimumLengthLevel: 1,
     selectionWeight: 1,
     revision: LEGACY_ASSET_VERSION,
+    ...(LEGACY_PUSH_PULL_MODEL_KEYS.has(modelKey) ? { cabCarLeadingChance: CAB_CAR_LEADING_CHANCE } : {}),
   };
+}
+
+export function trainVisualCabCarLeadingChance(visualVariantId: string): number {
+  const promotedVariant = [...RAILJET_VISUAL_VARIANTS, ...NIGHTJET_VISUAL_VARIANTS, ...ICE3_VISUAL_VARIANTS]
+    .find((variant) => variant.id === visualVariantId);
+  if (promotedVariant && "cabCarLeadingChance" in promotedVariant) {
+    return promotedVariant.cabCarLeadingChance ?? 0;
+  }
+  const legacySuffix = "-legacy-v1";
+  if (visualVariantId.endsWith(legacySuffix)) {
+    const modelKey = visualVariantId.slice(0, -legacySuffix.length);
+    return LEGACY_PUSH_PULL_MODEL_KEYS.has(modelKey) ? CAB_CAR_LEADING_CHANCE : 0;
+  }
+  return 0;
 }
 
 export function trainVisualVariants(train: Pick<TrainDefinition, "id" | "modelKey">): readonly TrainVisualVariant[] {

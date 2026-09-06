@@ -16,6 +16,8 @@ import {
   chooseTrainFormationOrientation,
   NIGHTJET_CAB_CAR_LEADING_CHANCE,
   NIGHTJET_TAURUS_LEADING_CHANCE,
+  PUSH_PULL_CAB_CAR_LEADING_CHANCE,
+  PUSH_PULL_LOCOMOTIVE_LEADING_CHANCE,
   WEATHER_RAIN_CHANCE,
   WEATHER_THUNDERSTORM_CHANCE,
   daylightFactor,
@@ -35,6 +37,7 @@ import {
   weatherFromRoll,
   weatherRatingPenalty,
   nightjetFormationOrientationForRoll,
+  pushPullFormationOrientationForRoll,
 } from "../app/game/simulation";
 import type { GameState } from "../app/game/types";
 import {
@@ -74,8 +77,10 @@ import {
   ICE3_VISUAL_VARIANTS,
   NIGHTJET_VISUAL_VARIANTS,
   RAILJET_VISUAL_VARIANTS,
+  CAB_CAR_LEADING_CHANCE,
   resolveTrainVisualVariant,
   selectTrainVisualVariant,
+  trainVisualCabCarLeadingChance,
   trainVisualVariants,
 } from "../app/game/trainVisuals";
 import {
@@ -1379,17 +1384,35 @@ describe("per-train Blender approval laboratory", () => {
     expect(manifest.revisionNotes).toContain("Redrawn Taurus side livery");
   });
 
-  it("uses the approved 75/25 Nightjet leading-end distribution deterministically", () => {
+  it("uses the approved 75/25 push-pull leading-end distribution deterministically", () => {
+    expect(CAB_CAR_LEADING_CHANCE).toBe(0.25);
+    expect(PUSH_PULL_LOCOMOTIVE_LEADING_CHANCE).toBe(0.75);
+    expect(PUSH_PULL_CAB_CAR_LEADING_CHANCE).toBe(0.25);
     expect(NIGHTJET_TAURUS_LEADING_CHANCE).toBe(0.75);
     expect(NIGHTJET_CAB_CAR_LEADING_CHANCE).toBe(0.25);
     expect(NIGHTJET_TAURUS_LEADING_CHANCE + NIGHTJET_CAB_CAR_LEADING_CHANCE).toBe(1);
+    expect(pushPullFormationOrientationForRoll(0)).toBe(1);
+    expect(pushPullFormationOrientationForRoll(0.749999)).toBe(1);
+    expect(pushPullFormationOrientationForRoll(0.75)).toBe(-1);
+    expect(pushPullFormationOrientationForRoll(0.999999)).toBe(-1);
     expect(nightjetFormationOrientationForRoll(0)).toBe(1);
-    expect(nightjetFormationOrientationForRoll(0.749999)).toBe(1);
-    expect(nightjetFormationOrientationForRoll(0.75)).toBe(-1);
     expect(nightjetFormationOrientationForRoll(0.999999)).toBe(-1);
-    expect(chooseTrainFormationOrientation("nightjet-new-generation", 0)[0]).toBe(1);
-    expect(chooseTrainFormationOrientation("nightjet-new-generation", 1327)[0]).toBe(-1);
+    const pushPullVisuals = [
+      "railjet-classic",
+      "railjet-nextgen",
+      "nightjet-new-generation",
+      "metronom-legacy-v1",
+      "ic2-legacy-v1",
+      "ice2-legacy-v1",
+      "comfortjet-legacy-v1",
+    ];
+    for (const visualVariantId of pushPullVisuals) {
+      expect(trainVisualCabCarLeadingChance(visualVariantId)).toBe(0.25);
+      expect(chooseTrainFormationOrientation(visualVariantId, 0)[0]).toBe(1);
+      expect(chooseTrainFormationOrientation(visualVariantId, 1327)[0]).toBe(-1);
+    }
     expect(chooseTrainFormationOrientation("nightjet-new-generation", 1327)).toEqual(chooseTrainFormationOrientation("nightjet-new-generation", 1327));
+    expect(trainVisualCabCarLeadingChance("ice3-br403-unified")).toBe(0);
     expect(chooseTrainFormationOrientation("nightjet-legacy-v1", 999)).toEqual([1, 999]);
   });
 
@@ -1580,10 +1603,22 @@ describe("production metric railway and Railjet registry", () => {
     expect(debugState(fundedState(), "railjet-classic").platformLanes[0].activeTrain).toMatchObject({
       trainId: "railjet",
       visualVariantId: "railjet-classic",
+      formationOrientation: 1,
+    });
+    expect(debugState(fundedState(), "railjet-classic-cab-car").platformLanes[0].activeTrain).toMatchObject({
+      trainId: "railjet",
+      visualVariantId: "railjet-classic",
+      formationOrientation: -1,
     });
     expect(debugState(fundedState(), "railjet-nextgen").platformLanes[0].activeTrain).toMatchObject({
       trainId: "railjet",
       visualVariantId: "railjet-nextgen",
+      formationOrientation: 1,
+    });
+    expect(debugState(fundedState(), "railjet-nextgen-cab-car").platformLanes[0].activeTrain).toMatchObject({
+      trainId: "railjet",
+      visualVariantId: "railjet-nextgen",
+      formationOrientation: -1,
     });
   });
 });
@@ -1896,6 +1931,7 @@ describe("manual save codes", () => {
       payout: 9_000,
       firstService: false,
       visualVariantId: "railjet-nextgen",
+      formationOrientation: -1 as const,
     };
     const state: GameState = {
       ...fundedState(),
@@ -1903,13 +1939,43 @@ describe("manual save codes", () => {
       lengthLevel: 5,
       platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: activeRailjet }],
     };
-    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain?.visualVariantId).toBe("railjet-nextgen");
+    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain).toMatchObject({
+      visualVariantId: "railjet-nextgen",
+      formationOrientation: -1,
+    });
 
     const oldState: GameState = {
       ...state,
-      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeRailjet, visualVariantId: undefined } }],
+      platformLanes: [{ platformIndex: 0, spawnCountdown: 0, activeTrain: { ...activeRailjet, visualVariantId: undefined, formationOrientation: undefined } }],
     };
-    expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain?.visualVariantId).toBe("railjet-classic");
+    expect(decodeSave(encodeSave(oldState)).platformLanes[0].activeTrain).toMatchObject({
+      visualVariantId: "railjet-classic",
+      formationOrientation: 1,
+    });
+  });
+
+  it("preserves cab-car-leading orientation for legacy push-pull formations", () => {
+    const state: GameState = {
+      ...fundedState(),
+      platformLanes: [{
+        platformIndex: 0,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: "ice2",
+          visualVariantId: "ice2-legacy-v1",
+          formationOrientation: -1,
+          phase: "approach",
+          phaseElapsed: 1,
+          phaseDuration: 5,
+          payout: 2_000,
+          firstService: false,
+        },
+      }],
+    };
+    expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain).toMatchObject({
+      visualVariantId: "ice2-legacy-v1",
+      formationOrientation: -1,
+    });
   });
 
   it("preserves the unified ICE 3 variant and migrates old active ICE 3 saves", () => {

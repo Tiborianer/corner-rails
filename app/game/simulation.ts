@@ -19,13 +19,21 @@ import type {
   UpgradeAction,
   WeatherKind,
 } from "./types";
-import { eligibleTrainVisualVariants, selectTrainVisualVariant } from "./trainVisuals";
+import {
+  CAB_CAR_LEADING_CHANCE,
+  eligibleTrainVisualVariants,
+  selectTrainVisualVariant,
+  trainVisualCabCarLeadingChance,
+} from "./trainVisuals";
 
 export const SEASONS = ["Spring", "Summer", "Autumn", "Winter"] as const;
 export const DEVELOPMENT_CAP = 3;
 export const EVENT_DURATION = 300;
-export const NIGHTJET_TAURUS_LEADING_CHANCE = 0.75;
-export const NIGHTJET_CAB_CAR_LEADING_CHANCE = 0.25;
+export const PUSH_PULL_LOCOMOTIVE_LEADING_CHANCE = 1 - CAB_CAR_LEADING_CHANCE;
+export const PUSH_PULL_CAB_CAR_LEADING_CHANCE = CAB_CAR_LEADING_CHANCE;
+// Compatibility names retained for existing Nightjet tests and save documentation.
+export const NIGHTJET_TAURUS_LEADING_CHANCE = PUSH_PULL_LOCOMOTIVE_LEADING_CHANCE;
+export const NIGHTJET_CAB_CAR_LEADING_CHANCE = PUSH_PULL_CAB_CAR_LEADING_CHANCE;
 export const WEATHER_RAIN_CHANCE = 0.25;
 export const WEATHER_THUNDERSTORM_CHANCE = 0.1;
 
@@ -238,17 +246,22 @@ function chooseTrainVisualVariantId(
   return [selectTrainVisualVariant(train, lengthLevel, roll).id, nextSeed];
 }
 
-/** The Nightjet candidate is a true push-pull set. Once its visual is promoted,
- * this deterministic choice turns the complete consist so either the Taurus or
- * control car leads along the same left-to-right operating path. */
+/** Deterministically turns a true push-pull consist so either its locomotive or
+ * driving trailer leads along the same left-to-right operating path. */
 export function chooseTrainFormationOrientation(visualVariantId: string, seed: number): [1 | -1, number] {
-  if (visualVariantId !== "nightjet-new-generation") return [1, seed];
+  const cabCarLeadingChance = trainVisualCabCarLeadingChance(visualVariantId);
+  if (cabCarLeadingChance <= 0) return [1, seed];
   const [roll, nextSeed] = nextRandom(seed);
-  return [nightjetFormationOrientationForRoll(roll), nextSeed];
+  return [pushPullFormationOrientationForRoll(roll, cabCarLeadingChance), nextSeed];
+}
+
+export function pushPullFormationOrientationForRoll(roll: number, cabCarLeadingChance = PUSH_PULL_CAB_CAR_LEADING_CHANCE): 1 | -1 {
+  const locomotiveLeadingChance = 1 - clamp(cabCarLeadingChance, 0, 1);
+  return clamp(roll, 0, 0.999999999) < locomotiveLeadingChance ? 1 : -1;
 }
 
 export function nightjetFormationOrientationForRoll(roll: number): 1 | -1 {
-  return Math.min(0.999999999, Math.max(0, roll)) < NIGHTJET_TAURUS_LEADING_CHANCE ? 1 : -1;
+  return pushPullFormationOrientationForRoll(roll, NIGHTJET_CAB_CAR_LEADING_CHANCE);
 }
 
 function updatePlatformLane(state: GameState, platformIndex: number, update: Partial<GameState["platformLanes"][number]>): GameState {
@@ -289,10 +302,11 @@ function startTrain(state: GameState, platformIndex: number, forcedTrain?: Train
     : randomInteger(rng, train.payout[0], train.payout[1]);
   const [visualVariantId, visualSeed] = chooseTrainVisualVariantId(train, state.lengthLevel, payoutSeed);
   const [formationOrientation, orientationSeed] = chooseTrainFormationOrientation(visualVariantId, visualSeed);
+  const supportsCabCarLeading = trainVisualCabCarLeadingChance(visualVariantId) > 0;
   const activeTrain: ActiveTrain = {
     trainId: train.id,
     visualVariantId,
-    ...(visualVariantId === "nightjet-new-generation" ? { formationOrientation } : {}),
+    ...(supportsCabCarLeading ? { formationOrientation } : {}),
     phase: train.kind === "event" ? "pass" : "approach",
     phaseElapsed: 0,
     phaseDuration: train.kind === "event" ? (train.id === "br01" ? 14 : 10) : 5,
@@ -698,7 +712,7 @@ export function prestigeStation(state: GameState): GameState {
 
 export function debugState(
   state: GameState,
-  mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-nextgen" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
+  mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
 ): GameState {
   if (mode === "ice3-unified") {
     const ready = debugState(state, "tier5");
@@ -742,8 +756,10 @@ export function debugState(
       toast: `Debug: Nightjet approaching with ${mode === "nightjet-taurus" ? "Taurus" : "cab car"} leading.`,
     };
   }
-  if (mode === "railjet-classic" || mode === "railjet-nextgen") {
+  if (mode === "railjet-classic" || mode === "railjet-classic-cab-car" || mode === "railjet-nextgen" || mode === "railjet-nextgen-cab-car") {
     const ready = debugState(state, "tier5");
+    const isClassic = mode.startsWith("railjet-classic");
+    const cabCarLeading = mode.endsWith("cab-car");
     return {
       ...ready,
       platformLanes: ready.platformLanes.map((lane) => lane.platformIndex === 0 ? {
@@ -751,7 +767,8 @@ export function debugState(
         spawnCountdown: 0,
         activeTrain: {
           trainId: "railjet",
-          visualVariantId: mode,
+          visualVariantId: isClassic ? "railjet-classic" : "railjet-nextgen",
+          formationOrientation: cabCarLeading ? -1 : 1,
           phase: "approach",
           phaseElapsed: 0,
           phaseDuration: 5,
@@ -759,7 +776,7 @@ export function debugState(
           firstService: false,
         },
       } : lane),
-      toast: `Debug: ${mode === "railjet-classic" ? "classic" : "new-generation"} Railjet approaching.`,
+      toast: `Debug: ${isClassic ? "classic" : "new-generation"} Railjet approaching with ${cabCarLeading ? "cab car" : "Taurus"} leading.`,
     };
   }
   if (mode === "tier5") {

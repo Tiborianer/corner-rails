@@ -196,6 +196,12 @@ Badge awards now produce a compact top-right unlock notice that identifies the b
 The user-approved new-generation Railjet V2.3 is now the canonical production variant. Its reviewed GLB is byte-identical to the promoted file. The classic V2.1 remains private-review and replaces the former overlapping black coach-door slabs with non-overlapping segmented door and livery surfaces. The Regional-Express R2 remains private-review and adds a reference-shaped BR 245 cab, split windscreen, lamps, wipers, diesel grilles, richer double-deck window/door construction and roof equipment. The two private candidates cross-link inside one review laboratory for quick comparison.
 
 Only the approved unified ICE 3 route remains exposed. Earlier ICE 3 candidates are retained solely as unlinked source/regeneration baselines and no longer resolve from the public query router. The automated suite now contains 75 passing checks, and the production build plus rendered-HTML check pass.
+
+## 2026-09-06 shared push-pull orientation
+
+The Nightjet's approved leading-end system now applies to every current train asset with a distinct driving trailer: classic and new-generation Railjet, Nightjet N2, metronom, IC2, ICE 2 and ComfortJet. Each arrival uses a deterministic 75% locomotive-leading / 25% cab-car-leading selection while continuing along the same track direction. Active orientations survive CR1 save-code round trips, including safe defaults for older saves. ICE 3 and other multiple units are deliberately excluded because their rear cab is not a separate push-pull driving trailer.
+
+The debug bar provides explicit locomotive- and cab-car-leading states for both Railjet generations. The private train laboratory now provides the same manual comparison for classic/new Railjet, Nightjet and the unpromoted BR 245 Regional-Express candidate. Automated coverage increased to 76 passing checks; the production build and rendered-HTML check pass.
 - [Production Nightjet with Taurus leading](../qa/production-nightjet-taurus-leading.png)
 - [Rare production Nightjet with cab car leading](../qa/production-nightjet-cab-car-leading.png)
 - [Production Nightjet mobile layout](../qa/production-nightjet-mobile.png)

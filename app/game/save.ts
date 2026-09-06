@@ -1,5 +1,6 @@
 import { createInitialState, TRAINS } from "./data";
 import { isBadgeId } from "./badges";
+import { trainVisualCabCarLeadingChance } from "./trainVisuals";
 import type { ActiveTrain, GameState, PlatformLane } from "./types";
 
 function checksum(input: string): string {
@@ -50,20 +51,24 @@ function isValidState(value: unknown): value is GameState {
 
 function normalizeActiveTrain(activeTrain: ActiveTrain | null | undefined): ActiveTrain | null {
   if (!activeTrain) return null;
-  if (activeTrain.visualVariantId === "nightjet-new-generation") {
-    const interimDirection = (activeTrain as ActiveTrain & { travelDirection?: 1 | -1 }).travelDirection;
-    const formationOrientation = activeTrain.formationOrientation === -1 || interimDirection === -1 ? -1 : 1;
-    const normalized = { ...activeTrain } as ActiveTrain & { travelDirection?: 1 | -1 };
-    delete normalized.travelDirection;
+  const defaultVisualVariantId = activeTrain.trainId === "railjet"
+    ? "railjet-classic"
+    : activeTrain.trainId === "nightjet"
+      ? "nightjet-new-generation"
+      : activeTrain.trainId === "ice3"
+        ? "ice3-br403-unified"
+        : ["metronom", "ic2", "ice2", "comfortjet"].includes(activeTrain.trainId)
+          ? `${activeTrain.trainId}-legacy-v1`
+          : undefined;
+  const visualVariantId = activeTrain.visualVariantId ?? defaultVisualVariantId;
+  const normalized = { ...activeTrain, ...(visualVariantId ? { visualVariantId } : {}) } as ActiveTrain & { travelDirection?: 1 | -1 };
+  const interimDirection = normalized.travelDirection;
+  delete normalized.travelDirection;
+  if (visualVariantId && trainVisualCabCarLeadingChance(visualVariantId) > 0) {
+    const formationOrientation = normalized.formationOrientation === -1 || interimDirection === -1 ? -1 : 1;
     return { ...normalized, formationOrientation };
   }
-  if (activeTrain.trainId === "railjet" && !activeTrain.visualVariantId) {
-    return { ...activeTrain, visualVariantId: "railjet-classic" };
-  }
-  if (activeTrain.trainId === "ice3" && !activeTrain.visualVariantId) {
-    return { ...activeTrain, visualVariantId: "ice3-br403-unified" };
-  }
-  return activeTrain;
+  return normalized;
 }
 
 export function decodeSave(code: string): GameState {

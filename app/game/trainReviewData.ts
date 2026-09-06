@@ -26,6 +26,8 @@ export interface TrainReviewCandidate {
   reviewSummary: string;
   comparisonCandidateId?: string;
   comparisonLabel?: string;
+  supportsCabCarLeading?: boolean;
+  locomotiveLabel?: string;
   headlights?: {
     frontInsetMeters: number;
     heightMeters: number;
@@ -55,6 +57,8 @@ export const TRAIN_REVIEW_CANDIDATES = {
     reviewSummary: "V2.1 keeps the approved classic geometry and metric calibration while removing the WebGL black-block failure: colour bands no longer overlap, and every door continues the wine-red, bright-red, graphite and aluminium livery. Production remains unchanged pending approval.",
     comparisonCandidateId: "db-regional-express",
     comparisonLabel: "View Regional-Express R2",
+    supportsCabCarLeading: true,
+    locomotiveLabel: "Taurus",
   },
   "railjet-nextgen-livery-v2": {
     id: "railjet-nextgen-livery-v2",
@@ -73,6 +77,8 @@ export const TRAIN_REVIEW_CANDIDATES = {
     approvalStatus: "approved-production",
     reviewStage: "formation",
     reviewSummary: "Approved production new-generation Railjet. The Viaggio Next Level formation and refined Taurus livery shown here are the same metric asset used by normal gameplay.",
+    supportsCabCarLeading: true,
+    locomotiveLabel: "Taurus",
   },
   "db-regional-express": {
     id: "db-regional-express",
@@ -93,6 +99,8 @@ export const TRAIN_REVIEW_CANDIDATES = {
     reviewSummary: "R2 rebuild of the supplied BR 245 and double-deck push-pull references, with a shaped TRAXX cab, inset glazing, detailed diesel grilles and roof equipment, and richer coach doors, windows and underframe. Approval is required before production changes.",
     comparisonCandidateId: "railjet-classic-livery-v2",
     comparisonLabel: "View classic Railjet",
+    supportsCabCarLeading: true,
+    locomotiveLabel: "BR 245",
   },
   "nightjet-new-generation": {
     id: "nightjet-new-generation",
@@ -111,6 +119,8 @@ export const TRAIN_REVIEW_CANDIDATES = {
     approvalStatus: "approved-production",
     reviewStage: "formation",
     reviewSummary: "Approved N2 production formation. Normal gameplay uses 75% Taurus-leading and 25% cab-car-leading arrivals.",
+    supportsCabCarLeading: true,
+    locomotiveLabel: "Taurus",
   },
   // Retained as unlinked regeneration baselines only. app/page.tsx deliberately
   // exposes no route to these superseded ICE 3 reviews.

@@ -44,6 +44,8 @@ The DB Regional-Express R2 set is the first use of that process after Railjet. I
 
 Nightjet N2 was explicitly approved on 2026-08-21 and promoted to the Tier 5 production registry. Its complete 204.675 m formation is about 238 KB; six reusable review modules cover the Taurus, two sleeper layouts, couchette, multifunction car and control/seat car at roughly 37–44 KB each. The laboratory and normal game load the same canonical production formation. N2 uses the geometry-only red/silver Taurus treatment and selects its leading end once per arrival: 75% Taurus and 25% cab car. Both orientations enter from the same side and follow the same path. The manifest records the nine supplied filenames, but the images remain research-only and are not copied, embedded, served or used as textures.
 
+Push-pull orientation is now shared by every current production formation whose asset includes a distinct locomotive/power car and driving trailer: both Railjet generations, Nightjet N2, metronom, IC2, ICE 2 and ComfortJet. Each arrival deterministically chooses 75% locomotive-leading and 25% cab-car-leading, saves that choice on the active train and preserves it through save-code export/import. The complete formation rotates in place; its travel direction and platform path do not change. The private classic Railjet and DB Regional-Express reviews also expose a manual leading-end control, ready for their later approval gates.
+
 ## Planned assets
 
 - China, France, and Japan train rosters and station dressing.

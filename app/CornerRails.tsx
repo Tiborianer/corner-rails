@@ -575,7 +575,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
                     <div><dt>Development</dt><dd>{state.upgradesUsed}/{DEVELOPMENT_CAP} uses</dd></div>
                     <div><dt>Next unlocks</dt><dd>{TRAINS.filter((train) => train.kind === "scheduled" && train.tier === state.tier + 1).map((train) => train.name.replace(/^DB /u, "")).join(" · ")}</dd></div>
                   </dl>
-                  <button className="primary-action" onClick={() => dispatch({ type: "tier-up" })}>Upgrade station to Tier {state.tier + 1} · {TIER_COSTS[state.tier - 1].toLocaleString()}</button>
+                  <button className="primary-action" onClick={() => dispatch({ type: "tier-up" })}>Pay {TIER_COSTS[state.tier - 1].toLocaleString()} coins · Upgrade to Tier {state.tier + 1}</button>
                 </>
               ) : (
                 <>

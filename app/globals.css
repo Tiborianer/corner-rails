@@ -1581,7 +1581,7 @@ button:disabled {
 
 .debug-tools {
   position: absolute;
-  z-index: 60;
+  z-index: 19;
   bottom: 82px;
   right: 20px;
   display: flex;

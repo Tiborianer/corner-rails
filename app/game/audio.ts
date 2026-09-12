@@ -2,6 +2,7 @@ export class AudioBus {
   private context: AudioContext | null = null;
   private muted = true;
   private pendingThunder = new Set<number>();
+  private birdVoices = new Set<OscillatorNode>();
 
   get isMuted() {
     return this.muted;
@@ -9,7 +10,7 @@ export class AudioBus {
 
   async setMuted(muted: boolean) {
     this.muted = muted;
-    if (muted) this.cancelThunder();
+    if (muted) { this.cancelThunder(); this.cancelBirds(); }
     if (!muted) {
       this.context ??= new AudioContext();
       await this.context.resume();
@@ -58,6 +59,30 @@ export class AudioBus {
     window.setTimeout(() => this.tone(1_180, 0.12, "sine", 0.022), 75);
   }
 
+  /** Two soft, raspy fly-over calls; audio pitch is independent of simulation speed. */
+  birdCall() {
+    if (this.muted || !this.context || this.context.state !== "running") return;
+    const context = this.context;
+    for (let i = 0; i < 2; i++) {
+      const oscillator = context.createOscillator();
+      const filter = context.createBiquadFilter();
+      const gain = context.createGain();
+      const now = context.currentTime + i * .28;
+      oscillator.type = "sawtooth";
+      oscillator.frequency.setValueAtTime(850 + i * 90, now);
+      oscillator.frequency.exponentialRampToValueAtTime(1400, now + .065);
+      oscillator.frequency.exponentialRampToValueAtTime(640, now + .19);
+      filter.type = "bandpass"; filter.frequency.value = 1500; filter.Q.value = .8;
+      gain.gain.setValueAtTime(.0001, now);
+      gain.gain.exponentialRampToValueAtTime(.018, now+.03);
+      gain.gain.exponentialRampToValueAtTime(.0001, now+.21);
+      oscillator.connect(filter).connect(gain).connect(context.destination);
+      this.birdVoices.add(oscillator);
+      oscillator.onended = () => { this.birdVoices.delete(oscillator); oscillator.disconnect(); filter.disconnect(); gain.disconnect(); };
+      oscillator.start(now); oscillator.stop(now+.23);
+    }
+  }
+
   thunder(delaySeconds: number) {
     if (this.muted || !this.context) return;
     const timer = window.setTimeout(() => {
@@ -65,6 +90,11 @@ export class AudioBus {
       this.playThunder();
     }, Math.max(0, delaySeconds) * 1_000);
     this.pendingThunder.add(timer);
+  }
+
+  cancelBirds() {
+    this.birdVoices.forEach(voice => voice.stop());
+    this.birdVoices.clear();
   }
 
   cancelThunder() {

@@ -463,6 +463,7 @@ export function tickGame(state: GameState, wallDelta: number): GameState {
     ...state,
     wallSeconds: state.wallSeconds + wallDelta,
     simSeconds: state.simSeconds + delta,
+    roadAgeSeconds: state.systems.roadAccess ? (state.roadAgeSeconds ?? 0) + delta : 0,
     boosts: state.boosts
       .map((boost) => ({ ...boost, remaining: boost.remaining - delta }))
       .filter((boost) => boost.remaining > 0),
@@ -610,6 +611,7 @@ export function purchaseUpgrade(state: GameState, action: UpgradeAction): GameSt
     next = {
       ...next,
       systems: { ...state.systems, [action.system]: true },
+      roadAgeSeconds: action.system === "roadAccess" ? 0 : state.roadAgeSeconds,
       lastUpgrade: { kind: "system", key: action.system, cost, previous: false, undoAvailable: true },
       toast: `${SYSTEMS[action.system].name} installed.`,
     };
@@ -633,6 +635,7 @@ export function undoLastUpgrade(state: GameState): GameState {
   }
   if (receipt.kind === "length") next = { ...next, lengthLevel: receipt.previous as number };
   if (receipt.kind === "system") next = { ...next, systems: { ...next.systems, [receipt.key]: false } };
+  if (receipt.kind === "system" && receipt.key === "roadAccess") next.roadAgeSeconds = 0;
   return next;
 }
 
@@ -712,7 +715,7 @@ export function prestigeStation(state: GameState): GameState {
 
 export function debugState(
   state: GameState,
-  mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
+  mode: "scenery" | "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
 ): GameState {
   if (mode === "ice3-unified") {
     const ready = debugState(state, "tier5");
@@ -800,6 +803,9 @@ export function debugState(
       } : lane),
       toast: `Debug: ${isClassic ? "classic" : "new-generation"} Railjet approaching with ${cabCarLeading ? "cab car" : "Taurus"} leading.`,
     };
+  }
+  if (mode === "scenery") {
+    return { ...debugState(state, "tier5"), roadAgeSeconds: 900, simSeconds: 48, seasonIndex: 0, nextSeasonAt: 1800, weather: "clear", weatherRemaining: 0, toast: "Scenery preview: established neighborhood, birds and meadow deer. Sound can be enabled above." };
   }
   if (mode === "tier5") {
     return {

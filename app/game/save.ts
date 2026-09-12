@@ -147,6 +147,8 @@ export function decodeSave(code: string): GameState {
     stormNightjetServed: legacy.stormNightjetServed === true,
     weather,
     weatherRemaining,
+    roadAgeSeconds: parsed.systems.roadAccess && Number.isFinite(legacy.roadAgeSeconds)
+      ? Math.max(0, Math.min(legacy.roadAgeSeconds, 86_400)) : 0,
     nextLightningIn: typeof legacy.nextLightningIn === "number" ? Math.max(0, legacy.nextLightningIn) : 0,
     lightningStrikeId: typeof legacy.lightningStrikeId === "number" ? Math.max(0, Math.floor(legacy.lightningStrikeId)) : 0,
     thunderDelaySeconds: typeof legacy.thunderDelaySeconds === "number" ? Math.max(0, legacy.thunderDelaySeconds) : 0,

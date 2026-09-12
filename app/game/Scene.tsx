@@ -8,6 +8,7 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import type { AmbientLight, DirectionalLight, Fog, Group, HemisphereLight, Object3D, PointLight, Points, SpotLight } from "three";
 import { ACESFilmicToneMapping, Box3, CatmullRomCurve3, Color, MathUtils, Vector3 } from "three";
 import { TRAINS } from "./data";
+import { RoadsideNeighborhood, Wildlife, Woodland } from "./Scenery";
 import {
   MetricCatenary,
   MetricContactShadow,
@@ -42,6 +43,7 @@ import {
 interface SceneProps {
   state: GameState;
   onPlacePlatform: () => void;
+  onBirdCall?: () => void;
 }
 
 const seasonGround = ["#78945c", "#6f9958", "#9b8050", "#b8c3bf"];
@@ -361,17 +363,6 @@ function MaintenanceYard({ rearTrackZ, buildingZ, platformLength, tier }: { rear
   );
 }
 
-function LowPolyTree({ position, scale, autumn, winter }: { position: [number, number, number]; scale: number; autumn: boolean; winter: boolean }) {
-  const foliage = winter ? "#63736d" : autumn ? "#a56c36" : "#3f704a";
-  const highlight = winter ? "#8c9993" : autumn ? "#cf9246" : "#63935d";
-  return <group position={position} scale={scale}><mesh position={[0, 0.18, 0]} castShadow><cylinderGeometry args={[0.035, 0.05, 0.36, 7]} /><meshStandardMaterial color="#76553b" roughness={0.95} /></mesh><mesh position={[0, 0.43, 0]} castShadow><dodecahedronGeometry args={[0.18, 0]} /><meshStandardMaterial color={foliage} roughness={0.96} /></mesh><mesh position={[-0.07, 0.54, 0.03]} scale={[0.7, 0.64, 0.7]} castShadow><dodecahedronGeometry args={[0.17, 0]} /><meshStandardMaterial color={highlight} roughness={0.96} /></mesh></group>;
-}
-
-function LandscapeScenery({ seasonIndex, stationHalfWidth }: { seasonIndex: number; stationHalfWidth: number }) {
-  const trees = useMemo(() => Array.from({ length: 34 }, (_, index) => ({ position: [-28 + ((index * 7.7) % 56), RAILWAY_GROUND_Y, index % 3 !== 0 ? stationHalfWidth + 3 + ((index * 1.7) % 2.6) : -stationHalfWidth - 5 - ((index * 1.3) % 2.2)] as [number, number, number], scale: 0.75 + (index % 5) * 0.13 })), [stationHalfWidth]);
-  return <group>{trees.map((tree, index) => <LowPolyTree key={index} position={tree.position} scale={tree.scale} autumn={seasonIndex === 2} winter={seasonIndex === 3} />)}</group>;
-}
-
 function LitterShape({ kind, color, scale }: { kind: LitterKind; color: string; scale: number }) {
   if (kind === "paper") return <Box position={[0, 0, 0]} scale={[0.075 * scale, 0.008, 0.05 * scale]} color={color} castShadow={false} />;
   if (kind === "carton") return <Box position={[0, 0.018, 0]} scale={[0.05 * scale, 0.035 * scale, 0.035 * scale]} color={color} castShadow={false} />;
@@ -502,7 +493,11 @@ function EventCelebration({ eventId, frontPlatformZ, platformLength }: { eventId
   return <group position={[0, 0, frontPlatformZ + 0.24]}><Box position={[-span / 2, platformSurfaceY + 0.32, 0]} scale={[0.035, 0.64, 0.035]} color="#3c4b49" /><Box position={[span / 2, platformSurfaceY + 0.32, 0]} scale={[0.035, 0.64, 0.035]} color="#3c4b49" />{Array.from({ length: 13 }, (_, index) => { const x = -span / 2 + (index / 12) * span; const color = colors[index % colors.length]; return <mesh key={index} position={[x, platformSurfaceY + 0.58 - Math.sin((index / 12) * Math.PI) * 0.12, 0]}><sphereGeometry args={[0.035, 10, 10]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={3.5} /></mesh>; })}<pointLight position={[0, platformSurfaceY + 0.45, 0]} intensity={2} distance={4} color={colors[0]} /></group>;
 }
 
-function Diorama({ state, onPlacePlatform }: SceneProps) {
+function parkedNeighborhoodCar(index: number) {
+  return <TrafficVehicle definition={TRAFFIC_VEHICLE_DEFINITIONS[index % 5]} />;
+}
+
+function Diorama({ state, onPlacePlatform, onBirdCall }: SceneProps) {
   const trackCount = Math.max(1, state.platforms);
   const laneZs = useMemo(() => Array.from({ length: trackCount }, (_, index) => productionTrackCenter(index, trackCount)), [trackCount]);
   const lengthMeters = platformLengthMeters(state.lengthLevel);
@@ -515,7 +510,6 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
   ), [laneZs, platformLength]);
   const rearTrackZ = Math.min(...laneZs);
   const frontPlatformZ = Math.max(...platformZs);
-  const stationHalfWidth = Math.max(Math.abs(rearTrackZ), Math.abs(frontPlatformZ));
   const buildingZ = rearTrackZ - (state.tier >= 5 ? 2.15 : 1.25);
   const buildingX = state.tier >= 5 ? -4.1 : -4.8;
   const roadZ = buildingZ - (state.tier >= 5 ? 2.2 : 1.65);
@@ -523,7 +517,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
   const headlightIntensity = isNight(state) ? 92 : wetWeather ? 68 : 34;
   const lampIntensity = 0.15 + (1 - daylightFactor(state.simSeconds)) * 2.35 + (state.weather === "thunderstorm" ? 0.8 : state.weather === "rain" ? 0.45 : 0);
   const frontExtent = frontPlatformZ + railwayMetersToWorld(RAILWAY_METRIC_PROFILE.platformWidthMeters / 2) + 0.45;
-  const rearExtent = state.systems.roadAccess ? roadZ - 0.7 : buildingZ - (state.tier >= 5 ? 1.45 : 0.85);
+  const rearExtent = state.systems.roadAccess ? roadZ - 2.8 : buildingZ - (state.tier >= 5 ? 1.45 : 0.85);
   const focusZ = (frontExtent + rearExtent) / 2;
   const sceneDepth = frontExtent - rearExtent;
   const activeEventId = state.eventWindow ?? state.platformLanes.find((lane) => lane.activeTrain?.trainId === "ice-s" || lane.activeTrain?.trainId === "br01")?.activeTrain?.trainId;
@@ -534,7 +528,8 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
       <LockedMetricCamera trackCount={trackCount} focusZ={focusZ} sceneDepth={sceneDepth} />
       <Atmosphere state={state} />
       <mesh position={[0, RAILWAY_GROUND_Y - 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow><planeGeometry args={[90, 56]} /><meshStandardMaterial color={seasonGround[state.seasonIndex]} roughness={wetWeather ? 0.3 : 0.95} metalness={wetWeather ? 0.14 : 0} /></mesh>
-      <LandscapeScenery seasonIndex={state.seasonIndex} stationHalfWidth={stationHalfWidth} />
+      <Woodland season={state.seasonIndex} frontPlatformZ={frontPlatformZ} roadZ={roadZ} />
+      <Wildlife state={state} frontPlatformZ={frontPlatformZ} onBirdCall={onBirdCall} />
       {state.region && laneZs.map((z) => <MetricTrack key={z} z={z} length={trackLength} />)}
       {state.region && !state.platformPlaced ? (
         <group onClick={onPlacePlatform} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = "default"; }}>
@@ -554,6 +549,7 @@ function Diorama({ state, onPlacePlatform }: SceneProps) {
         <Signal key={`platform-signal-${index}`} advanced={state.systems.advancedSignaling} x={signal.x} z={signal.z} />
       ))}
       {state.systems.roadAccess && <RoadAccess speed={state.speed} z={roadZ} stationX={buildingX} />}
+      {state.systems.roadAccess && <RoadsideNeighborhood state={state} roadZ={roadZ} parkedCar={parkedNeighborhoodCar} />}
       {state.systems.maintenance && <MaintenanceYard rearTrackZ={rearTrackZ} buildingZ={buildingZ} platformLength={platformLength} tier={state.tier} />}
       <PlatformLightPool state={state} platformZs={platformZs} platformLength={platformLength} />
       <EventCelebration eventId={eventId} frontPlatformZ={frontPlatformZ} platformLength={platformLength} />

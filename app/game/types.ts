@@ -117,6 +117,8 @@ export interface GameState {
   cleanliness: number;
   speed: 1 | 2 | 3;
   simSeconds: number;
+  /** Cosmetic neighborhood growth; advances only while the road exists. */
+  roadAgeSeconds: number;
   wallSeconds: number;
   platformLanes: PlatformLane[];
   firstTrainComplete: boolean;

@@ -55,6 +55,7 @@ import type {
 type StationSceneProps = {
   state: GameState;
   onPlacePlatform: () => void;
+  onBirdCall?: () => void;
 };
 
 function StationScene({ legacyVisuals, ...props }: StationSceneProps & { legacyVisuals: boolean }) {
@@ -97,7 +98,7 @@ type Action =
   | { type: "claim-mission" }
   | { type: "event"; eventId: "ice-s" | "br01" }
   | { type: "prestige" }
-  | { type: "debug"; mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified" }
+  | { type: "debug"; mode: "scenery" | "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified" }
   | { type: "import"; state: GameState }
   | { type: "toast"; message: string | null };
 
@@ -268,7 +269,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
 
   useEffect(() => {
     const audioBus = audio.current;
-    return () => audioBus.cancelThunder();
+    return () => { audioBus.cancelThunder(); audioBus.cancelBirds(); };
   }, []);
 
   useEffect(() => {
@@ -395,7 +396,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
   return (
     <main className={`game-shell ${isNight(state) ? "night" : "day"} weather-${state.weather}`}>
       <section className="world" aria-label="Corner Rails station diorama">
-        <StationScene legacyVisuals={legacyVisuals} state={state} onPlacePlatform={() => dispatch({ type: "place-platform" })} />
+        <StationScene legacyVisuals={legacyVisuals} state={state} onPlacePlatform={() => dispatch({ type: "place-platform" })} onBirdCall={() => audio.current.birdCall()} />
         <div className="world-vignette" />
       </section>
 
@@ -690,7 +691,7 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
       {debugEnabled && state.region && (
         <div className="debug-tools">
           <span>DEBUG</span>
-          {(["tier5", "night", "rain", "thunderstorm", "dirty"] as const).map((mode) => <button key={mode} onClick={() => dispatch({ type: "debug", mode })}>{mode}</button>)}
+          {(["tier5", "scenery", "night", "rain", "thunderstorm", "dirty"] as const).map((mode) => <button key={mode} onClick={() => dispatch({ type: "debug", mode })}>{mode}</button>)}
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-classic" })}>RJ classic</button>
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-classic-cab-car" })}>RJ classic cab</button>
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-nextgen" })}>RJ new</button>

@@ -456,6 +456,7 @@ export function createInitialState(prestige = 0): GameState {
     cleanliness: 100,
     speed: 1,
     simSeconds: 0,
+    roadAgeSeconds: 0,
     wallSeconds: 0,
     platformLanes: [{ platformIndex: 0, spawnCountdown: 2, activeTrain: null }],
     firstTrainComplete: false,

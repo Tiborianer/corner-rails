@@ -74,6 +74,7 @@ import {
   railwayMetersToWorld,
 } from "../app/game/metricRailway";
 import {
+  DB_REGIONAL_EXPRESS_VISUAL_VARIANTS,
   ICE3_VISUAL_VARIANTS,
   NIGHTJET_VISUAL_VARIANTS,
   RAILJET_VISUAL_VARIANTS,
@@ -329,9 +330,9 @@ describe("render helpers", () => {
       bundleBytes += (await stat(modelPath)).size;
       hierarchySignatures.add(nodes.map((node) => node.getName()).sort().join("|"));
 
-      expect(nodes.some((node) => node.getName() === `${train.id}_train_root`)).toBe(true);
+      expect(nodes.some((node) => node.getName() === `${train.modelKey}_train_root`)).toBe(true);
       if (train.cars > 1) {
-        expect(nodes.some((node) => node.getName().startsWith(`${train.id}_car_1_`))).toBe(true);
+        expect(nodes.some((node) => node.getName().startsWith(`${train.modelKey}_car_1_`))).toBe(true);
         expect(formationLength).toBeGreaterThan(train.cars * 0.75);
       }
       expect(formationLength).toBeLessThan(train.cars * 2.2 + 2);
@@ -538,22 +539,37 @@ describe("Railjet visual bake-off assets", () => {
 });
 
 describe("per-train Blender approval laboratory", () => {
-  it("registers the DB Regional-Express candidate only for private review", () => {
+  it("promotes the approved DB Regional-Express candidate to the Tier 2 registry", () => {
     expect(TRAIN_REVIEW_CANDIDATES["db-regional-express"]).toMatchObject({
-      approvalStatus: "private-review",
-      productionTrainId: "unassigned",
-      assetRevision: "2",
+      approvalStatus: "approved-production",
+      productionTrainId: "db-regional-express",
+      assetRevision: "production-r2",
       vehicleCount: 4,
       nominalLengthMeters: 99.84,
       traction: "diesel",
     });
     expect(TRAIN_REVIEW_METRIC_SCALE).toBe(RAILWAY_METRIC_PROFILE.metersToWorld);
-    const productionVisual = trainVisualVariants({ id: "desiro-hc", modelKey: "desiro-hc" })[0];
-    expect(productionVisual.profile).toBe("legacy-v1");
-    expect(productionVisual.assetPath).toContain("models/trains/desiro-hc.glb");
+    expect(DB_REGIONAL_EXPRESS_VISUAL_VARIANTS).toHaveLength(1);
+    const productionVisual = trainVisualVariants({ id: "db-regional-express", modelKey: "desiro-hc" })[0];
+    expect(productionVisual).toMatchObject({
+      id: "db-regional-express-br245-dosto",
+      profile: "metric-v1",
+      assetPath: "models/trains/blender/db-regional-express/db-regional-express-blender.glb",
+      lengthMeters: 99.84,
+      minimumLengthLevel: 2,
+      cabCarLeadingChance: 0.25,
+    });
+    const productionTrain = TRAINS.find((train) => train.id === "db-regional-express");
+    expect(productionTrain).toMatchObject({
+      name: "DB Regional-Express · BR 245 + Dosto",
+      tier: 2,
+      cars: 4,
+      modelKey: "desiro-hc",
+      requirements: { platforms: 2, lengthLevel: 2, systems: [] },
+    });
   });
 
-  it("ships a metre-scaled four-vehicle BR 245 double-deck review formation", async () => {
+  it("ships the approved metre-scaled four-vehicle BR 245 double-deck formation", async () => {
     const candidate = TRAIN_REVIEW_CANDIDATES["db-regional-express"];
     const modelPath = path.resolve("public", candidate.assetPath.slice(1));
     const io = new NodeIO();
@@ -594,6 +610,7 @@ describe("per-train Blender approval laboratory", () => {
     expect(Math.abs(bounds.max[0] + bounds.min[0])).toBeLessThan(0.1);
     expect(root.listMaterials().length).toBeLessThanOrEqual(14);
     expect((await stat(modelPath)).size).toBeLessThan(500_000);
+    expect(await readFile(modelPath)).toEqual(await readFile(path.resolve("public/models/train-lab/db-regional-express/db-regional-express-blender.glb")));
 
     const wheels = root.listNodes().filter((node) => /_wheel_-?1_[01](?:\.\d+)?$/.test(node.getName()));
     expect(wheels).toHaveLength(32);
@@ -621,8 +638,8 @@ describe("per-train Blender approval laboratory", () => {
     expect(manifest).toMatchObject({
       schemaVersion: 2,
       candidateId: "db-regional-express-dosto-br245",
-      approvalStatus: "private-review",
-      productionRegistryModified: false,
+      approvalStatus: "approved-production",
+      productionRegistryModified: true,
       assetRevision: "reference-detail-r2",
       userReferenceFilenames: [
         "Regio_Clean_side_view.jpg",
@@ -1401,6 +1418,7 @@ describe("per-train Blender approval laboratory", () => {
       "railjet-classic",
       "railjet-nextgen",
       "nightjet-new-generation",
+      "db-regional-express-br245-dosto",
       "metronom-legacy-v1",
       "ic2-legacy-v1",
       "ice2-legacy-v1",
@@ -1437,7 +1455,7 @@ describe("per-train Blender approval laboratory", () => {
 });
 
 describe("production metric railway and Railjet registry", () => {
-  it("keeps classic Railjet private while promoting the approved new generation", async () => {
+  it("uses both approved Railjet livery V2 formations in production", async () => {
     const io = new NodeIO();
     const candidates = [
       { id: "railjet-classic-livery-v2" as const, length: 205.375, vehicles: 8 },
@@ -1452,7 +1470,7 @@ describe("production metric railway and Railjet registry", () => {
       const materialNames = root.listMaterials().map((material) => material.getName());
       const bounds = getBounds(root.listScenes()[0]);
       expect(record).toMatchObject({
-        approvalStatus: candidate.id === "railjet-nextgen-livery-v2" ? "approved-production" : "private-review",
+        approvalStatus: "approved-production",
         vehicleCount: candidate.vehicles,
         nominalLengthMeters: candidate.length,
       });
@@ -1470,7 +1488,7 @@ describe("production metric railway and Railjet registry", () => {
       expect(manifest).toMatchObject({
         schemaVersion: 3,
         vehicleCount: candidate.vehicles,
-        productionRailjetModified: candidate.id === "railjet-nextgen-livery-v2",
+        productionRailjetModified: true,
       });
       expect(manifest.liveryRevision).toMatch(/^reference-calibrated-v2/);
       if (candidate.id === "railjet-nextgen-livery-v2") {
@@ -1512,6 +1530,7 @@ describe("production metric railway and Railjet registry", () => {
         expect(nodeNames.some((name) => name.startsWith("taurus_cab_") && name.includes("windshield"))).toBe(false);
         expect(nodeNames.some((name) => name.includes("taurus_bright_red_sweep"))).toBe(false);
       } else {
+        expect(record.assetPath).toBe("/models/trains/blender/railjet/railjet-classic-blender.glb");
         expect(nodeNames.some((name) => name.includes("door_upper_leaf"))).toBe(true);
         expect(nodeNames.some((name) => name.includes("door_red_belt"))).toBe(true);
         expect(manifest.liveryRevision).toBe("reference-calibrated-v2.1");
@@ -1519,7 +1538,7 @@ describe("production metric railway and Railjet registry", () => {
     }
 
     const digest = async (file: string) => createHash("sha256").update(await readFile(path.resolve(file))).digest("hex");
-    expect(await digest("public/models/trains/blender/railjet/railjet-classic-blender.glb")).toBe("d1f489c7e6562051dba5e156a868e8b437bf95864e2070409bfab74ed1df9383");
+    expect(await digest("public/models/trains/blender/railjet/railjet-classic-blender.glb")).toBe("c7a686657f0e3482f46172951e082f859e10286bc3bca043eb77d6cef01c0504");
     expect(await digest("public/models/trains/blender/railjet/railjet-nextgen-blender.glb")).toBe("a6e2ef2bcefb3ca111f78d84dce49eb1c0bbaef9dc51e5f867b1f255126db56f");
     expect(await digest("public/models/trains/railjet.glb")).toBe("9b0bdff278461f9ad9fe35378679e8e82c31839bcdc487bda53a159175f9503e");
   });
@@ -1559,7 +1578,7 @@ describe("production metric railway and Railjet registry", () => {
       { id: "railjet-classic", profile: "metric-v1", minimumLengthLevel: 4, selectionWeight: 1 },
       { id: "railjet-nextgen", profile: "metric-v1", minimumLengthLevel: 5, selectionWeight: 1 },
     ]);
-    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet" && candidate.id !== "nightjet" && candidate.id !== "ice3")) {
+    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet" && candidate.id !== "nightjet" && candidate.id !== "ice3" && candidate.id !== "db-regional-express")) {
       expect(trainVisualVariants(train)).toHaveLength(1);
       expect(resolveTrainVisualVariant(train).profile).toBe("legacy-v1");
     }
@@ -1618,6 +1637,19 @@ describe("production metric railway and Railjet registry", () => {
     expect(debugState(fundedState(), "railjet-nextgen-cab-car").platformLanes[0].activeTrain).toMatchObject({
       trainId: "railjet",
       visualVariantId: "railjet-nextgen",
+      formationOrientation: -1,
+    });
+  });
+
+  it("creates production debug arrivals for both Regional-Express leading ends", () => {
+    expect(debugState(fundedState(), "regional-express-locomotive").platformLanes[0].activeTrain).toMatchObject({
+      trainId: "db-regional-express",
+      visualVariantId: "db-regional-express-br245-dosto",
+      formationOrientation: 1,
+    });
+    expect(debugState(fundedState(), "regional-express-cab-car").platformLanes[0].activeTrain).toMatchObject({
+      trainId: "db-regional-express",
+      visualVariantId: "db-regional-express-br245-dosto",
       formationOrientation: -1,
     });
   });
@@ -1975,6 +2007,32 @@ describe("manual save codes", () => {
     expect(decodeSave(encodeSave(state)).platformLanes[0].activeTrain).toMatchObject({
       visualVariantId: "ice2-legacy-v1",
       formationOrientation: -1,
+    });
+  });
+
+  it("migrates old Desiro service saves to the approved BR 245 Regional-Express", () => {
+    const state: GameState = {
+      ...fundedState(),
+      servedTrainIds: ["desiro-hc"],
+      platformLanes: [{
+        platformIndex: 0,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: "desiro-hc",
+          phase: "dwell",
+          phaseElapsed: 2,
+          phaseDuration: 14,
+          payout: 75,
+          firstService: false,
+        },
+      }],
+    };
+    const restored = decodeSave(encodeSave(state));
+    expect(restored.servedTrainIds).toEqual(["db-regional-express"]);
+    expect(restored.platformLanes[0].activeTrain).toMatchObject({
+      trainId: "db-regional-express",
+      visualVariantId: "db-regional-express-br245-dosto",
+      formationOrientation: 1,
     });
   });
 

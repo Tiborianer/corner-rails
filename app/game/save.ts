@@ -51,17 +51,20 @@ function isValidState(value: unknown): value is GameState {
 
 function normalizeActiveTrain(activeTrain: ActiveTrain | null | undefined): ActiveTrain | null {
   if (!activeTrain) return null;
-  const defaultVisualVariantId = activeTrain.trainId === "railjet"
+  const trainId = activeTrain.trainId === "desiro-hc" ? "db-regional-express" : activeTrain.trainId;
+  const defaultVisualVariantId = trainId === "railjet"
     ? "railjet-classic"
-    : activeTrain.trainId === "nightjet"
+    : trainId === "nightjet"
       ? "nightjet-new-generation"
-      : activeTrain.trainId === "ice3"
+      : trainId === "db-regional-express"
+        ? "db-regional-express-br245-dosto"
+      : trainId === "ice3"
         ? "ice3-br403-unified"
-        : ["metronom", "ic2", "ice2", "comfortjet"].includes(activeTrain.trainId)
-          ? `${activeTrain.trainId}-legacy-v1`
+        : ["metronom", "ic2", "ice2", "comfortjet"].includes(trainId)
+          ? `${trainId}-legacy-v1`
           : undefined;
   const visualVariantId = activeTrain.visualVariantId ?? defaultVisualVariantId;
-  const normalized = { ...activeTrain, ...(visualVariantId ? { visualVariantId } : {}) } as ActiveTrain & { travelDirection?: 1 | -1 };
+  const normalized = { ...activeTrain, trainId, ...(visualVariantId ? { visualVariantId } : {}) } as ActiveTrain & { travelDirection?: 1 | -1 };
   const interimDirection = normalized.travelDirection;
   delete normalized.travelDirection;
   if (visualVariantId && trainVisualCabCarLeadingChance(visualVariantId) > 0) {
@@ -97,7 +100,10 @@ export function decodeSave(code: string): GameState {
   const defaults = createInitialState(legacy.prestige ?? 0);
   const knownTrainIds = new Set(TRAINS.map((train) => train.id));
   const servedTrainIds = Array.isArray(legacy.servedTrainIds)
-    ? [...new Set(legacy.servedTrainIds.filter((trainId): trainId is string => typeof trainId === "string" && knownTrainIds.has(trainId)))]
+    ? [...new Set(legacy.servedTrainIds
+      .filter((trainId): trainId is string => typeof trainId === "string")
+      .map((trainId) => trainId === "desiro-hc" ? "db-regional-express" : trainId)
+      .filter((trainId) => knownTrainIds.has(trainId)))]
     : [];
   const unlockedBadges = Array.isArray(legacy.unlockedBadges) ? legacy.unlockedBadges.filter(isBadgeId) : [];
   const weather = legacy.weather === "rain" || legacy.weather === "thunderstorm" || legacy.weather === "clear"

@@ -1,5 +1,6 @@
 {
   "schemaVersion": 3,
+  "approvalStatus": "approved-production",
   "generator": "Blender 5.2 LTS Python API",
   "formation": "Classic \u00d6BB Railjet",
   "lengthMeters": 205.375,
@@ -15,13 +16,13 @@
     "driving-trailer"
   ],
   "masterBlend": "assets/blender/railjet-classic-livery-v2/railjet-classic-livery-v2-master.blend",
-  "formationGlb": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-livery-v2.glb",
+  "formationGlb": "public/models/trains/blender/railjet/railjet-classic-blender.glb",
   "moduleGlbs": {
-    "taurus": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-taurus.glb",
-    "economy": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-economy.glb",
-    "restaurant": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-restaurant.glb",
-    "first": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-first.glb",
-    "driving_trailer": "public/models/train-lab/railjet-classic-livery-v2/railjet-classic-driving-trailer.glb"
+    "taurus": "public/models/trains/blender/railjet/railjet-classic-taurus.glb",
+    "economy": "public/models/trains/blender/railjet/railjet-classic-economy.glb",
+    "restaurant": "public/models/trains/blender/railjet/railjet-classic-restaurant.glb",
+    "first": "public/models/trains/blender/railjet/railjet-classic-first.glb",
+    "driving_trailer": "public/models/trains/blender/railjet/railjet-classic-driving-trailer.glb"
   },
   "assetContract": {
     "units": "meters",
@@ -55,5 +56,5 @@
     "doorLeaf": "continuous wine-red, bright-red, graphite and aluminium body datums with a narrow vertical window",
     "depthFix": "all side colour panels use non-overlapping vertical spans to prevent WebGL z-fighting"
   },
-  "productionRailjetModified": false
+  "productionRailjetModified": true
 }

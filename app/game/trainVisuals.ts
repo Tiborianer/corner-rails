@@ -44,7 +44,7 @@ export const RAILJET_VISUAL_VARIANTS = [
     lengthMeters: 205.38,
     minimumLengthLevel: 4,
     selectionWeight: 1,
-    revision: "blender-2026-08-16",
+    revision: "blender-livery-v2-1-production-2026-09-06",
     cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
   },
   {
@@ -82,6 +82,26 @@ export const NIGHTJET_VISUAL_VARIANTS = [
     minimumLengthLevel: 5,
     selectionWeight: 1,
     revision: "blender-n2-2026-08-21",
+    cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
+  },
+] as const satisfies readonly TrainVisualVariant[];
+
+export const DB_REGIONAL_EXPRESS_VISUAL_VARIANTS = [
+  {
+    id: "db-regional-express-br245-dosto",
+    assetPath: "models/trains/blender/db-regional-express/db-regional-express-blender.glb",
+    profile: "metric-v1",
+    scale: [
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+      RAILWAY_METRIC_PROFILE.metersToWorld,
+    ],
+    rotation: [0, 0, 0],
+    contactOffsetY: RAILWAY_METRIC_PROFILE.railTopY,
+    lengthMeters: 99.84,
+    minimumLengthLevel: 2,
+    selectionWeight: 1,
+    revision: "blender-r2-production-2026-09-06",
     cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
   },
 ] as const satisfies readonly TrainVisualVariant[];
@@ -127,7 +147,7 @@ export function legacyTrainVisual(modelKey: string): TrainVisualVariant {
 }
 
 export function trainVisualCabCarLeadingChance(visualVariantId: string): number {
-  const promotedVariant = [...RAILJET_VISUAL_VARIANTS, ...NIGHTJET_VISUAL_VARIANTS, ...ICE3_VISUAL_VARIANTS]
+  const promotedVariant = [...RAILJET_VISUAL_VARIANTS, ...NIGHTJET_VISUAL_VARIANTS, ...DB_REGIONAL_EXPRESS_VISUAL_VARIANTS, ...ICE3_VISUAL_VARIANTS]
     .find((variant) => variant.id === visualVariantId);
   if (promotedVariant && "cabCarLeadingChance" in promotedVariant) {
     return promotedVariant.cabCarLeadingChance ?? 0;
@@ -143,6 +163,7 @@ export function trainVisualCabCarLeadingChance(visualVariantId: string): number 
 export function trainVisualVariants(train: Pick<TrainDefinition, "id" | "modelKey">): readonly TrainVisualVariant[] {
   if (train.id === "railjet") return RAILJET_VISUAL_VARIANTS;
   if (train.id === "nightjet") return NIGHTJET_VISUAL_VARIANTS;
+  if (train.id === "db-regional-express") return DB_REGIONAL_EXPRESS_VISUAL_VARIANTS;
   if (train.id === "ice3") return ICE3_VISUAL_VARIANTS;
   return [legacyTrainVisual(train.modelKey)];
 }

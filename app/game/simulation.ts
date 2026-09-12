@@ -712,7 +712,7 @@ export function prestigeStation(state: GameState): GameState {
 
 export function debugState(
   state: GameState,
-  mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
+  mode: "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
 ): GameState {
   if (mode === "ice3-unified") {
     const ready = debugState(state, "tier5");
@@ -754,6 +754,28 @@ export function debugState(
         },
       } : lane),
       toast: `Debug: Nightjet approaching with ${mode === "nightjet-taurus" ? "Taurus" : "cab car"} leading.`,
+    };
+  }
+  if (mode === "regional-express-locomotive" || mode === "regional-express-cab-car") {
+    const ready = debugState(state, "tier5");
+    const cabCarLeading = mode === "regional-express-cab-car";
+    return {
+      ...ready,
+      platformLanes: ready.platformLanes.map((lane) => lane.platformIndex === 0 ? {
+        ...lane,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: "db-regional-express",
+          visualVariantId: "db-regional-express-br245-dosto",
+          formationOrientation: cabCarLeading ? -1 : 1,
+          phase: "approach",
+          phaseElapsed: 0,
+          phaseDuration: 5,
+          payout: 75,
+          firstService: false,
+        },
+      } : lane),
+      toast: `Debug: DB Regional-Express approaching with ${cabCarLeading ? "cab car" : "BR 245"} leading.`,
     };
   }
   if (mode === "railjet-classic" || mode === "railjet-classic-cab-car" || mode === "railjet-nextgen" || mode === "railjet-nextgen-cab-car") {

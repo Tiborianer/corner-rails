@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "generator": "Blender 5.2 LTS Python API",
   "candidateId": "db-regional-express-dosto-br245",
-  "approvalStatus": "private-review",
+  "approvalStatus": "approved-production",
   "formation": "DB Regional-Express BR 245 double-deck push-pull",
   "lengthMeters": 99.84,
   "vehicleCount": 4,
@@ -25,12 +25,12 @@
     }
   },
   "masterBlend": "assets/blender/db-regional-express/db-regional-express-master.blend",
-  "formationGlb": "public/models/train-lab/db-regional-express/db-regional-express-blender.glb",
+  "formationGlb": "public/models/trains/blender/db-regional-express/db-regional-express-blender.glb",
   "moduleGlbs": {
-    "br245": "public/models/train-lab/db-regional-express/db-regional-express-br245.glb",
-    "mixed_class": "public/models/train-lab/db-regional-express/db-regional-express-mixed-class.glb",
-    "second_class": "public/models/train-lab/db-regional-express/db-regional-express-second-class.glb",
-    "driving_trailer": "public/models/train-lab/db-regional-express/db-regional-express-driving-trailer.glb"
+    "br245": "public/models/trains/blender/db-regional-express/db-regional-express-br245.glb",
+    "mixed_class": "public/models/trains/blender/db-regional-express/db-regional-express-mixed-class.glb",
+    "second_class": "public/models/trains/blender/db-regional-express/db-regional-express-second-class.glb",
+    "driving_trailer": "public/models/trains/blender/db-regional-express/db-regional-express-driving-trailer.glb"
   },
   "assetContract": {
     "units": "meters",
@@ -69,5 +69,5 @@
     "br245Body": "asymmetric diesel intake grilles, access panels, cab steps and segmented multi-engine roof equipment",
     "doubleDeckCars": "inset window seals, detailed twin-leaf doors, handles, class markers, REGIO lettering and ribbed HVAC housings"
   },
-  "productionRegistryModified": false
+  "productionRegistryModified": true
 }

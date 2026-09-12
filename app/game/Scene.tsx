@@ -576,4 +576,5 @@ useGLTF.preload(trainVisualAssetUrl(resolveTrainVisualVariant({ id: "br642", mod
 useGLTF.preload(trainVisualAssetUrl(resolveTrainVisualVariant({ id: "br648", modelKey: "br648" })));
 useGLTF.preload(trainVisualAssetUrl(resolveTrainVisualVariant({ id: "railjet", modelKey: "railjet" }, "railjet-classic")));
 useGLTF.preload(trainVisualAssetUrl(resolveTrainVisualVariant({ id: "railjet", modelKey: "railjet" }, "railjet-nextgen")));
+useGLTF.preload(trainVisualAssetUrl(resolveTrainVisualVariant({ id: "db-regional-express", modelKey: "desiro-hc" })));
 useGLTF.preload(trainVisualAssetUrl(resolveTrainVisualVariant({ id: "ice3", modelKey: "ice3" }, "ice3-br403-unified")));

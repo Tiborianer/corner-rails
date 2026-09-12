@@ -208,6 +208,14 @@ The debug bar provides explicit locomotive- and cab-car-leading states for both 
 - [Railjet night candidate](../qa/railjet-lab/classic-generated-night.jpg)
 - [Three simultaneous procedural formations](../qa/railjet-lab/nextgen-hybrid-three-load.jpg)
 
+## 2026-09-06 completed-model production promotion
+
+The user's approval promotes the remaining completed review assets: classic Railjet V2.1 and DB Regional-Express R2. The normal game and their review routes now resolve the same canonical production GLBs. New-generation Railjet V2.3, Nightjet N2 and ICE 3 I3 U remain unchanged, so all five completed Blender train sets are now available in normal gameplay.
+
+The Regional-Express replaces the old Tier 2 Siemens Desiro HC service record with the modeled BR 245 diesel locomotive, two double-deck intermediate cars and double-deck driving trailer. The change preserves the 18-train roster, payout, dwell and spawn weight, removes the incorrect electrification requirement, and migrates both active and served `desiro-hc` save references. The generic Desiro GLB remains a code-controlled rollback asset. Regional-Express and both Railjet generations retain deterministic 75% locomotive-leading and 25% cab-car-leading orientation.
+
+Local normal-game QA loaded the production Regional-Express through the debug bar and confirmed its approach state, 75-coin reward, metric track contact and station integration without a loading stall or WebGL error. Automated coverage now contains 78 passing checks, including canonical asset hashes, review/production byte equality, roster identity, old-save migration, production debug states and both leading orientations. ESLint, the Sites production build, rendered-HTML smoke test and GitHub Pages build pass; the existing large glTF runtime chunk remains the only build warning.
+
 ## Known scope limits
 
 - The train GLBs remain original low-poly interpretations with no protected logos, but no longer share a generic coach. Train families have distinct full-length silhouettes, cab masks, roof equipment, bogies, articulated or locomotive-hauled structure, door/window rhythms, liveries, and correct end roles. They are detailed diorama assets rather than scanned museum replicas.

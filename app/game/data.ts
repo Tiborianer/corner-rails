@@ -65,7 +65,7 @@ const source = {
   rs1: "https://www.stadlerrail.com/api/docs/x/fec656e35b/rszero_hemu_en.pdf",
   desiroClassic: "https://press.siemens.com/global/en/pressrelease/consortium-develops-safe-remote-controlled-system-ai-based-obstacle-detection-rail",
   lint41: "https://www.alstom.com/de/press-releases-news/2009/11/Deutsche-Bahn-bestellt-16-Coradia-Lint-Regionalzuge-20091127",
-  desiroHC: "https://press.siemens.com/global/de/pressemitteilung/db-regio-bayern-und-siemens-mobility-unterzeichnen-vertrag-ueber-31-regionalzuege",
+  br245: "https://www.deutschebahn.com/resource/blob/12724132/94cb6e76adb9ff756caf9f2940d0bcba/DB-245_________12-2013-data.pdf",
   metronom: "https://www.der-metronom.de/unternehmen/ueber-uns/",
   nightjet:
     "https://www.nightjet.com/dam/jcr%3A6d74c6d1-0c5e-44a2-8b25-5e08c2a51bdb/folder-nightjet-promo-deutschland-de.pdf",
@@ -129,21 +129,23 @@ export const TRAINS: TrainDefinition[] = [
     source: source.lint41,
   },
   {
-    id: "desiro-hc",
-    name: "Siemens Desiro HC Regional-Express",
+    id: "db-regional-express",
+    name: "DB Regional-Express · BR 245 + Dosto",
     operator: "DB Regio",
     tier: 2,
     kind: "scheduled",
-    style: "regional",
+    style: "double",
     cars: 4,
     dwell: [12, 17],
     payout: [55, 90],
     spawnWeight: 4,
-    requirements: { platforms: 2, lengthLevel: 2, systems: ["electrification"] },
+    requirements: { platforms: 2, lengthLevel: 2, systems: [] },
+    // Keep the former model key as a rollback pointer for older deployments;
+    // production resolves this stable train ID to the approved Blender asset.
     modelKey: "desiro-hc",
     colors: { body: "#f1f1ed", accent: "#cc132c", roof: "#67747b", windows: "#133946" },
-    fact: "Desiro HC combines single-deck end cars with high-capacity double-deck centre cars.",
-    source: source.desiroHC,
+    fact: "This push-pull Regional-Express pairs a diesel DB Class 245 with double-deck coaches and a driving trailer.",
+    source: source.br245,
   },
   {
     id: "metronom",

@@ -38,6 +38,27 @@ export interface TrainReviewCandidate {
 }
 
 export const TRAIN_REVIEW_CANDIDATES = {
+  "metronom-br146": {
+    id: "metronom-br146",
+    badge: "ME M1",
+    label: "metronom · TRAXX 146.2 curved-livery set",
+    shortLabel: "metronom 146.2",
+    assetPath: "/models/train-lab/metronom-br146/metronom-br146-blender.glb",
+    assetRevision: "curved-livery-m1",
+    vehicleCount: 4,
+    nominalLengthMeters: 100.2,
+    reviewPlatformLengthMeters: 130,
+    traction: "electric",
+    revision: "curved-livery-m1",
+    primarySource: "https://www.der-metronom.de/unternehmen/ueber-uns/",
+    productionTrainId: "metronom",
+    approvalStatus: "private-review",
+    reviewStage: "formation",
+    reviewSummary: "Four vehicles matching your formation reference: a Class 146.2-family electric locomotive, two double-deck coaches and a rounded cab car. Curved white sweeps, yellow sides, blue doors and sill, two pantographs and role-specific glazing. Awaiting your appearance approval.",
+    supportsCabCarLeading: true,
+    locomotiveLabel: "BR 146 locomotive",
+    headlights: { frontInsetMeters: 0.50, heightMeters: 1.55, lateralMeters: 0.64, beamLengthMeters: 30, color: "#fff1c4" },
+  },
   "railjet-classic-livery-v2": {
     id: "railjet-classic-livery-v2",
     badge: "RJ C2",

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "metronom-br146",
+  "assetRevision": "curved-livery-m1",
+  "approvalStatus": "private-review",
+  "productionRegistryModified": false,
+  "formation": "TRAXX P160 AC2 / metronom ME 146-12 reference + two double-deck coaches + driving trailer",
+  "vehicleCount": 4,
+  "lengthMeters": 100.2,
+  "consist": [
+    "br146",
+    "second_class",
+    "bicycle",
+    "cab_car"
+  ],
+  "vehicleCentersMeters": {
+    "br146": 40.650001525878906,
+    "second_class": 17.5,
+    "bicycle": -9.600000381469727,
+    "cab_car": -36.70000076293945
+  },
+  "dimensionsMeters": {
+    "locomotive": {
+      "length": 18.9,
+      "width": 2.978,
+      "height": 4.28
+    },
+    "coach": {
+      "length": 26.8,
+      "width": 2.78,
+      "height": 4.63
+    }
+  },
+  "formationChoice": "User-requested four vehicles including locomotive; shortened review formation, not a claim about a fixed full-size service consist.",
+  "identityEvidence": "User locomotive image shows ME 146-12 / 146 512-9; operator lists 146.1/146.2/147.5, manufacturer metronom set identifies 146.2.",
+  "masterBlend": "assets/blender/metronom-br146/metronom-br146-master.blend",
+  "formationGlb": "public/models/train-lab/metronom-br146/metronom-br146-blender.glb",
+  "moduleGlbs": {
+    "br146": "public/models/train-lab/metronom-br146/metronom-br146.glb",
+    "second_class": "public/models/train-lab/metronom-br146/metronom-second-class.glb",
+    "bicycle": "public/models/train-lab/metronom-br146/metronom-bicycle.glb",
+    "cab_car": "public/models/train-lab/metronom-br146/metronom-cab-car.glb"
+  },
+  "sources": [
+    "https://www.der-metronom.de/unternehmen/ueber-uns/",
+    "https://www.der-metronom.com/fahrplan/wagenreihung/",
+    "https://www.marklin.com/products/details/article/26611",
+    "https://static.maerklin.de/damcontent/40/b0/40b0a1fe9e87c66b9f0497bf4ba8254b1434542051.pdf",
+    "https://www.deutschebahn.com/resource/blob/12723972/27f230ccadd935116edcb92217fda017/DB-Wg-D_____11-2004_Doppelstock-data.pdf"
+  ],
+  "userReferenceFilenames": [
+    "metronom_locomotive_side.jpg",
+    "metronom_full_locomotive_front_side.jpeg",
+    "metronom_cab_car_front_side.jpeg",
+    "metronom_cab_car_front.jpg",
+    "metronom_full_consist_front.jpg",
+    "metronom_locomotive_front_side.jpeg",
+    "metronom_full_consist.jpg"
+  ],
+  "referencePolicy": "Filename-only provenance; no photographs or operator logos are embedded or shipped.",
+  "assetContract": {
+    "units": "meters",
+    "forwardAxis": "+X",
+    "lateralAxis": "+Y",
+    "upAxis": "+Z",
+    "standardGaugeMeters": 1.435,
+    "wheelTreadCentersMeters": [
+      -0.7175,
+      0.7175
+    ],
+    "railContactPlaneZ": 0,
+    "railContactAnchor": "rail_contact_origin",
+    "pantographContactHeightMeters": 5.5,
+    "calibrationTrackExported": false
+  },
+  "visualGuides": {
+    "locomotive": "TRAXX 2 broad raked face, split windscreen, white cheeks, two pantographs, curved white scoop over yellow sides",
+    "cabCar": "one tall panoramic screen, rounded charcoal/yellow/white surround, blue apron, swept white roof shoulders",
+    "coaches": "yellow lower side under a curved white scoop, roof-following upper glass, blue double doors and sill"
+  }
+}

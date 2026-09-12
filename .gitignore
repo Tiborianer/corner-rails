@@ -40,3 +40,7 @@ yarn-error.log*
 /outputs/
 /work/
 *.tsbuildinfo
+
+# Blender script caches and recoverable editor backups
+__pycache__/
+*.blend1

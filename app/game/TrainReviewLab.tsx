@@ -241,7 +241,7 @@ function ReviewScene({
       <color attach="background" args={[sky]} />
       <fog attach="fog" args={[sky, 35, 72]} />
       <ambientLight intensity={night ? 0.5 : 1.35} color={night ? "#839bc9" : "#fff0d2"} />
-      <directionalLight position={[-7, 13, -5]} intensity={night ? 0.75 : 2.25} color={night ? "#9db2dd" : "#fff0bd"} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+      <directionalLight position={[-7, 13, -5]} intensity={night ? 0.75 : 2.25} color={night ? "#9db2dd" : "#fff0bd"} castShadow shadow-bias={-0.0002} shadow-normalBias={0.015} shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
       <hemisphereLight args={[night ? "#2f4167" : "#dcf1fb", raining ? "#536456" : "#718d55", night ? 0.55 : 1.05]} />
       <mesh position={[0, RAILWAY_GROUND_Y, 0.25]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[90, 50]} />

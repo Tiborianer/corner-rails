@@ -15,7 +15,7 @@ function numericQueryValue(value: string | string[] | undefined, fallback: numbe
 export default async function Home({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const parameters = await searchParams;
   const trainLab = Array.isArray(parameters.trainLab) ? parameters.trainLab[0] : parameters.trainLab;
-  if (trainLab === "railjet-classic-livery-v2" || trainLab === "railjet-nextgen-livery-v2" || trainLab === "db-regional-express" || trainLab === "nightjet-new-generation" || trainLab === "ice3-br403-v2-unified") {
+  if (trainLab === "metronom-br146" || trainLab === "railjet-classic-livery-v2" || trainLab === "railjet-nextgen-livery-v2" || trainLab === "db-regional-express" || trainLab === "nightjet-new-generation" || trainLab === "ice3-br403-v2-unified") {
     const captureMode = queryValue(parameters.capture, ["0", "1"], "0") === "1";
     const initialState: TrainReviewLabInitialState = {
       candidateId: trainLab,

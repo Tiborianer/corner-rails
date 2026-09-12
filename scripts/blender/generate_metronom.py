@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import math
+import sys
 from pathlib import Path
 import bpy
 from mathutils import Vector
@@ -19,8 +20,10 @@ spec = importlib.util.spec_from_file_location("metronom_helpers", Path(__file__)
 re = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(re)
 c = re.common
-SOURCE = ROOT / "assets/blender/metronom-br146"
-OUTPUT = ROOT / "public/models/train-lab/metronom-br146"
+FLAT_LIVERY = "--flat" in sys.argv
+CANDIDATE = "metronom-br146-flat" if FLAT_LIVERY else "metronom-br146"
+SOURCE = ROOT / "assets/blender" / CANDIDATE
+OUTPUT = ROOT / "public/models/train-lab" / CANDIDATE
 LENGTHS = {"br146": 18.90, "second_class": 26.80, "bicycle": 26.80, "cab_car": 26.80}
 GAP = 0.30
 LENGTH = sum(LENGTHS.values()) + 3 * GAP
@@ -252,7 +255,7 @@ def build_loco(parent):
     for side in (-1,1):
         # White scoop is defined by its smoothly sampled lower boundary.
         band(col,root,f"br146_yellow_sweep_{side}",side,False,-7.63,7.63,lambda x:1.13,
-             lambda x:2.35+1.28*min(1,(abs(x)/5.40)**2),M["yellow"])
+             lambda x:2.95 if FLAT_LIVERY else 2.35+1.28*min(1,(abs(x)/5.40)**2),M["yellow"])
         band(col,root,f"br146_blue_sill_{side}",side,False,-7.65,7.65,lambda x:.98,lambda x:1.25,M["blue"])
         for sign in (-1,1):
             # Sloped pale nose cheek; compact near-corner cab side window.
@@ -302,7 +305,7 @@ def build_coach(parent,role):
     start=-10.55 if cab else -13.16
     for side in (-1,1):
         band(col,root,f"{role}_yellow_curve_{side}",side,True,start,13.16,lambda x:1.12,
-             lambda x:2.62+1.40*min(1,(abs(x-.1)/10.1)**2),M["yellow"])
+             lambda x:2.95 if FLAT_LIVERY else 2.62+1.40*min(1,(abs(x-.1)/10.1)**2),M["yellow"])
         band(col,root,f"{role}_blue_sill_{side}",side,True,start,13.16,lambda x:.96,lambda x:1.15,M["blue"])
         band(col,root,f"{role}_blue_roof_edge_{side}",side,True,start,13.16,lambda x:4.42,lambda x:4.56,M["blue"])
         doors=(-8.05,10.28) if cab else (-10.35,10.35)
@@ -398,7 +401,7 @@ def main():
     bpy.context.scene.view_settings.view_transform="AgX"
     master=SOURCE/"metronom-br146-master.blend"
     bpy.ops.wm.save_as_mainfile(filepath=str(master),compress=True)
-    manifest={"schemaVersion":1,"candidateId":"metronom-br146","assetRevision":"curved-livery-m1",
+    manifest={"schemaVersion":1,"candidateId":CANDIDATE,"assetRevision":"flat-livery-m2" if FLAT_LIVERY else "curved-livery-m1",
         "approvalStatus":"private-review","productionRegistryModified":False,
         "formation":"TRAXX P160 AC2 / metronom ME 146-12 reference + two double-deck coaches + driving trailer",
         "vehicleCount":4,"lengthMeters":round(LENGTH,3),"consist":list(LENGTHS),"vehicleCentersMeters":centers,

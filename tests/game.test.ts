@@ -1578,7 +1578,7 @@ describe("production metric railway and Railjet registry", () => {
       { id: "railjet-classic", profile: "metric-v1", minimumLengthLevel: 4, selectionWeight: 1 },
       { id: "railjet-nextgen", profile: "metric-v1", minimumLengthLevel: 5, selectionWeight: 1 },
     ]);
-    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet" && candidate.id !== "nightjet" && candidate.id !== "ice3" && candidate.id !== "db-regional-express")) {
+    for (const train of TRAINS.filter((candidate) => candidate.id !== "railjet" && candidate.id !== "nightjet" && candidate.id !== "ice3" && candidate.id !== "db-regional-express" && candidate.id !== "metronom")) {
       expect(trainVisualVariants(train)).toHaveLength(1);
       expect(resolveTrainVisualVariant(train).profile).toBe("legacy-v1");
     }

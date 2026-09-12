@@ -27,6 +27,20 @@ export interface TrainVisualVariant {
 
 const LEGACY_ASSET_VERSION = "5";
 export const CAB_CAR_LEADING_CHANCE = 0.25;
+export const METRONOM_VISUAL_VARIANTS = ["curved", "flat"].map((livery): TrainVisualVariant => ({
+  id: `metronom-${livery}`,
+  assetPath: `models/trains/blender/metronom/metronom-${livery}.glb`,
+  profile: "metric-v1",
+  scale: [RAILWAY_METRIC_PROFILE.metersToWorld, RAILWAY_METRIC_PROFILE.metersToWorld, RAILWAY_METRIC_PROFILE.metersToWorld],
+  rotation: [0, 0, 0],
+  contactOffsetY: RAILWAY_METRIC_PROFILE.railTopY,
+  lengthMeters: 100.2,
+  minimumLengthLevel: 3,
+  selectionWeight: 1,
+  revision: "metronom-two-liveries-m2",
+  cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
+  headlights: { frontInsetMeters: .50, heightMeters: 1.55, beamLengthMeters: 30, color: "#fff1c4" },
+}));
 const LEGACY_PUSH_PULL_MODEL_KEYS = new Set(["metronom", "ic2", "ice2", "comfortjet"]);
 
 export const RAILJET_VISUAL_VARIANTS = [
@@ -147,7 +161,7 @@ export function legacyTrainVisual(modelKey: string): TrainVisualVariant {
 }
 
 export function trainVisualCabCarLeadingChance(visualVariantId: string): number {
-  const promotedVariant = [...RAILJET_VISUAL_VARIANTS, ...NIGHTJET_VISUAL_VARIANTS, ...DB_REGIONAL_EXPRESS_VISUAL_VARIANTS, ...ICE3_VISUAL_VARIANTS]
+  const promotedVariant = [...RAILJET_VISUAL_VARIANTS, ...NIGHTJET_VISUAL_VARIANTS, ...DB_REGIONAL_EXPRESS_VISUAL_VARIANTS, ...ICE3_VISUAL_VARIANTS, ...METRONOM_VISUAL_VARIANTS]
     .find((variant) => variant.id === visualVariantId);
   if (promotedVariant && "cabCarLeadingChance" in promotedVariant) {
     return promotedVariant.cabCarLeadingChance ?? 0;
@@ -165,6 +179,7 @@ export function trainVisualVariants(train: Pick<TrainDefinition, "id" | "modelKe
   if (train.id === "nightjet") return NIGHTJET_VISUAL_VARIANTS;
   if (train.id === "db-regional-express") return DB_REGIONAL_EXPRESS_VISUAL_VARIANTS;
   if (train.id === "ice3") return ICE3_VISUAL_VARIANTS;
+  if (train.id === "metronom") return METRONOM_VISUAL_VARIANTS;
   return [legacyTrainVisual(train.modelKey)];
 }
 
@@ -194,7 +209,7 @@ export function selectTrainVisualVariant(
   let cursor = Math.min(0.999999999, Math.max(0, roll)) * totalWeight;
   for (const variant of variants) {
     cursor -= variant.selectionWeight;
-    if (cursor <= 0) return variant;
+    if (cursor < 0) return variant;
   }
   return variants[variants.length - 1];
 }

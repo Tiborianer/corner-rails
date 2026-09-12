@@ -4,7 +4,9 @@ import { KHRMaterialsEmissiveStrength } from "@gltf-transform/extensions";
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import { TRAIN_REVIEW_CANDIDATES, trainReviewFormationRotation, trainReviewMotionPosition } from "../app/game/trainReviewData";
-import { trainVisualVariants } from "../app/game/trainVisuals";
+import { trainVisualVariants, selectTrainVisualVariant } from "../app/game/trainVisuals";
+import { createInitialState } from "../app/game/data";
+import { encodeSave, decodeSave } from "../app/game/save";
 
 const file = "public/models/train-lab/metronom-br146/metronom-br146-blender.glb";
 const load = () => new NodeIO().registerExtensions([KHRMaterialsEmissiveStrength]).read(file);
@@ -45,16 +47,51 @@ describe("metronom curved-livery Blender review", () => {
     expect(gzipSync(bytes).length).toBeLessThan(300_000);
   });
 
-  it("keeps approval pending, modules available and production metronom unchanged", async () => {
+  it("keeps modules available and promotes both user-requested liveries", async () => {
     const manifest = JSON.parse(await readFile("assets/blender/metronom-br146/manifest.json", "utf8"));
-    expect(manifest).toMatchObject({ vehicleCount: 4, lengthMeters: 100.2, approvalStatus: "private-review", productionRegistryModified: false });
+    expect(manifest).toMatchObject({ vehicleCount: 4, lengthMeters: 100.2, approvalStatus: "approved-production", productionRegistryModified: true });
     expect(Object.keys(manifest.moduleGlbs)).toHaveLength(4);
     for (const modulePath of Object.values(manifest.moduleGlbs)) {
       const root = (await new NodeIO().registerExtensions([KHRMaterialsEmissiveStrength]).read(modulePath as string)).getRoot();
       expect(root.listNodes().find(n => n.getName() === "rail_contact_origin")).toBeDefined();
     }
     expect(TRAIN_REVIEW_CANDIDATES["metronom-br146"].supportsCabCarLeading).toBe(true);
-    expect(trainVisualVariants({ id: "metronom", modelKey: "metronom" }).every(v => v.profile === "legacy-v1")).toBe(true);
+    expect(trainVisualVariants({ id: "metronom", modelKey: "metronom" }).every(v => v.profile === "metric-v1")).toBe(true);
+  });
+
+  it("selects equal-probability liveries and persists the choice through saves", () => {
+    const train = {id:"metronom",modelKey:"metronom"};
+    expect(selectTrainVisualVariant(train,3,0).id).toBe("metronom-curved");
+    expect(selectTrainVisualVariant(train,3,.499999).id).toBe("metronom-curved");
+    expect(selectTrainVisualVariant(train,3,.5).id).toBe("metronom-flat");
+    expect(selectTrainVisualVariant(train,3,.999999).id).toBe("metronom-flat");
+    const counts = {"metronom-curved":0,"metronom-flat":0};
+    for(let i=0;i<1000;i++) counts[selectTrainVisualVariant(train,3,i/1000).id as keyof typeof counts]++;
+    expect(counts).toEqual({"metronom-curved":500,"metronom-flat":500});
+    for(const variant of trainVisualVariants(train)) {
+      const state = createInitialState();
+      state.platformLanes=[{platformIndex:0,spawnCountdown:0,activeTrain:{trainId:"metronom",visualVariantId:variant.id,formationOrientation:-1,phase:"approach",phaseElapsed:1,phaseDuration:10,payout:100,firstService:false}}];
+      const restored=decodeSave(encodeSave(state)).platformLanes[0].activeTrain;
+      expect(restored?.visualVariantId).toBe(variant.id);
+      expect(restored?.formationOrientation).toBe(-1);
+    }
+  });
+
+  it("keeps the rounded Regional-Express rebuild isolated and validates its curved upper glazing", async () => {
+    expect(TRAIN_REVIEW_CANDIDATES["db-regional-express-r3"].approvalStatus).toBe("private-review");
+    expect(trainVisualVariants({id:"db-regional-express",modelKey:"desiro-hc"})[0].assetPath).not.toContain("r3");
+    const doc=await new NodeIO().registerExtensions([KHRMaterialsEmissiveStrength]).read("public/models/train-lab/db-regional-express-r3/db-regional-express-r3.glb");
+    const nodes=doc.getRoot().listNodes();
+    expect(nodes.filter(n=>n.getName().includes("r3_continuous_rounded_shell"))).toHaveLength(3);
+    expect(nodes.filter(n=>n.getName().includes("r3_cab_panoramic_glass"))).toHaveLength(1);
+    expect(nodes.filter(n=>/_wheel_-?1_[01](?:\.\d+)?$/.test(n.getName()))).toHaveLength(32);
+    const pane=nodes.find(n=>n.getName().includes("r3_second_class_upper") && n.getName().includes("_pane"));
+    const positions=pane?.getMesh()?.listPrimitives()[0].getAttribute("POSITION");
+    expect(positions).toBeDefined();
+    const xyz=[0,0,0]; const widths:number[]=[];
+    for(let i=0;i<positions!.getCount();i++){positions!.getElement(i,xyz);widths.push(Math.abs(xyz[2]));}
+    expect(Math.max(...widths)-Math.min(...widths)).toBeGreaterThan(.1);
+    expect(doc.getRoot().listTextures()).toHaveLength(0);
   });
 
   it("reverses the formation without reversing travel and keeps smooth stop/pass motion", () => {

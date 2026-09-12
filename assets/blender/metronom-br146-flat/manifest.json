@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "candidateId": "metronom-br146",
-  "assetRevision": "curved-livery-m1",
+  "candidateId": "metronom-br146-flat",
+  "assetRevision": "flat-livery-m2",
   "approvalStatus": "approved-production",
   "productionRegistryModified": true,
   "formation": "TRAXX P160 AC2 / metronom ME 146-12 reference + two double-deck coaches + driving trailer",
@@ -33,13 +33,13 @@
   },
   "formationChoice": "User-requested four vehicles including locomotive; shortened review formation, not a claim about a fixed full-size service consist.",
   "identityEvidence": "User locomotive image shows ME 146-12 / 146 512-9; operator lists 146.1/146.2/147.5, manufacturer metronom set identifies 146.2.",
-  "masterBlend": "assets/blender/metronom-br146/metronom-br146-master.blend",
-  "formationGlb": "public/models/train-lab/metronom-br146/metronom-br146-blender.glb",
+  "masterBlend": "assets/blender/metronom-br146-flat/metronom-br146-master.blend",
+  "formationGlb": "public/models/train-lab/metronom-br146-flat/metronom-br146-blender.glb",
   "moduleGlbs": {
-    "br146": "public/models/train-lab/metronom-br146/metronom-br146.glb",
-    "second_class": "public/models/train-lab/metronom-br146/metronom-second-class.glb",
-    "bicycle": "public/models/train-lab/metronom-br146/metronom-bicycle.glb",
-    "cab_car": "public/models/train-lab/metronom-br146/metronom-cab-car.glb"
+    "br146": "public/models/train-lab/metronom-br146-flat/metronom-br146.glb",
+    "second_class": "public/models/train-lab/metronom-br146-flat/metronom-second-class.glb",
+    "bicycle": "public/models/train-lab/metronom-br146-flat/metronom-bicycle.glb",
+    "cab_car": "public/models/train-lab/metronom-br146-flat/metronom-cab-car.glb"
   },
   "sources": [
     "https://www.der-metronom.de/unternehmen/ueber-uns/",
@@ -74,11 +74,9 @@
     "calibrationTrackExported": false
   },
   "visualGuides": {
-    "locomotive": "TRAXX 2 broad raked face, split windscreen, white cheeks, two pantographs, curved white scoop over yellow sides",
-    "cabCar": "one tall panoramic screen, rounded charcoal/yellow/white surround, blue apron, swept white roof shoulders",
-    "coaches": "yellow lower side under a curved white scoop, roof-following upper glass, blue double doors and sill"
+    "livery": "Straight horizontal yellow lower half and white upper sides, blue trim; same four-vehicle geometry as curved M1."
   },
-  "livery": "curved",
+  "livery": "flat",
   "productionLiveryChance": 0.5,
-  "productionAsset": "public/models/trains/blender/metronom/metronom-curved.glb"
+  "productionAsset": "public/models/trains/blender/metronom/metronom-flat.glb"
 }

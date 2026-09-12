@@ -1,6 +1,6 @@
 # metronom M1 — four-vehicle Blender review
 
-Status: **review only; not approved for production**. The existing gameplay metronom remains unchanged.
+Status: **promoted following the user's two-livery spawning request on 2026-09-12**. See `METRONOM_M2_DBRE_R3.md` for current behavior. The notes below preserve the first-review record.
 
 ## Reference interpretation
 

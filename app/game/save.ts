@@ -60,10 +60,12 @@ function normalizeActiveTrain(activeTrain: ActiveTrain | null | undefined): Acti
         ? "db-regional-express-br245-dosto"
       : trainId === "ice3"
         ? "ice3-br403-unified"
-        : ["metronom", "ic2", "ice2", "comfortjet"].includes(trainId)
+        : trainId === "metronom" ? "metronom-curved"
+        : ["ic2", "ice2", "comfortjet"].includes(trainId)
           ? `${trainId}-legacy-v1`
           : undefined;
-  const visualVariantId = activeTrain.visualVariantId ?? defaultVisualVariantId;
+  const visualVariantId = trainId === "metronom" && activeTrain.visualVariantId === "metronom-legacy-v1"
+    ? "metronom-curved" : activeTrain.visualVariantId ?? defaultVisualVariantId;
   const normalized = { ...activeTrain, trainId, ...(visualVariantId ? { visualVariantId } : {}) } as ActiveTrain & { travelDirection?: 1 | -1 };
   const interimDirection = normalized.travelDirection;
   delete normalized.travelDirection;

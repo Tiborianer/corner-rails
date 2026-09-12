@@ -154,7 +154,7 @@ export const TRAINS: TrainDefinition[] = [
     tier: 2,
     kind: "scheduled",
     style: "double",
-    cars: 6,
+    cars: 4,
     dwell: [14, 18],
     payout: [80, 125],
     spawnWeight: 3,

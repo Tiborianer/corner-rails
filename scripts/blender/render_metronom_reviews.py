@@ -1,9 +1,13 @@
 """Reproducible overview, exact sides and cab recognition views."""
 from pathlib import Path
 import bpy
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-OUTPUT = ROOT / "qa/train-review/metronom-br146"
+candidate = sys.argv[sys.argv.index("--")+1] if "--" in sys.argv else "metronom-br146"
+if candidate not in ("metronom-br146", "metronom-br146-flat", "db-regional-express-r3"):
+    raise ValueError("Unsupported review candidate")
+OUTPUT = ROOT / "qa/train-review" / candidate
 OUTPUT.mkdir(parents=True, exist_ok=True)
 scene = bpy.context.scene
 scene.render.resolution_x = 1440

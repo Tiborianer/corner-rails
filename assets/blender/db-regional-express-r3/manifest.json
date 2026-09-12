@@ -1,0 +1,27 @@
+{
+  "candidateId": "db-regional-express-r3",
+  "approvalStatus": "private-review",
+  "vehicleCount": 4,
+  "lengthMeters": 99.84000000000002,
+  "productionRegistryModified": false,
+  "locomotive": "Approved BR245 generator preserved; new rounded coaches and driving trailer",
+  "profile": {
+    "width": 2.78,
+    "height": 4.63,
+    "upperDeckShoulderBase": 3.13,
+    "gauge": 1.435,
+    "wheelContact": 0
+  },
+  "references": [
+    "Regio_Clean_side_view.jpg",
+    "Regio_miniature_view.jpg",
+    "Regio_real_photo_back view.jpg",
+    "Regio_single_cabcar_side_view.jpg"
+  ],
+  "sources": [
+    "https://www.rmv.de/c/de/fahrplan/linien-netze/fahrzeugtypen/regionalzuege/doppelstockwagen-lokbespannt/doppelstockwagen",
+    "https://www.tillig.com/Produkte/Doppelstockwagen.html",
+    "https://www.bahnbilder.de/bild/deutschland~strecken~kbs-590-halle-kasseler-bahn/1233205/blick-auf-einen-doppelstock-steuerwagen-der-2.html"
+  ],
+  "notes": "Reference-guided original geometry, no photographs or logos embedded. Specific carriage subtype is not claimed."
+}

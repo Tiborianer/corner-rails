@@ -1,9 +1,10 @@
 {
   "candidateId": "db-regional-express-r3",
-  "approvalStatus": "private-review",
+  "approvalStatus": "approved-production",
+  "productionAsset": "public/models/trains/blender/db-regional-express/db-regional-express-r3.glb",
   "vehicleCount": 4,
   "lengthMeters": 99.84000000000002,
-  "productionRegistryModified": false,
+  "productionRegistryModified": true,
   "locomotive": "Approved BR245 generator preserved; new rounded coaches and driving trailer",
   "profile": {
     "width": 2.78,

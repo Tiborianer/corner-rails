@@ -103,7 +103,7 @@ export const NIGHTJET_VISUAL_VARIANTS = [
 export const DB_REGIONAL_EXPRESS_VISUAL_VARIANTS = [
   {
     id: "db-regional-express-br245-dosto",
-    assetPath: "models/trains/blender/db-regional-express/db-regional-express-blender.glb",
+    assetPath: "models/trains/blender/db-regional-express/db-regional-express-r3.glb",
     profile: "metric-v1",
     scale: [
       RAILWAY_METRIC_PROFILE.metersToWorld,
@@ -115,8 +115,9 @@ export const DB_REGIONAL_EXPRESS_VISUAL_VARIANTS = [
     lengthMeters: 99.84,
     minimumLengthLevel: 2,
     selectionWeight: 1,
-    revision: "blender-r2-production-2026-09-06",
+    revision: "blender-r3-production",
     cabCarLeadingChance: CAB_CAR_LEADING_CHANCE,
+    headlights: { frontInsetMeters: 0.50, heightMeters: 1.7, beamLengthMeters: 30, color: "#fff1c4" },
   },
 ] as const satisfies readonly TrainVisualVariant[];
 

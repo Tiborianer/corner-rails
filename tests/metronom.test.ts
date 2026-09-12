@@ -77,9 +77,12 @@ describe("metronom curved-livery Blender review", () => {
     }
   });
 
-  it("keeps the rounded Regional-Express rebuild isolated and validates its curved upper glazing", async () => {
-    expect(TRAIN_REVIEW_CANDIDATES["db-regional-express-r3"].approvalStatus).toBe("private-review");
-    expect(trainVisualVariants({id:"db-regional-express",modelKey:"desiro-hc"})[0].assetPath).not.toContain("r3");
+  it("promotes the rounded Regional-Express without changing its approved geometry", async () => {
+    const candidate = TRAIN_REVIEW_CANDIDATES["db-regional-express-r3"];
+    expect(candidate.approvalStatus).toBe("approved-production");
+    const variant = trainVisualVariants({id:"db-regional-express",modelKey:"desiro-hc"})[0];
+    expect(`/${variant.assetPath}`).toBe(candidate.assetPath);
+    expect(await readFile(`public/${variant.assetPath}`)).toEqual(await readFile("public/models/train-lab/db-regional-express-r3/db-regional-express-r3.glb"));
     const doc=await new NodeIO().registerExtensions([KHRMaterialsEmissiveStrength]).read("public/models/train-lab/db-regional-express-r3/db-regional-express-r3.glb");
     const nodes=doc.getRoot().listNodes();
     expect(nodes.filter(n=>n.getName().includes("r3_continuous_rounded_shell"))).toHaveLength(3);

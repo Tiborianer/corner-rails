@@ -540,10 +540,10 @@ describe("Railjet visual bake-off assets", () => {
 
 describe("per-train Blender approval laboratory", () => {
   it("promotes the approved DB Regional-Express candidate to the Tier 2 registry", () => {
-    expect(TRAIN_REVIEW_CANDIDATES["db-regional-express"]).toMatchObject({
+    expect(TRAIN_REVIEW_CANDIDATES["db-regional-express-r3"]).toMatchObject({
       approvalStatus: "approved-production",
       productionTrainId: "db-regional-express",
-      assetRevision: "production-r2",
+      assetRevision: "rounded-r3",
       vehicleCount: 4,
       nominalLengthMeters: 99.84,
       traction: "diesel",
@@ -554,7 +554,7 @@ describe("per-train Blender approval laboratory", () => {
     expect(productionVisual).toMatchObject({
       id: "db-regional-express-br245-dosto",
       profile: "metric-v1",
-      assetPath: "models/trains/blender/db-regional-express/db-regional-express-blender.glb",
+      assetPath: "models/trains/blender/db-regional-express/db-regional-express-r3.glb",
       lengthMeters: 99.84,
       minimumLengthLevel: 2,
       cabCarLeadingChance: 0.25,

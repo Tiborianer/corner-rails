@@ -715,8 +715,32 @@ export function prestigeStation(state: GameState): GameState {
 
 export function debugState(
   state: GameState,
-  mode: "scenery" | "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified",
+  mode: "scenery" | "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified" | "metronom-curved" | "metronom-curved-cab-car" | "metronom-flat" | "metronom-flat-cab-car",
 ): GameState {
+  if (mode === "metronom-curved" || mode === "metronom-curved-cab-car" || mode === "metronom-flat" || mode === "metronom-flat-cab-car") {
+    const ready = debugState(state, "tier5");
+    const curved = mode.startsWith("metronom-curved");
+    const cabCarLeading = mode.endsWith("cab-car");
+    const train = TRAINS.find((candidate) => candidate.id === "metronom")!;
+    return {
+      ...ready,
+      platformLanes: ready.platformLanes.map((lane) => lane.platformIndex === 0 ? {
+        ...lane,
+        spawnCountdown: 0,
+        activeTrain: {
+          trainId: train.id,
+          visualVariantId: curved ? "metronom-curved" : "metronom-flat",
+          formationOrientation: cabCarLeading ? -1 : 1,
+          phase: "approach",
+          phaseElapsed: 0,
+          phaseDuration: 5,
+          payout: train.payout[0],
+          firstService: false,
+        },
+      } : lane),
+      toast: `Debug: metronom ${curved ? "curved" : "straight-band"} livery approaching with ${cabCarLeading ? "cab car" : "BR 146"} leading.`,
+    };
+  }
   if (mode === "ice3-unified") {
     const ready = debugState(state, "tier5");
     return {

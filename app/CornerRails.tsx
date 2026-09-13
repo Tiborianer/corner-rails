@@ -98,7 +98,7 @@ type Action =
   | { type: "claim-mission" }
   | { type: "event"; eventId: "ice-s" | "br01" }
   | { type: "prestige" }
-  | { type: "debug"; mode: "scenery" | "tier5" | "rain" | "thunderstorm" | "night" | "dirty" | "railjet-classic" | "railjet-classic-cab-car" | "railjet-nextgen" | "railjet-nextgen-cab-car" | "regional-express-locomotive" | "regional-express-cab-car" | "nightjet-taurus" | "nightjet-cab-car" | "ice3-unified" }
+  | { type: "debug"; mode: Parameters<typeof debugState>[1] }
   | { type: "import"; state: GameState }
   | { type: "toast"; message: string | null };
 
@@ -692,12 +692,16 @@ export default function CornerRails({ legacyVisuals = false }: { legacyVisuals?:
         <div className="debug-tools">
           <span>DEBUG</span>
           {(["tier5", "scenery", "night", "rain", "thunderstorm", "dirty"] as const).map((mode) => <button key={mode} onClick={() => dispatch({ type: "debug", mode })}>{mode}</button>)}
-          <button onClick={() => dispatch({ type: "debug", mode: "railjet-classic" })}>RJ classic</button>
-          <button onClick={() => dispatch({ type: "debug", mode: "railjet-classic-cab-car" })}>RJ classic cab</button>
+          <button title="Approved classic Railjet V2.1 livery · Taurus leading" onClick={() => dispatch({ type: "debug", mode: "railjet-classic" })}>Railjet classic V2.1</button>
+          <button title="Approved classic Railjet V2.1 livery · cab car leading" onClick={() => dispatch({ type: "debug", mode: "railjet-classic-cab-car" })}>Classic V2.1 cab</button>
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-nextgen" })}>RJ new</button>
           <button onClick={() => dispatch({ type: "debug", mode: "railjet-nextgen-cab-car" })}>RJ new cab</button>
           <button onClick={() => dispatch({ type: "debug", mode: "regional-express-locomotive" })}>RE BR 245</button>
           <button onClick={() => dispatch({ type: "debug", mode: "regional-express-cab-car" })}>RE cab car</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "metronom-curved" })}>Metronom curved</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "metronom-curved-cab-car" })}>Metronom curved cab</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "metronom-flat" })}>Metronom flat</button>
+          <button onClick={() => dispatch({ type: "debug", mode: "metronom-flat-cab-car" })}>Metronom flat cab</button>
           <button onClick={() => dispatch({ type: "debug", mode: "nightjet-taurus" })}>NJ Taurus</button>
           <button onClick={() => dispatch({ type: "debug", mode: "nightjet-cab-car" })}>NJ cab car</button>
           <button onClick={() => dispatch({ type: "debug", mode: "ice3-unified" })}>ICE 3</button>
